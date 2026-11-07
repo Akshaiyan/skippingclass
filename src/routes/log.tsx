@@ -59,7 +59,7 @@ function LogPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Decision log" description="Append-only. Records cannot be edited or removed." />
+      <PageHeader title="Decision log" />
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-border bg-surface px-4 py-3 text-sm">
         <span className="inline-flex items-center gap-2 font-medium"><ShieldCheck className="size-4" aria-hidden /> Hash-chain intact</span>
