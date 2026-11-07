@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+results.json
+practice_trace.jsonl
+hidden_test_ids.txt
+decision_log.ndjson
+*.ndjson
+out_*.csv
+practice_results*.csv
+dev_results.csv
+labelling_sheet.csv
+business_results.json
+headline_check.json
