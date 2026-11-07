@@ -28,6 +28,14 @@ export const LOCKED = "Locked";
 export const LOCKED_TOOLTIP = "Locked: closed claims cannot change";
 export const LOCKED_BANNER = "Locked: this claim is closed and is not affected by policy changes.";
 export const RULE_BASED = "Rule-based, not a prediction";
+export const IMPACT_COPY = {
+  volume: "Claim volume",
+  live: "Live",
+  expected: "Expected",
+  cost: "Handling cost per claim",
+  rates: "Handling cost by flow · EUR / claim",
+  flows: { green: "Green flow", yellow: "Yellow flow", red: "Red flow" },
+};
 
 export const CONFIRM_REC = "Confirm recommendation";
 export const OVERRIDE_REC = "Override recommendation";
