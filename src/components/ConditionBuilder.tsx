@@ -3,6 +3,7 @@ import type { Condition, Op, Operand } from "@/types";
 import { FIELDS, FIELD_MAP, type FieldType } from "@/lib/fields";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { emptyLeaf } from "@/lib/conditions";
 
 const OPS_BY_TYPE: Record<FieldType, Op[]> = {
   bool: ["eq", "neq", "is_blank", "is_not_blank"],
@@ -32,7 +33,6 @@ const sel =
 type Kind = "leaf" | "all" | "any" | "not";
 const kindOf = (c: Condition): Kind =>
   "all" in c ? "all" : "any" in c ? "any" : "not" in c ? "not" : "leaf";
-export const emptyLeaf = (): Condition => ({ field: "", op: "eq" });
 
 function Leaf({
   c,

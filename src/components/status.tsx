@@ -4,24 +4,7 @@ import type { Flow, Rec, Tri } from "@/types";
 import { FLOW_OF, LOCKED, NOT_PROVIDED, REC_LABEL } from "@/copy";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import type { EvidenceLabel } from "@/data/businessCase";
-import { LABEL_HELP } from "@/data/businessCase";
-
-export const FLOW_DOT: Record<Flow, string> = {
-  red: "bg-flow-red",
-  yellow: "bg-flow-yellow",
-  green: "bg-flow-green",
-};
-export const FLOW_TINT: Record<Flow, string> = {
-  red: "bg-flow-red-tint",
-  yellow: "bg-flow-yellow-tint",
-  green: "bg-flow-green-tint",
-};
-export const FLOW_BORDER: Record<Flow, string> = {
-  red: "border-l-flow-red",
-  yellow: "border-l-flow-yellow",
-  green: "border-l-flow-green",
-};
+import { FLOW_DOT, FLOW_TINT } from "@/lib/flow-styles";
 
 export function Dot({ flow, className }: { flow: Flow; className?: string }) {
   return (
@@ -197,24 +180,6 @@ export function RecheckChip({ from, to }: { from: Rec; to: Rec }) {
         <Dot flow={FLOW_OF[to]} className="size-1.5" />
       </span>
     </span>
-  );
-}
-
-export function EvidenceChip({ label }: { label: EvidenceLabel }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span tabIndex={0} className="inline-flex">
-          <Chip
-            tone={label === "NOT MEASURED" ? "outline" : label === "MEASURED" ? "solid" : "neutral"}
-            className="font-mono tracking-wide"
-          >
-            {label}
-          </Chip>
-        </span>
-      </TooltipTrigger>
-      <TooltipContent>{LABEL_HELP[label]}</TooltipContent>
-    </Tooltip>
   );
 }
 

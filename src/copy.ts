@@ -82,7 +82,7 @@ export const REFUSAL = {
 export const RELEASE_V2 = "Release v2";
 export const HOLD_V2 = "Hold v2";
 export const ADD_RULE = "Add rule";
-export const LATEST_FIRST = "Latest first";
+export const SORT_RECENT = "Sorted most recent to oldest";
 
 export const INFO_FOOTNOTE =
   "Copy and send from your usual channel. This tool never sends anything.";

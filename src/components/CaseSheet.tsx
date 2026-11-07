@@ -18,7 +18,7 @@ import {
 } from "@/copy";
 import { useStore } from "@/store";
 import { fieldLabel, FIELD_MAP } from "@/lib/fields";
-import type { DerivedClaim } from "@/lib/report";
+import { quoteLimitOf, type DerivedClaim } from "@/lib/report";
 import { cn } from "@/lib/utils";
 import {
   Chip,
@@ -125,7 +125,7 @@ export function CaseSheet({
   initialOverride?: Rec | "open";
   onReturnFocus?: () => void;
 }) {
-  const { state, dispatch } = useStore();
+  const { state, dispatch, v1Rules } = useStore();
   const [mode, setMode] = useState<"view" | "override">("view");
   const [target, setTarget] = useState<Rec | undefined>();
   const [infoOpen, setInfoOpen] = useState(false);
@@ -159,7 +159,9 @@ export function CaseSheet({
   const sorted = [...claim.checklist].sort((a, b) => order[a.result] - order[b.result]);
   const passed = sorted.filter((c) => c.result === "false");
   const notPassed = sorted.filter((c) => c.result !== "false");
-  const sug = yellow ? suggestion(claim, 1500) : null;
+  // The limit in force: the session's v2 limit once v2 is released, otherwise the live v1 rule.
+  const liveLimit = state.gateOpen ? state.quoteLimit : (quoteLimitOf(v1Rules) ?? state.quoteLimit);
+  const sug = yellow ? suggestion(claim, liveLimit) : null;
   const reviewed = claim.ui_status === "reviewed";
   const confirm = () => {
     if (locked || reviewed || mode !== "view" || !state.reviewer.trim()) return;

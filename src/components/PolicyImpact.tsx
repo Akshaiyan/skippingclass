@@ -13,10 +13,16 @@ import {
 import { getPolicyImpact } from "@/data/api";
 import { IMPACT_COPY, NOT_PROVIDED } from "@/copy";
 import { useStore } from "@/store";
+import { Dot } from "./status";
 
 const euro = (value: number) =>
   new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" }).format(value);
-const flowSwatches = { green: "bg-flow-green", yellow: "bg-flow-yellow", red: "bg-flow-red" };
+// Pies stay neutral: flow colour appears only as the small dot next to each legend label.
+const flowGray = {
+  red: "var(--chart-gray-1)",
+  yellow: "var(--chart-gray-2)",
+  green: "var(--chart-gray-3)",
+};
 
 export function PolicyImpact() {
   const { state, derived } = useStore();
@@ -71,7 +77,7 @@ export function PolicyImpact() {
                           isAnimationActive={false}
                         >
                           {data.map((row) => (
-                            <Cell key={row.flow} fill={`var(--${row.flow})`} />
+                            <Cell key={row.flow} fill={flowGray[row.flow]} />
                           ))}
                         </Pie>
                         <Tooltip formatter={(value: number) => [`${value} claims`]} />
@@ -102,9 +108,11 @@ export function PolicyImpact() {
             <div key={row.flow} className="contents">
               <span className="flex items-center gap-2">
                 <span
-                  className={`size-2.5 shrink-0 rounded-md ${flowSwatches[row.flow]}`}
+                  className="size-2.5 shrink-0 rounded-md"
+                  style={{ background: flowGray[row.flow] }}
                   aria-hidden
                 />
+                <Dot flow={row.flow} className="size-1.5" />
                 {IMPACT_COPY.flows[row.flow]}
               </span>
               <span className="tnum text-right font-mono">{row.live}</span>

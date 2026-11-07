@@ -18,7 +18,8 @@ import {
   Refusal,
   WhyDisabled,
 } from "@/components/status";
-import { ConditionBuilder, emptyLeaf } from "@/components/ConditionBuilder";
+import { ConditionBuilder } from "@/components/ConditionBuilder";
+import { emptyLeaf } from "@/lib/conditions";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

@@ -62,6 +62,10 @@ const limitOf = (r?: PolicyRule) =>
     ? Number(r.condition.right.value)
     : null;
 
+/** The quote limit a rule set enforces, or null when it has no quote-limit rule. */
+export const quoteLimitOf = (rules: PolicyRule[]) =>
+  limitOf(rules.find((r) => r.id === "R1.quote_over_limit" && r.active !== false));
+
 export function diffLines(v1: PolicyRule[], draft: PolicyRule[]): string[] {
   const lines: string[] = [];
   for (const r of draft) {
@@ -136,6 +140,14 @@ export function flipList(d: DerivedClaim[]): Flip[] {
     }));
 }
 
+/** True when the given rules reproduce each claim's stored rule and checklist from its facts. */
+export function replaysStored(claims: Claim[], rules: PolicyRule[]): boolean {
+  return claims.every((c) => {
+    const ev = evaluate(rules, c.facts);
+    return ev.rule === c.rule_v1 && JSON.stringify(ev.checklist) === JSON.stringify(c.checklist);
+  });
+}
+
 export interface CheckResult {
   id: number;
   label: string;
@@ -163,11 +175,10 @@ export function exhaustiveChecks(
   const incomplete = draft.find(
     (r) => r.active !== false && r.id !== "R3.routine" && !isConditionComplete(r.condition),
   );
-  const replayOk = evals.every(
-    ({ c, ev }) =>
-      REC_ORDER.includes(ev.recommendation) &&
-      JSON.stringify(evaluate(draft, c.facts)) === JSON.stringify(ev),
-  );
+  // Replay against the stored baseline: re-running the live rules on the stored facts must
+  // reproduce the rule and checklist recorded when the claim was decided.
+  const replayOk =
+    evals.every(({ ev }) => REC_ORDER.includes(ev.recommendation)) && replaysStored(claims, v1);
   const closedOk = deriveClaims(claims, draft).every(
     (c) => c.case_status === "open" || !c.needs_recheck,
   );
@@ -207,7 +218,8 @@ export function exhaustiveChecks(
     {
       id: 3,
       label: "Every claim gets exactly one recommendation, and it replays identically",
-      explain: "Each rule is complete and two evaluations of every claim match.",
+      explain:
+        "Each rule is complete, and the live rules reproduce every stored decision from its facts.",
       pass: !incomplete && replayOk,
       message: incomplete ? `Rule ${incomplete.id} has an incomplete condition` : undefined,
     },

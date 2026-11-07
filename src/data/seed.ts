@@ -270,6 +270,29 @@ const RAW: { case_id: string; case_status: "open" | "closed"; claim_summary: str
 
 for (const r of RAW) r.facts["case_status"] = r.case_status;
 
+// One past reviewer override. PRA-012 was routine under v1; the reviewer asked for the missing
+// garage invoice before it closed, so the claim shows the corrected step, as a live override would.
+const SEED_OVERRIDE = {
+  type: "reviewer_override",
+  case_id: "PRA-012",
+  from_rec: "routine_processing",
+  to_rec: "request_information",
+  reason_code: "data_wrong",
+  note: "Parking sensor repair was not on the itemized quote; asked the garage for the invoice before closing.",
+  policy_version: "v1",
+  policy_hash: POLICY_V1.hash,
+} as const;
+
+const applyOverride = (c: Claim): Claim =>
+  c.case_id === SEED_OVERRIDE.case_id && c.recommendation_v1 === SEED_OVERRIDE.from_rec
+    ? {
+        ...c,
+        recommendation_v1: SEED_OVERRIDE.to_rec,
+        flow: FLOW_OF[SEED_OVERRIDE.to_rec],
+        ui_status: "reviewed",
+      }
+    : c;
+
 export const SEED_CLAIMS: Claim[] = RAW.map((r) => {
   const ev = evaluate(V1_RULES, r.facts);
   return {
@@ -289,7 +312,7 @@ export const SEED_CLAIMS: Claim[] = RAW.map((r) => {
     policy_hash: POLICY_V1.hash,
     needs_recheck: false,
   };
-});
+}).map(applyOverride);
 
 const BASE_TS = Date.UTC(2026, 10, 7, 9, 0, 0);
 const daysAgo = (d: number, h = 0) => new Date(BASE_TS - d * 864e5 + h * 36e5).toISOString();
@@ -308,18 +331,7 @@ export const SEED_LOG: LogEntry[] = (() => {
       timestamp: daysAgo(21 - i * 1.5, 1),
     });
   });
-  out.push({
-    type: "reviewer_override",
-    case_id: "PRA-004",
-    actor: "Jonas Weber",
-    from_rec: "routine_processing",
-    to_rec: "human_review",
-    reason_code: "data_wrong",
-    note: "Duplicate flag was missing on intake; same mirror claimed in August.",
-    policy_version: "v1",
-    policy_hash: POLICY_V1.hash,
-    timestamp: daysAgo(12, 3),
-  });
+  out.push({ ...SEED_OVERRIDE, actor: "Jonas Weber", timestamp: daysAgo(12, 3) });
   SEED_CLAIMS.filter((c) => c.case_status === "closed").forEach((c, i) => {
     out.push({
       type: "final_decision",

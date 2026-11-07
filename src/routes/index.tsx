@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useStore } from "@/store";
-import { Dot, FLOW_DOT, SectionTitle } from "@/components/status";
+import { Dot, SectionTitle } from "@/components/status";
+import { FLOW_DOT } from "@/lib/flow-styles";
 import {
   Select,
   SelectContent,
@@ -18,14 +19,12 @@ export const Route = createFileRoute("/")({
       { title: "Dashboard · Motor claims triage" },
       {
         name: "description",
-        content:
-          "Where reviewer time goes, which claims need attention, and an honest business case.",
+        content: "Open claims by recommended next step, with the claims that need attention first.",
       },
       { property: "og:title", content: "Dashboard · Motor claims triage" },
       {
         property: "og:description",
-        content:
-          "Explainable next-step recommendations for motor claims, with an evidence-labelled business case.",
+        content: "Explainable next-step recommendations for motor claims, sorted by urgency.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

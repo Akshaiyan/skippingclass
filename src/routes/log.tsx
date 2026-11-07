@@ -2,8 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ArrowRight, Check, ChevronRight, Copy, Search, ShieldCheck } from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
 import type { LogEntry } from "@/types";
-import { LATEST_FIRST, LOG_TYPE_LABEL } from "@/copy";
+import { SORT_RECENT, LOG_TYPE_LABEL } from "@/copy";
 import { useStore } from "@/store";
+import { evaluate } from "@/lib/evaluate";
 import { cn } from "@/lib/utils";
 import { Chip, FlowBadge, PageHeader, PolicyStamp } from "@/components/status";
 import { Button } from "@/components/ui/button";
@@ -51,11 +52,18 @@ function CopyJson({ text }: { text: string }) {
 }
 
 function LogPage() {
-  const { state } = useStore();
+  const { state, v1Rules } = useStore();
   const [type, setType] = useState<"all" | LogEntry["type"]>("all");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<number | null>(null);
-  const sys = state.log.filter((e) => e.type === "system_decision").length;
+  // Each system decision is replayed: the live rules run on the claim's stored facts and must
+  // reproduce the recommendation that was logged.
+  const sysEntries = state.log.filter((e) => e.type === "system_decision");
+  const sys = sysEntries.length;
+  const replayed = sysEntries.filter((e) => {
+    const claim = state.claims.find((c) => "case_id" in e && c.case_id === e.case_id);
+    return !!claim && "to_rec" in e && evaluate(v1Rules, claim.facts).recommendation === e.to_rec;
+  }).length;
 
   const rows = useMemo(
     () =>
@@ -81,7 +89,7 @@ function LogPage() {
         <span className="inline-flex items-center gap-2 font-medium">
           <ShieldCheck className="size-4" aria-hidden />{" "}
           <span className="tnum">
-            {sys}/{sys}
+            {replayed}/{sys}
           </span>{" "}
           decisions replay identically
         </span>
@@ -116,7 +124,7 @@ function LogPage() {
             className="h-8 w-48 rounded-md border border-border bg-background pl-8 pr-2 font-mono text-xs hover:border-border-strong"
           />
         </label>
-        <span className="text-xs text-muted-foreground">{LATEST_FIRST}</span>
+        <span className="text-xs text-muted-foreground">{SORT_RECENT}</span>
       </div>
 
       {state.source === "connecting" && state.log.length === 0 ? (

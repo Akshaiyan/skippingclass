@@ -1,21 +1,30 @@
 import { Check, ChevronDown, Search, X } from "lucide-react";
 import { useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import type { Flow, Rec } from "@/types";
-import { CHANGE_REC, FLOW_OF, LOCKED_TOOLTIP, REC_LABEL, REC_ORDER, changeTo } from "@/copy";
+import {
+  CHANGE_REC,
+  FLOW_OF,
+  LOCKED_TOOLTIP,
+  REC_LABEL,
+  REC_ORDER,
+  changeTo,
+  REC_OF,
+} from "@/copy";
 import { useStore } from "@/store";
 import type { DerivedClaim } from "@/lib/report";
 import { cn } from "@/lib/utils";
 import {
   Chip,
   Dot,
-  FLOW_BORDER,
   FlowBadge,
   RecheckChip,
   RuleChips,
   StatusChip,
   WhyDisabled,
 } from "@/components/status";
+import { FLOW_BORDER } from "@/lib/flow-styles";
 import { CaseSheet } from "@/components/CaseSheet";
+import { SegmentedControl } from "@/components/SegmentedControl";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -84,7 +93,7 @@ export function ClaimsList({
   hideFlowFilter?: boolean;
 }) {
   const { derived, state } = useStore();
-  const [status, setStatus] = useState<StatusFilter>("all");
+  const [status, setStatus] = useState<StatusFilter>("open");
   const [q, setQ] = useState("");
   const [recheckOnly, setRecheckOnly] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -171,53 +180,35 @@ export function ClaimsList({
           />
         </label>
         {!hideFlowFilter && (
-          <div
-            role="radiogroup"
-            aria-label="Flow"
-            className="inline-flex flex-wrap rounded-lg border border-border bg-surface p-1"
-          >
-            {(["all", "red", "yellow", "green"] as FlowFilter[]).map((f) => (
-              <button
-                key={f}
-                role="radio"
-                aria-checked={flow === f}
-                onClick={() => setFlow(f)}
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors duration-(--dur-fast)",
-                  flow === f
-                    ? "bg-background text-foreground shadow-card"
-                    : "text-text-2 hover:text-foreground",
-                )}
-              >
-                {f !== "all" && <Dot flow={f} />}
-                {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
-                <span className="tnum text-muted-foreground">{counts[f]}</span>
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            label="Recommendation"
+            value={flow}
+            onChange={setFlow}
+            options={(["all", "red", "yellow", "green"] as FlowFilter[]).map((f) => ({
+              value: f,
+              count: counts[f],
+              label:
+                f === "all" ? (
+                  "All"
+                ) : (
+                  <>
+                    <Dot flow={f} />
+                    {REC_LABEL[REC_OF[f]]}
+                  </>
+                ),
+            }))}
+          />
         )}
-        <div
-          role="radiogroup"
-          aria-label="Status"
-          className="inline-flex rounded-lg border border-border bg-surface p-1"
-        >
-          {(["open", "closed", "all"] as StatusFilter[]).map((s) => (
-            <button
-              key={s}
-              role="radio"
-              aria-checked={status === s}
-              onClick={() => setStatus(s)}
-              className={cn(
-                "rounded-md px-3 py-2 text-xs font-medium capitalize transition-colors duration-(--dur-fast)",
-                status === s
-                  ? "bg-background text-foreground shadow-card"
-                  : "text-text-2 hover:text-foreground",
-              )}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          label="Status"
+          value={status}
+          onChange={setStatus}
+          options={[
+            { value: "open", label: "Open" },
+            { value: "closed", label: "Closed" },
+            { value: "all", label: "All" },
+          ]}
+        />
         <label className="inline-flex items-center gap-2 text-xs font-medium text-text-2">
           <Switch checked={recheckOnly} onCheckedChange={setRecheckOnly} /> Needs recheck only
         </label>
