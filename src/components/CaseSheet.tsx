@@ -22,6 +22,7 @@ import type { DerivedClaim } from "@/lib/report";
 import { cn } from "@/lib/utils";
 import { Chip, FlowBadge, NotProvided, PolicyStamp, RuleChips, StatusChip, TriGlyph, WhyDisabled } from "./status";
 import { OverrideFlow } from "./OverrideFlow";
+import { DecisionMemory } from "./DecisionMemory";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
@@ -261,6 +262,8 @@ export function CaseSheet({
                 </dl>
               </section>
               </details>
+
+              <DecisionMemory caseId={claim.case_id} />
 
               {sug && (
                 <section className="rounded-lg border border-border bg-surface p-4">

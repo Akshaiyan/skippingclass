@@ -1,6 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import aegisLogo from "@/assets/aegis-logo.png.asset.json";
-import aegisMark from "@/assets/aegis-mark.png.asset.json";
+import { AegisLogo, AegisMark } from "@/components/AegisLogo";
 import { Inbox, LayoutDashboard, Menu, PanelLeftClose, PanelLeftOpen, Scale, ScrollText } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useStore } from "@/store";
@@ -38,11 +37,11 @@ function NavList({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: (
             )}
           >
             <Icon className="size-4 shrink-0" aria-hidden />
-            <span className={cn(collapsed && "text-[10px] leading-3")}>{collapsed ? n.short : n.label}</span>
+            <span className={cn(collapsed && "text-xs leading-3")}>{collapsed ? n.short : n.label}</span>
             {n.to === "/claims" && redOpen > 0 && (
               <span
                 className={cn(
-                  "tnum inline-flex items-center gap-1 rounded-full bg-flow-red-tint px-1.5 text-[11px] font-medium text-foreground",
+                  "tnum inline-flex items-center gap-1 rounded-full bg-flow-red-tint px-1.5 text-xs font-medium text-foreground",
                   collapsed ? "absolute right-1 top-1" : "ml-auto",
                 )}
                 aria-label={`${redOpen} open human review claims`}
@@ -74,7 +73,7 @@ function SidebarFooter({ collapsed }: { collapsed: boolean }) {
         <span className="grid size-8 place-items-center rounded-full bg-surface-2 text-xs font-semibold">
           {state.reviewer.split(" ").map((p) => p[0]).join("").slice(0, 2) || "?"}
         </span>
-        <span className="font-mono text-[10px] text-muted-foreground">v1</span>
+        <span className="font-mono text-xs text-muted-foreground">v1</span>
       </div>
     );
   return (
@@ -100,10 +99,10 @@ function Brand({ collapsed }: { collapsed: boolean }) {
   return (
     <div className={cn("flex items-center gap-2", collapsed && "flex-col gap-1")}>
       {collapsed ? (
-        <img src={aegisMark.url} alt="Aegis" className="h-6 w-auto dark:invert" />
+        <AegisMark className="h-6 w-auto text-foreground" />
       ) : (
         <div className="leading-tight">
-          <img src={aegisLogo.url} alt="Aegis" className="h-7 w-auto dark:invert" />
+          <AegisLogo className="h-7 w-auto text-foreground" />
           <div className="mt-2 text-xs text-muted-foreground">truth in triage</div>
         </div>
       )}
@@ -112,13 +111,14 @@ function Brand({ collapsed }: { collapsed: boolean }) {
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const { state } = useStore();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-dvh bg-background">
       <aside
         className={cn(
-          "sticky top-0 hidden h-screen shrink-0 flex-col justify-between border-r border-border bg-sidebar transition-[width] duration-200 ease-out md:flex",
+          "sticky top-0 hidden h-dvh shrink-0 flex-col justify-between border-r border-border bg-sidebar transition-[width] duration-200 ease-out md:flex",
           collapsed ? "w-16 px-1.5 py-4" : "w-60 px-3 py-4",
         )}
       >
@@ -144,7 +144,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background px-4 py-3 md:hidden">
+        <div className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:hidden">
           <Brand collapsed={false} />
           <Button variant="outline" size="sm" onClick={() => setMobileOpen(true)}>
             <Menu aria-hidden /> Menu
@@ -160,7 +160,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             <SidebarFooter collapsed={false} />
           </SheetContent>
         </Sheet>
-        <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
+        {state.source !== "live" && (
+          <div role="status" className="border-b border-border bg-surface px-4 py-2 text-sm md:px-8">
+            <strong className="font-medium">Demo data.</strong>{" "}
+            {state.source === "connecting" ? "Connecting to the triage service…" : "The triage service is not reachable, so decisions shown here are not from the engine and are not recorded."}
+          </div>
+        )}
+        <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 md:px-8 md:py-8">{children}</main>
       </div>
     </div>
   );

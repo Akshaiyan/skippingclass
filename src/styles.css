@@ -1,3 +1,6 @@
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+@import "@fontsource-variable/oxanium";
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
@@ -10,8 +13,10 @@
  */
 
 @theme inline {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  /* Display face: squared letterforms that sit next to the Aegis wordmark. Titles and big numbers only. */
+  --font-display: "Oxanium Variable", "Oxanium", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: 8px;
   --radius-lg: var(--radius);
@@ -68,6 +73,12 @@
 
 :root {
   --radius: 10px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-press: 120ms;
+  --dur-fast: 160ms;
+  --dur-panel: 220ms;
   --background: oklch(1 0 0);
   --surface: oklch(0.985 0 0);
   --surface-2: oklch(0.967 0.001 286.4);
@@ -76,7 +87,7 @@
   --foreground: oklch(0.145 0 0);
   --text-2: oklch(0.37 0.012 285.8);
   --muted-foreground: oklch(0.552 0.014 285.9);
-  --faint: oklch(0.712 0.013 286.1);
+  --faint: oklch(0.62 0.013 286.1); /* 4.6:1 on white; was 2.56:1 */
   --card: oklch(1 0 0);
   --card-foreground: var(--foreground);
   --popover: oklch(1 0 0);
@@ -125,6 +136,49 @@
   }
   html {
     font-feature-settings: "cv11", "ss01";
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    color-scheme: light;
+  }
+  button,
+  a,
+  [role="button"],
+  [role="radio"],
+  [role="switch"],
+  [role="checkbox"],
+  summary {
+    touch-action: manipulation;
+  }
+  button,
+  [role="button"],
+  [role="radio"],
+  [role="switch"] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  /* 44px minimum hit area on touch. Mouse users keep the compact sizes. */
+  @media (pointer: coarse) {
+    button:not([role="switch"]):not([role="checkbox"]),
+    [role="radio"],
+    [role="combobox"],
+    select,
+    input:not([type="checkbox"]):not([type="radio"]) {
+      min-height: 44px;
+    }
+    a.touch-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+    }
+  }
+  /* iOS zooms the page when an input under 16px gets focus. Fix the cause, never disable zoom. */
+  @media (pointer: coarse) {
+    input,
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
   }
   body {
     background-color: var(--color-background);
@@ -166,23 +220,38 @@
 }
 
 @utility hero-type {
+  font-family: var(--font-display);
   font-size: 44px;
   line-height: 52px;
   font-weight: 500;
-  letter-spacing: -0.02em;
-}
-
-@utility page-title {
-  font-size: 24px;
-  line-height: 32px;
-  font-weight: 600;
   letter-spacing: -0.01em;
 }
 
+@utility page-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 32px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
 @utility section-title {
-  font-size: 15px;
+  font-family: var(--font-display);
+  font-size: 16px;
   line-height: 22px;
   font-weight: 600;
+}
+
+@utility display-num {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Touch targets: 44px minimum on touch, compact on mouse. Put on any small pressable. */
+@utility touch-target {
+  @media (pointer: coarse) {
+    min-height: 44px;
+  }
 }
 
 @utility card-panel {

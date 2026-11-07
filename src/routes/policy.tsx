@@ -1,3 +1,5 @@
+import { fetchChange, postPolicyDecision, type EngineChange as ChangeSummary } from "@/data/live";
+import { EngineChange } from "@/components/EngineChange";
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowRight, Check, Pause, Pencil, Plus, RotateCcw, Rocket, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -97,12 +99,24 @@ function PolicyPage() {
   const [touched, setTouched] = useState(false);
   const [decision, setDecision] = useState<PolicyDecision | null>(null);
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [signed, setSigned] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [change, setChange] = useState<ChangeSummary | null>(null);
+  // In live mode the engine checks only the released v2 file. A browser draft that differs cannot be released.
+  const draftIsEngineV2 = state.source !== "live" || JSON.stringify(rules) === state.engineV2;
+  const needsSignoff = !!change?.requires_signoff;
+  const signoffOk = !needsSignoff || signed;
+  useEffect(() => {
+    if (state.source !== "live") return;
+    fetchChange().then(setChange).catch(() => setChange(null));
+  }, [state.source, state.log.length]);
 
   const flips = useMemo(() => flipList(derived), [derived]);
   const checks = useMemo(() => exhaustiveChecks(state.claims, v1Rules, rules), [state.claims, v1Rules, rules]);
   const allPass = checks.every((c) => c.pass);
   const towardRoutine = flips.some((f) => f.towardRoutine);
   const gate = validateGate({ author: state.reviewer, approver, reason, checksPass: allPass });
+  const canRelease = gate.canRelease && signoffOk && draftIsEngineV2;
   const openFlips = flips.filter((flip) => flip.claim.case_status === "open");
   const visibleRules = rules.filter((r) => r.id !== "R3.routine");
   const activeCount = visibleRules.filter((r) => r.active !== false).length;
@@ -119,11 +133,31 @@ function PolicyPage() {
 
   const decide = (type: PolicyDecision["type"]) => {
     setTouched(true);
-    if (type === "policy_approved" ? !gate.canRelease : !gate.canHold) return;
-    const record: PolicyDecision = { type, actor: approver.trim(), reason: reason.trim(), policy_version: "v2", policy_hash: draftHash, timestamp: new Date().toISOString() };
-    dispatch({ type: "policyDecision", record });
-    setDecision(record);
+    if (type === "policy_approved" ? !canRelease : !gate.canHold) return;
     setSummaryOpen(false);
+    const hash = state.engineV2Hash ?? draftHash;
+    const record: PolicyDecision = { type, actor: approver.trim(), reason: reason.trim(), policy_version: "v2", policy_hash: hash, timestamp: new Date().toISOString() };
+    if (state.source !== "live") {
+      dispatch({ type: "policyDecision", record });
+      setDecision(record);
+      return;
+    }
+    // Live: the engine records the decision and enforces the sign-off. The screen changes only after it is recorded.
+    setSendError(null);
+    postPolicyDecision({
+      decision: type === "policy_approved" ? "approved" : "rejected",
+      actor: approver.trim(),
+      reason: reason.trim(),
+      policy_version: "v2",
+      policy_hash: hash,
+      proposed_by: state.reviewer,
+      signoff_for: needsSignoff && signed && change ? change.into_routine : [],
+    })
+      .then(() => {
+        dispatch({ type: "policyDecision", record });
+        setDecision(record);
+      })
+      .catch((e: unknown) => setSendError(e instanceof Error ? e.message : "The decision was not recorded."));
   };
 
   const quoteRule = rules.find((r) => r.id === "R1.quote_over_limit");
@@ -140,6 +174,7 @@ function PolicyPage() {
 
   return (
     <div className="space-y-6">
+      <EngineChange />
       <PageHeader
         title="Policy overview"
         description={
@@ -276,6 +311,16 @@ function PolicyPage() {
                 <Label htmlFor="g-appr">Approver</Label>
                 <Input id="g-appr" className="mt-1.5" value={approver} onChange={(e) => setApprover(e.target.value)} placeholder="A different person" />
                 {(touched || approver) && gate.approverErr && <Refusal>{gate.approverErr}</Refusal>}
+                {needsSignoff && (
+                  <label className="mt-3 flex items-start gap-2 text-sm">
+                    <input type="checkbox" className="mt-1" checked={signed} onChange={(e) => setSigned(e.target.checked)} />
+                    <span>I have checked these claims that move into routine: <strong>{change?.into_routine.join(", ")}</strong>. Releasing them needs a named sign-off.</span>
+                  </label>
+                )}
+                {!draftIsEngineV2 && (
+                  <Refusal>The engine can only check the released v2 file. This draft differs, so it cannot be released from here.</Refusal>
+                )}
+                {sendError && <Refusal>{sendError}</Refusal>}
               </div>
             </div>
             <div>
@@ -285,7 +330,7 @@ function PolicyPage() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <WhyDisabled disabled={!gate.canRelease} reason={releaseReason}>
-                <Button disabled={!gate.canRelease} onClick={() => setSummaryOpen(true)}>
+                <Button disabled={!canRelease} onClick={() => setSummaryOpen(true)}>
                   <Rocket aria-hidden /> {RELEASE_V2}
                 </Button>
               </WhyDisabled>
@@ -312,7 +357,7 @@ function PolicyPage() {
             <dt className="text-muted-foreground">Reason</dt><dd className="break-words">{reason.trim()}</dd>
           </dl>
           <PolicyStamp version="v2" hash={draftHash} />
-          <DialogFooter><Button variant="ghost" onClick={() => setSummaryOpen(false)}>Back</Button><Button disabled={!gate.canRelease} onClick={() => decide("policy_approved")}><Rocket aria-hidden />{RELEASE_V2}</Button></DialogFooter>
+          <DialogFooter><Button variant="ghost" onClick={() => setSummaryOpen(false)}>Back</Button><Button disabled={!canRelease} onClick={() => decide("policy_approved")}><Rocket aria-hidden />{RELEASE_V2}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 

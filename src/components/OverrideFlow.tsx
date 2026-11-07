@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ReviewerOverride } from "@/types";
+import { postOverride } from "@/data/live";
 
 export function OverrideFlow({ claim, initialTarget, onCancel, onDone }: { claim: Claim; initialTarget?: Rec; onCancel: () => void; onDone: () => void }) {
   const { state, dispatch } = useStore();
@@ -22,6 +23,8 @@ export function OverrideFlow({ claim, initialTarget, onCancel, onDone }: { claim
   const [actor, setActor] = useState(state.reviewer);
   const [touched, setTouched] = useState(false);
   const [done, setDone] = useState<ReviewerOverride | null>(null);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const errors = validateOverride({ from: claim.recommendation_v1, to, reason, note, actor });
   const valid = Object.keys(errors).length === 0;
@@ -41,7 +44,7 @@ export function OverrideFlow({ claim, initialTarget, onCancel, onDone }: { claim
 
   const submit = () => {
     setTouched(true);
-    if (!valid || !to || !reason || claim.case_status === "closed") return;
+    if (!valid || !to || !reason || sending || claim.case_status === "closed") return;
     const timestamp = new Date().toISOString();
     const record: ReviewerOverride = {
       type: "reviewer_override",
@@ -55,6 +58,19 @@ export function OverrideFlow({ claim, initialTarget, onCancel, onDone }: { claim
       policy_hash: claim.policy_hash,
       timestamp,
     };
+    // Live mode: the engine's log is the record. Only a recorded override changes the screen.
+    if (state.source === "live") {
+      setSending(true);
+      setSendError(null);
+      postOverride(record)
+        .then(() => {
+          dispatch({ type: "override", record, timestamp });
+          setDone(record);
+        })
+        .catch((e: unknown) => setSendError(e instanceof Error ? e.message : "The override was not recorded."))
+        .finally(() => setSending(false));
+      return;
+    }
     dispatch({ type: "override", record, timestamp });
     setDone(record);
   };
@@ -165,7 +181,8 @@ export function OverrideFlow({ claim, initialTarget, onCancel, onDone }: { claim
 
       <div className="flex flex-wrap gap-2">
         <WhyDisabled disabled={!valid} reason={Object.values(errors)[0]}>
-          <Button onClick={submit} disabled={!valid || claim.case_status === "closed"}>Record override</Button>
+          {sendError && <Refusal>{sendError}</Refusal>}
+          <Button onClick={submit} disabled={!valid || sending || claim.case_status === "closed"}>{sending ? "Recording…" : "Record override"}</Button>
         </WhyDisabled>
         <Button variant="ghost" onClick={onCancel}>Cancel</Button>
       </div>

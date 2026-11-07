@@ -1,11 +1,14 @@
 import { createContext, useContext } from "react";
 import type { Claim, Flow, LogEntry, PolicyDecision, PolicyRule, Rec, ReviewerOverride } from "@/types";
 import { appendLog, getClaims, getDraftPolicy, getLog, getPolicy, getHandlingRates } from "@/data/api";
+import type { LiveSnapshot } from "@/data/live";
 import type { HandlingRates } from "@/lib/policy-impact";
 import { FLOW_OF } from "@/copy";
 import type { DerivedClaim } from "@/lib/report";
 
 export type QuoteLimit = number;
+
+export type DataSource = "connecting" | "live" | "demo";
 
 interface State {
   claims: Claim[];
@@ -15,9 +18,20 @@ interface State {
   quoteLimit: QuoteLimit;
   gateOpen: boolean;
   handlingRates: HandlingRates;
+  /** "live": everything comes from the triage API. "demo": the team's seed data, because the API was unreachable. */
+  source: DataSource;
+  sourceError: string | null;
+  v1Rules: PolicyRule[];
+  v1Hash: string;
+  integrity: LiveSnapshot["integrity"] | null;
+  /** The engine's v2 rules and hash, so the approval screen can tell whether the draft is what the engine checks. */
+  engineV2: string | null;
+  engineV2Hash: string | null;
 }
 
 type Action =
+  | { type: "live"; snapshot: LiveSnapshot }
+  | { type: "sourceError"; message: string }
   | { type: "setHandlingRate"; flow: Flow; rate: number | null }
   | { type: "confirm"; case_id: string; timestamp: string }
   | { type: "undoConfirm"; case_id: string; timestamp: string; confirmationTimestamp: string; previousStatus?: "reviewed" }
@@ -42,6 +56,22 @@ function withLimit(rules: PolicyRule[], limit: number): PolicyRule[] {
 
 export function storeReducer(s: State, a: Action): State {
   switch (a.type) {
+    case "live":
+      return {
+        ...s,
+        source: "live",
+        sourceError: null,
+        claims: a.snapshot.claims,
+        draftRules: a.snapshot.draft.rules,
+        v1Rules: a.snapshot.v1.rules,
+        v1Hash: a.snapshot.v1.hash,
+        log: a.snapshot.log,
+        integrity: a.snapshot.integrity,
+        engineV2: JSON.stringify(a.snapshot.draft.rules),
+        engineV2Hash: a.snapshot.draft.hash,
+      };
+    case "sourceError":
+      return { ...s, source: "demo", sourceError: a.message };
     case "setHandlingRate":
       if (a.rate !== null && (!Number.isFinite(a.rate) || a.rate < 0)) return s;
       return { ...s, handlingRates: { ...getHandlingRates(), ...s.handlingRates, [a.flow]: a.rate } };
@@ -80,7 +110,7 @@ export function storeReducer(s: State, a: Action): State {
     case "setRules":
       return { ...s, draftRules: a.rules };
     case "resetDraft":
-      return { ...s, draftRules: getPolicy().rules, quoteLimit: 1500 };
+      return { ...s, draftRules: s.v1Rules, quoteLimit: 1500 };
     case "setQuoteLimit":
       return { ...s, quoteLimit: a.limit, draftRules: withLimit(s.draftRules, a.limit) };
     case "policyDecision":
@@ -99,6 +129,7 @@ interface Ctx {
 export const StoreCtx = createContext<Ctx | null>(null);
 
 export function initialStoreState(): State {
+  // Seed data first, so the first paint never waits on the network. StoreProvider replaces it with the live snapshot.
   return {
     claims: getClaims(),
     draftRules: getDraftPolicy().rules,
@@ -107,6 +138,13 @@ export function initialStoreState(): State {
     quoteLimit: 1200,
     gateOpen: false,
     handlingRates: getHandlingRates(),
+    source: "connecting",
+    sourceError: null,
+    v1Rules: getPolicy().rules,
+    v1Hash: getPolicy().hash,
+    integrity: null,
+    engineV2: null,
+    engineV2Hash: null,
   };
 }
 

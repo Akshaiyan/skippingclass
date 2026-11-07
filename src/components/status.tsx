@@ -22,7 +22,7 @@ export function FlowBadge({ rec, size = "md" }: { rec: Rec; size?: "sm" | "md" }
       className={cn(
         "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full font-medium text-foreground",
         FLOW_TINT[flow],
-        size === "sm" ? "px-2 py-0.5 text-[11px] leading-4" : "px-2.5 py-0.5 text-xs leading-5",
+        size === "sm" ? "px-2 py-0.5 text-xs leading-4" : "px-2.5 py-0.5 text-xs leading-5",
       )}
     >
       <Dot flow={flow} className={size === "sm" ? "size-1.5" : undefined} />
@@ -40,7 +40,7 @@ export function Chip({ children, className, tone = "neutral" }: { children: Reac
     solid: "bg-primary text-primary-foreground",
   };
   return (
-    <span className={cn("inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium leading-4", tones[tone], className)}>
+    <span className={cn("inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium leading-4", tones[tone], className)}>
       {children}
     </span>
   );
@@ -48,7 +48,7 @@ export function Chip({ children, className, tone = "neutral" }: { children: Reac
 
 export function PolicyStamp({ version, hash, className }: { version: string; hash: string; className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-surface px-2 py-0.5 font-mono text-[11px] leading-4 text-text-2", className)}>
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-surface px-2 py-0.5 font-mono text-xs leading-4 text-text-2", className)}>
       <span className="font-semibold text-foreground">{version}</span>
       <span className="text-faint">·</span>
       {hash}
@@ -81,7 +81,7 @@ export function RuleChips({ rule }: { rule: string }) {
         <span
           key={p}
           className={cn(
-            "break-all rounded-md px-1.5 py-0.5 font-mono text-[11px] leading-4",
+            "break-all rounded-md px-1.5 py-0.5 font-mono text-xs leading-4",
             p.startsWith("ABSENT") ? "bg-unknown-tint text-unknown" : p === "R3.routine" ? "bg-surface-2 text-muted-foreground" : "border border-border bg-background text-foreground",
           )}
         >
@@ -114,7 +114,7 @@ export function TriGlyph({ result, outcome }: { result: Tri; outcome: Rec }) {
   if (result === "unknown")
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full bg-unknown-tint px-1.5 py-0.5 text-xs font-medium text-unknown">
-        <span aria-hidden className="grid size-3.5 place-items-center rounded-full border border-dashed border-unknown text-[9px] font-bold leading-none">?</span>
+        <span aria-hidden className="grid size-3.5 place-items-center rounded-full border border-dashed border-unknown text-xs font-bold leading-none">?</span>
         Unknown
       </span>
     );
@@ -131,7 +131,7 @@ export function RecheckChip({ from, to }: { from: Rec; to: Rec }) {
       <Chip tone="outline">
         <RefreshCw className="size-3" aria-hidden /> Needs recheck
       </Chip>
-      <span className="inline-flex items-center gap-1 font-mono text-[10px] text-muted-foreground">
+      <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground">
         v1 <Dot flow={FLOW_OF[from]} className="size-1.5" /> → v2 <Dot flow={FLOW_OF[to]} className="size-1.5" />
       </span>
     </span>
