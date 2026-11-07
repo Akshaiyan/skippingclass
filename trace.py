@@ -8,7 +8,7 @@ import json
 import engine
 
 FACT_FIELDS = [
-    "policy_active_on_incident", "claim_type", "repair_type", "quote_eur",
+    "case_status", "policy_active_on_incident", "claim_type", "repair_type", "quote_eur",
     "incident_report_present", "itemized_quote_present", "injury_reported",
     "liability_disputed", "duplicate_flag", "evidence_conflict",
 ]

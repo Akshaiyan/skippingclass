@@ -10,13 +10,7 @@ RULE_REVIEW, RULE_REQUEST, RULE_ROUTINE = "R1", "R2", "R3"
 
 
 def _quote(row):
-    raw = (row.get("quote_eur") or "").strip()
-    if not raw:
-        return None
-    try:
-        return float(raw)
-    except ValueError:
-        return None
+    return triage.amount_or_none(row.get("quote_eur"))
 
 
 def decide(row, quote_limit=triage.QUOTE_LIMIT_EUR):
@@ -50,6 +44,10 @@ def decide(row, quote_limit=triage.QUOTE_LIMIT_EUR):
         missing.append("policy_active_on_incident is blank")
     if not claim_type:
         missing.append("claim_type is blank")
+    if not (row.get("repair_type") or "").strip():
+        missing.append("repair_type is blank")
+    if triage.status_of(row) == "unknown":
+        missing.append("case_status is not open or closed")
     for field in triage.REVIEW_BOOL_FIELDS:
         if triage.parse_bool(row.get(field)) is None:
             missing.append(f"{field} is blank")

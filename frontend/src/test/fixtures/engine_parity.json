@@ -237,6 +237,15 @@
    }
   },
   {
+   "id": "R2.blank.repair_type",
+   "outcome": "request_information",
+   "description": "Repair type not provided",
+   "condition": {
+    "field": "repair_type",
+    "op": "is_blank"
+   }
+  },
+  {
    "id": "R2.false.incident_report_present",
    "outcome": "request_information",
    "description": "Incident report is false",
@@ -260,6 +269,31 @@
      "kind": "value",
      "value": false
     }
+   }
+  },
+  {
+   "id": "R2.status_unknown",
+   "outcome": "request_information",
+   "description": "Case status is not open or closed",
+   "condition": {
+    "field": "case_status",
+    "op": "not_in",
+    "right": {
+     "kind": "value",
+     "value": [
+      "open",
+      "closed"
+     ]
+    }
+   }
+  },
+  {
+   "id": "R2.status_blank",
+   "outcome": "request_information",
+   "description": "Case status not provided",
+   "condition": {
+    "field": "case_status",
+    "op": "is_blank"
    }
   },
   {
@@ -551,6 +585,31 @@
      "kind": "value",
      "value": false
     }
+   }
+  },
+  {
+   "id": "R2.status_unknown",
+   "outcome": "request_information",
+   "description": "Case status is not open or closed",
+   "condition": {
+    "field": "case_status",
+    "op": "not_in",
+    "right": {
+     "kind": "value",
+     "value": [
+      "open",
+      "closed"
+     ]
+    }
+   }
+  },
+  {
+   "id": "R2.status_blank",
+   "outcome": "request_information",
+   "description": "Case status not provided",
+   "condition": {
+    "field": "case_status",
+    "op": "is_blank"
    }
   },
   {
@@ -1377,9 +1436,9 @@
     "duplicate_flag": false,
     "evidence_conflict": false
    },
-   "expected_v1": "routine_processing",
-   "expected_v2": "routine_processing",
-   "open": true
+   "expected_v1": "request_information",
+   "expected_v2": null,
+   "open": false
   },
   {
    "case_id": "ADV-0016",
@@ -1437,7 +1496,7 @@
     "duplicate_flag": false,
     "evidence_conflict": false
    },
-   "expected_v1": "routine_processing",
+   "expected_v1": "request_information",
    "expected_v2": "request_information",
    "open": true
   },
@@ -2438,8 +2497,8 @@
     "evidence_conflict": false
    },
    "expected_v1": "human_review",
-   "expected_v2": "human_review",
-   "open": true
+   "expected_v2": null,
+   "open": false
   },
   {
    "case_id": "ADV-0069",
@@ -2458,8 +2517,8 @@
     "evidence_conflict": false
    },
    "expected_v1": "human_review",
-   "expected_v2": "human_review",
-   "open": true
+   "expected_v2": null,
+   "open": false
   },
   {
    "case_id": "ADV-0070",
@@ -2478,8 +2537,8 @@
     "evidence_conflict": false
    },
    "expected_v1": "human_review",
-   "expected_v2": "human_review",
-   "open": true
+   "expected_v2": null,
+   "open": false
   },
   {
    "case_id": "ADV-0071",
@@ -2498,8 +2557,8 @@
     "evidence_conflict": false
    },
    "expected_v1": "human_review",
-   "expected_v2": "human_review",
-   "open": true
+   "expected_v2": null,
+   "open": false
   },
   {
    "case_id": "ADV-0072",
@@ -2518,8 +2577,8 @@
     "evidence_conflict": false
    },
    "expected_v1": "human_review",
-   "expected_v2": "human_review",
-   "open": true
+   "expected_v2": null,
+   "open": false
   },
   {
    "case_id": "ADV-0073",
@@ -2538,8 +2597,8 @@
     "evidence_conflict": true
    },
    "expected_v1": "human_review",
-   "expected_v2": "human_review",
-   "open": true
+   "expected_v2": null,
+   "open": false
   },
   {
    "case_id": "ADV-0074",
@@ -2558,8 +2617,8 @@
     "evidence_conflict": false
    },
    "expected_v1": "human_review",
-   "expected_v2": "human_review",
-   "open": true
+   "expected_v2": null,
+   "open": false
   },
   {
    "case_id": "ADV-0075",

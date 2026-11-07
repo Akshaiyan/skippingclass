@@ -37,6 +37,15 @@ check("a request for information that should have been routine is in neither err
       q.score([(I, R)]) == {"total": 1, "correct": 0, "incorrect_routine": 0, "unnecessary_review": 0}, q.score([(I, R)]))
 check("an empty set scores zero everywhere", q.score([])["total"] == 0 and q.score([])["correct"] == 0)
 
+# Per-class metrics, checked by hand: red (human_review) predicted 3 times, 2 correct, 1 false positive, 1 missed.
+pc = q.per_class([(q.REVIEW, q.REVIEW), (q.REVIEW, q.REVIEW), (q.REVIEW, R), (R, q.REVIEW)])
+check("human review precision is 2 of 3", abs(pc[q.REVIEW]["precision"] - 2 / 3) < 1e-9, pc[q.REVIEW])
+check("human review recall is 2 of 3", abs(pc[q.REVIEW]["recall"] - 2 / 3) < 1e-9, pc[q.REVIEW])
+check("human review F1 is 2/3", abs(pc[q.REVIEW]["f1"] - 2 / 3) < 1e-9, pc[q.REVIEW])
+check("one false positive and one false negative are counted for human review",
+      pc[q.REVIEW]["fp"] == 1 and pc[q.REVIEW]["fn"] == 1, pc[q.REVIEW])
+check("a class with no predictions has no precision", q.per_class([(R, R)])[q.REVIEW]["precision"] is None)
+
 # Real data: the counts must be internally consistent and the changed-case list must match the notice
 dev = q._load("labelled_development_cases.csv")
 practice = q._load("unlabelled_practice_cases.csv")

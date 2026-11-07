@@ -6,6 +6,7 @@ in production they would be read from the decision log. The v2 limit used by the
 MADE-UP test change, not a policy.
 """
 import engine
+import triage
 
 
 def replay(claims, new_quote_limit):
@@ -19,7 +20,7 @@ def replay(claims, new_quote_limit):
     results, flips = [], []
     for row in claims:
         v1_rec, v1_rule, _ = engine.decide(row)
-        closed = (row.get("case_status") or "").strip() == "closed"
+        closed = triage.status_of(row) == "closed"
         if closed:
             results.append({
                 "case_id": row["case_id"], "recommendation_v1": v1_rec,

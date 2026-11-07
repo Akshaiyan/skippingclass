@@ -11,6 +11,8 @@ ponytail: JSON, not YAML (stdlib only). Known ceiling: no date or cross-field op
 Upgrade trigger: a v2 change that needs them.
 """
 import json
+
+import triage
 from pathlib import Path
 
 OPS = {"is_true", "is_false", "eq", "ne", "gt", "gte", "lt", "lte", "blank", "in", "not_in", "gt_field", "lt_field"}
@@ -34,10 +36,8 @@ def _bool(v):
 
 
 def _num(v):
-    try:
-        return float((v or "").strip())
-    except ValueError:
-        return None
+    import triage  # the one rule for a readable amount
+    return triage.amount_or_none(v)
 
 
 def _value(row, field):
@@ -132,6 +132,8 @@ def decide(row, policy):
         ids = "+".join(t["id"] for t in fired)
         return fired[0]["outcome"], ids, "; ".join(t.get("description", t["id"]) for t in fired)
     missing = []
+    if triage.status_of(row) == "unknown":
+        missing.append("case_status is not open or closed")
     for f in policy["evidence"]:
         known, val = _value(row, f)
         if not known:

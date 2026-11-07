@@ -49,7 +49,7 @@ KEYS = ["policy_active_on_incident", "claim_type", "repair_type", "quote_eur", "
 n = bad = 0
 first_bad = None
 for combo in GRID:
-    row = dict(zip(KEYS, combo))
+    row = dict(zip(KEYS, combo)); row["case_status"] = "open"
     n += 1
     got = policy.decide(row, V2)[0]
     if got != oracle_v2(row):
@@ -57,7 +57,7 @@ for combo in GRID:
         first_bad = first_bad or (row, got, oracle_v2(row))
 check(f"policy v2 matches the notice-derived oracle on all {n:,} field combinations", bad == 0, first_bad)
 
-BASE = {"policy_active_on_incident": "True", "claim_type": "motor_own_damage", "repair_type": "standard",
+BASE = {"case_status": "open", "policy_active_on_incident": "True", "claim_type": "motor_own_damage", "repair_type": "standard",
         "quote_eur": "800", "incident_report_present": "True", "itemized_quote_present": "True",
         "injury_reported": "False", "liability_disputed": "False", "duplicate_flag": "False", "evidence_conflict": "False"}
 

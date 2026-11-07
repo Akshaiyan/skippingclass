@@ -96,32 +96,74 @@ def clean_amount(v):
     return t
 
 
+# Spellings that mean one canonical repair type. Matched on letters and digits only, so case, spaces,
+# punctuation and the Turkish dotted capital I do not matter. Decision record: a v2 trigger on the exact spelling
+# missed "EV High Voltage Battery (HV)" and "Hochvolt-Batterie" (red-team finding 3).
+REPAIR_SYNONYMS = {"ev_high_voltage_battery": ["evhighvoltagebattery", "hochvolt"]}
+
+
+def canonical_repair(token):
+    squashed = re.sub(r"[^a-z0-9]", "", token)
+    for canon, keys in REPAIR_SYNONYMS.items():
+        if any(k in squashed for k in keys):
+            return canon
+    return token
+
+
 def read_claims_text(text):
+    """Refuses, with the line number, anything it cannot read exactly. It never drops rows silently:
+    - an unclosed quote, or a field over the size limit (strict CSV parsing);
+    - a row with more cells than the header (an unquoted delimiter would shift every later cell);
+    - a row with no case_id;
+    - a header with two columns of the same name.
+    Short rows are accepted and their missing cells are blank (absent), as exported files often drop trailing blanks."""
     text = text.lstrip("﻿")
     delim = sniff_delimiter(text)
-    reader = csv.reader(io.StringIO(text, newline=""), delimiter=delim)
-    rows = [r for r in reader]
+    try:
+        rows = [r for r in csv.reader(io.StringIO(text, newline=""), delimiter=delim, strict=True)]
+    except csv.Error as exc:
+        raise ValueError(f"input file is malformed and was not read: {exc}") from exc
     if not rows:
         raise ValueError("input file is empty")
     header = [_norm_header(h) for h in rows[0]]
     if "case_id" not in header:
         raise ValueError("input file has no case_id column (found: %s)" % ", ".join(header[:8]))
+    dupes = sorted({h for h in header if header.count(h) > 1})
+    if dupes:
+        raise ValueError("input file has duplicate column names, so values would be ambiguous: " + ", ".join(dupes))
     out = []
-    for raw in rows[1:]:
+    seen_ids = set()
+    repaired = []
+    for line_no, raw in enumerate(rows[1:], start=2):
         if not any(c.strip() for c in raw):
             continue
+        if len(raw) > len(header):
+            # Cleaning, not loss: an unquoted comma inside claim_summary adds cells. The only free-text field is
+            # claim_summary, so the extra cells are joined back into it with the delimiter that was there.
+            if "claim_summary" not in header:
+                raise ValueError(f"line {line_no} has {len(raw)} cells but the header has {len(header)}, "
+                                 "and there is no claim_summary column to repair it into")
+            i = header.index("claim_summary")
+            extra = len(raw) - len(header)
+            raw = raw[:i] + [delim.join(raw[i:i + extra + 1])] + raw[i + extra + 1:]
+            repaired.append(line_no)
         rec = {col: "" for col in CANONICAL}
         for name, value in zip(header, raw):
             # Unknown columns are kept verbatim so a new policy field reaches the engine (not silently dropped).
             rec[name] = value.strip()
+        if not rec["case_id"]:
+            raise ValueError(f"line {line_no} has no case_id")
+        if rec["case_id"] in seen_ids:
+            raise ValueError(f"line {line_no} repeats case_id {rec['case_id']!r}; each claim must appear once")
+        seen_ids.add(rec["case_id"])
         for f in BOOL_FIELDS:
             rec[f] = clean_bool(rec[f])
         rec["case_status"] = clean_status(rec["case_status"])
         rec["claim_type"] = clean_token(rec["claim_type"])
-        rec["repair_type"] = clean_token(rec["repair_type"])
+        rec["repair_type"] = canonical_repair(clean_token(rec["repair_type"]))
         rec["quote_eur"] = clean_amount(rec["quote_eur"])
         out.append(rec)
-    return out, {"delimiter": delim, "columns_found": [c for c in header if c in CANONICAL],
+    return out, {"repaired_lines": repaired, "delimiter": delim, "columns_found": [c for c in header if c in CANONICAL],
                  "columns_missing": [c for c in CANONICAL if c not in header and c != "expected_v1"]}
 
 

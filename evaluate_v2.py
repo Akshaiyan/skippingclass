@@ -12,6 +12,7 @@ What applies to a fixed rule set, and what does not:
 Run: python evaluate_v2.py
 """
 import math
+import triage
 import random
 import sys
 from collections import Counter
@@ -77,7 +78,7 @@ def main():
     ok = True
 
     section("1. Synthetic file: stratified 70/30 split (consistency check, NOT accuracy)")
-    syn = [r for r in load("final_synthetic_10k.csv") if r["case_status"] != "closed"]
+    syn = [r for r in load("final_synthetic_10k.csv") if triage.status_of(r) == "open"]
     train, test = split(syn)
     for name, part in (("train 70%", train), ("test 30%", test)):
         agree = sum(policy.decide(r, V2)[0] == oracle_v2(r) for r in part)
@@ -113,10 +114,10 @@ def main():
              "adversarial (137)": load("adversarial_claims.csv")}
     print(f"  {'file':26s} {'EV':>7s} {'quote>1200':>11s} {'injury':>8s} {'flip v1->v2':>12s}")
     for name, rows in files.items():
-        open_rows = [r for r in rows if r["case_status"] != "closed"] or rows
+        open_rows = [r for r in rows if triage.status_of(r) == "open"] or rows
         n_ = len(rows)
         ev = sum(r["repair_type"] == "ev_high_voltage_battery" for r in rows) / n_
-        over = sum(1 for r in rows if r["quote_eur"] and float(r["quote_eur"]) > 1200) / n_
+        over = sum(1 for r in rows if (triage.amount_or_none(r["quote_eur"]) or 0) > 1200) / n_
         inj = sum(r["injury_reported"] == "True" for r in rows) / n_
         fl = sum(policy.decide(r, V1)[0] != policy.decide(r, V2)[0] for r in open_rows) / len(open_rows)
         print(f"  {name:26s} {ev:7.1%} {over:11.1%} {inj:8.1%} {fl:12.1%}")

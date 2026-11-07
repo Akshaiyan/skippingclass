@@ -62,7 +62,8 @@
     "injury_reported",
     "liability_disputed",
     "duplicate_flag",
-    "evidence_conflict"
+    "evidence_conflict",
+    "repair_type"
   ],
   "must_be_true": [
     "incident_report_present",

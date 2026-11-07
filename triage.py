@@ -3,12 +3,33 @@
 Usage: python triage.py <claims.csv> <results.csv>
 """
 import csv
+import re
 import sys
 
 POLICY_VERSION = "v1"
 QUOTE_LIMIT_EUR = 1500.0
 REVIEW_BOOL_FIELDS = ["injury_reported", "liability_disputed", "duplicate_flag", "evidence_conflict"]
 EVIDENCE_BOOL_FIELDS = ["incident_report_present", "itemized_quote_present"]
+
+
+_PLAIN_AMOUNT = re.compile(r"[0-9]+(\.[0-9]+)?")
+
+
+def amount_or_none(raw):
+    """A quote is read only as a plain, non-negative decimal. NaN, inf, exponents, signs, underscores and text are
+    unreadable (None), so the rules treat them as absent. Decision record: float() accepted 'nan' and 'inf', which
+    compare false against every limit and so passed as a known value (red-team finding 2)."""
+    s = (raw or "").strip()
+    if not _PLAIN_AMOUNT.fullmatch(s):
+        return None
+    return float(s)
+
+
+def status_of(row):
+    """The one definition of a claim's status: open, closed, or unknown (blank or other). Unknown is never guessed as open.
+    Decision record: 'not closed' treated a blank status as open (red-team finding 8)."""
+    s = (row.get("case_status") or "").strip().lower()
+    return s if s in ("open", "closed") else "unknown"
 
 
 def parse_bool(value):
@@ -38,13 +59,7 @@ def decide_v1(row):
     for field in REVIEW_BOOL_FIELDS:
         if parse_bool(row.get(field)) is True:
             reasons.append(f"{field} is true")
-    quote_raw = (row.get("quote_eur") or "").strip()
-    quote = None
-    if quote_raw:
-        try:
-            quote = float(quote_raw)
-        except ValueError:
-            quote = None
+    quote = amount_or_none(row.get("quote_eur"))
     if quote is not None and quote > QUOTE_LIMIT_EUR:
         reasons.append(f"quote {quote:.0f} EUR is above {QUOTE_LIMIT_EUR:.0f} EUR")
     if reasons:
@@ -64,6 +79,10 @@ def decide_v1(row):
         missing.append("policy_active_on_incident is blank")
     if not claim_type:
         missing.append("claim_type is blank")
+    if not (row.get("repair_type") or "").strip():
+        missing.append("repair_type is blank")
+    if status_of(row) == "unknown":
+        missing.append("case_status is not open or closed")
     for field in REVIEW_BOOL_FIELDS:
         if parse_bool(row.get(field)) is None:
             missing.append(f"{field} is blank")
@@ -86,7 +105,7 @@ def main(src, dst):
         writer.writeheader()
         for row in rows:
             rec, rule, why = decide_v1(row)
-            closed = (row.get("case_status") or "").strip() == "closed"
+            closed = status_of(row) == "closed"
             # v2 is not released yet: recommendation_v2 repeats v1 for now.
             writer.writerow({
                 "case_id": row["case_id"],
