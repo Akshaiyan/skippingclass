@@ -183,7 +183,7 @@ export function evaluate(rules: PolicyRule[], facts: Facts): Evaluation {
       evidence:
         recommendation === "routine_processing"
           ? "no other rule fired or was undecidable"
-          : "another rule decided first",
+          : "an earlier rule decided",
     });
   }
   return { recommendation, rule, checklist, explanation, absentFields: absent };

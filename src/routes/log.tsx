@@ -1,10 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, Check, ChevronRight, Copy, Search, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  ChevronRight,
+  Copy,
+  Search,
+  ShieldAlert,
+  ShieldCheck,
+} from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
 import type { LogEntry } from "@/types";
 import { SORT_RECENT, LOG_TYPE_LABEL } from "@/copy";
 import { useStore } from "@/store";
-import { evaluate } from "@/lib/evaluate";
+import { replaysStored } from "@/lib/report";
 import { cn } from "@/lib/utils";
 import { Chip, FlowBadge, PageHeader, PolicyStamp } from "@/components/status";
 import { Button } from "@/components/ui/button";
@@ -56,14 +64,9 @@ function LogPage() {
   const [type, setType] = useState<"all" | LogEntry["type"]>("all");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<number | null>(null);
-  // Each system decision is replayed: the live rules run on the claim's stored facts and must
-  // reproduce the recommendation that was logged.
-  const sysEntries = state.log.filter((e) => e.type === "system_decision");
-  const sys = sysEntries.length;
-  const replayed = sysEntries.filter((e) => {
-    const claim = state.claims.find((c) => "case_id" in e && c.case_id === e.case_id);
-    return !!claim && "to_rec" in e && evaluate(v1Rules, claim.facts).recommendation === e.to_rec;
-  }).length;
+  // Replay: the live rules run on each claim's stored facts and must reproduce every stored rule result.
+  const replayed = state.claims.filter((c) => replaysStored([c], v1Rules)).length;
+  const integrity = state.source === "live" ? state.integrity : null;
 
   const rows = useMemo(
     () =>
@@ -83,15 +86,28 @@ function LogPage() {
       <PageHeader title="Decision log" />
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-border bg-surface px-4 py-3 text-sm">
+        {integrity ? (
+          integrity.intact ? (
+            <span className="inline-flex items-center gap-2 font-medium">
+              <ShieldCheck className="size-4" aria-hidden /> Hash chain intact
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-2 font-medium text-destructive">
+              <ShieldAlert className="size-4" aria-hidden /> Hash chain broken at entry{" "}
+              {integrity.broken_at}: {integrity.reason}
+            </span>
+          )
+        ) : (
+          <span className="inline-flex items-center gap-2 text-text-2">
+            <ShieldAlert className="size-4" aria-hidden /> Demo data: no hash chain to check
+          </span>
+        )}
         <span className="inline-flex items-center gap-2 font-medium">
-          <ShieldCheck className="size-4" aria-hidden /> Hash-chain intact
-        </span>
-        <span className="inline-flex items-center gap-2 font-medium">
-          <ShieldCheck className="size-4" aria-hidden />{" "}
+          <ShieldCheck className="size-4" aria-hidden />
           <span className="tnum">
-            {replayed}/{sys}
-          </span>{" "}
-          decisions replay identically
+            {replayed}/{state.claims.length}
+          </span>
+          claims replay from their stored facts
         </span>
       </div>
 
@@ -218,7 +234,7 @@ function LogPage() {
                           {LOG_TYPE_LABEL[e.type]}
                         </Chip>
                       </td>
-                      <td className="px-3 py-3 font-mono text-xs">
+                      <td className="whitespace-nowrap px-3 py-3 font-mono text-xs">
                         {"case_id" in e ? (e.case_id ?? "—") : "—"}
                       </td>
                       <td className="whitespace-nowrap px-3 py-3">{e.actor}</td>

@@ -20,7 +20,7 @@ export const Route = createFileRoute("/")({
       { title: "Dashboard · Motor claims triage" },
       {
         name: "description",
-        content: "Open claims by recommended next step, with the claims that need attention first.",
+        content: "Open claims by recommended next step, with the most urgent at the top.",
       },
       { property: "og:title", content: "Dashboard · Motor claims triage" },
       {
@@ -183,7 +183,7 @@ function Dashboard() {
             title="Needs attention"
             subtitle={
               flow === "all"
-                ? "Open claims, human review first, then requests for information, then routine."
+                ? "Open claims, from human review to routine processing."
                 : `Open claims recommended for ${REC_LABEL[REC_OF[flow]].toLowerCase()}.`
             }
           />
