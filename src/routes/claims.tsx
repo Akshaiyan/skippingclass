@@ -38,7 +38,7 @@ function ClaimsPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/claims" });
   const flow: FlowFilter = search.flow ?? "all";
-  const [status, setStatus] = useState<StatusFilter>("all");
+  const [status, setStatus] = useState<StatusFilter>("open");
   const [q, setQ] = useState("");
   const [recheckOnly, setRecheckOnly] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
