@@ -1,7 +1,8 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { StoreProvider, useStore } from "@/store";
+import { useStore } from "@/store";
+import { StoreProvider } from "@/store.provider";
 import type { PolicyRule } from "@/types";
 
 function Probe() {
