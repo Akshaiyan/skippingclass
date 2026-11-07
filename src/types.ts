@@ -37,6 +37,13 @@ export interface Claim {
   policy_hash: string;
   needs_recheck: boolean;
   ui_status?: "reviewed";
+  /** Things the claims team did outside this tool, e.g. an acknowledgement sent from the mailbox. */
+  activity?: ClaimActivity[];
+}
+
+export interface ClaimActivity {
+  label: string;
+  timestamp: string;
 }
 
 export type ReasonCode = "policy_wrong" | "data_wrong" | "judgement";
@@ -64,7 +71,12 @@ export interface PolicyDecision {
 }
 
 export interface SystemRecord {
-  type: "system_decision" | "reviewer_accept" | "policy_proposed" | "final_decision";
+  type:
+    | "system_decision"
+    | "reviewer_accept"
+    | "policy_proposed"
+    | "final_decision"
+    | "info_request_prepared";
   case_id?: string;
   actor: string;
   from_rec?: Rec;

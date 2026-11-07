@@ -98,4 +98,5 @@ export const LOG_TYPE_LABEL: Record<LogEntry["type"], string> = {
   policy_approved: "Policy released",
   policy_rejected: "Policy held",
   final_decision: "Final decision",
+  info_request_prepared: "Information request prepared",
 };

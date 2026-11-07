@@ -293,6 +293,14 @@ const applyOverride = (c: Claim): Claim =>
       }
     : c;
 
+// What the claims team already did outside this tool. This tool never sends anything itself.
+const ACTIVITY: Record<string, { label: string; daysAgo: number }[]> = {
+  "PRA-001": [{ label: "Acknowledgement sent by the claims team", daysAgo: 9 }],
+  "PRA-002": [{ label: "Both drivers asked for statements", daysAgo: 6 }],
+  "PRA-005": [{ label: "Customer emailed for the repair quote", daysAgo: 4 }],
+  "PRA-010": [{ label: "Acknowledgement sent by the claims team", daysAgo: 2 }],
+};
+
 export const SEED_CLAIMS: Claim[] = RAW.map((r) => {
   const ev = evaluate(V1_RULES, r.facts);
   return {
@@ -311,6 +319,10 @@ export const SEED_CLAIMS: Claim[] = RAW.map((r) => {
     policy_version: POLICY_V1.version,
     policy_hash: POLICY_V1.hash,
     needs_recheck: false,
+    activity: (ACTIVITY[r.case_id] ?? []).map((a) => ({
+      label: a.label,
+      timestamp: new Date(Date.UTC(2026, 10, 7, 9, 0, 0) - a.daysAgo * 864e5).toISOString(),
+    })),
   };
 }).map(applyOverride);
 
