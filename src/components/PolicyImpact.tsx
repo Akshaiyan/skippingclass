@@ -146,7 +146,10 @@ export function PolicyImpact() {
         <h3 id="changed-title" className="section-title">
           Changed claims
         </h3>
-        <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4" aria-live="polite">
+        <dl
+          className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4"
+          aria-live="polite"
+        >
           {[
             ["Newly to Human review", savings.newlyEscalated],
             ["Released from Human review", savings.released],
@@ -187,26 +190,39 @@ export function PolicyImpact() {
             })}
           </ul>
         ) : (
-          <p className="mt-3 text-xs text-muted-foreground">No open claim changes with this draft.</p>
+          <p className="mt-3 text-xs text-muted-foreground">
+            No open claim changes with this draft.
+          </p>
         )}
         <div className="mt-4 flex items-baseline justify-between gap-3 text-sm" aria-live="polite">
           <span>Extra cost of Human review per month</span>
           <span className="tnum font-mono font-semibold">
-            {savings.extraReviewCostPerMonth > 0 ? "+" : savings.extraReviewCostPerMonth < 0 ? "−" : ""}
+            {savings.extraReviewCostPerMonth > 0
+              ? "+"
+              : savings.extraReviewCostPerMonth < 0
+                ? "−"
+                : ""}
             {euro(Math.abs(savings.extraReviewCostPerMonth))}
-            <span className="ml-2 text-xs font-normal text-muted-foreground">{IMPACT_COPY.assumed}</span>
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
+              {IMPACT_COPY.assumed}
+            </span>
           </span>
         </div>
         <details className="mt-2 text-xs text-muted-foreground">
           <summary className="cursor-pointer">Formula</summary>
           <p className="mt-1 font-mono">
             ({savings.newlyEscalated} newly to Human review − {savings.released} released) ÷{" "}
-            {savings.openClaims} open claims × {state.assumptions.claimsPerMonth.toLocaleString("en-IE")} claims per month ×{" "}
+            {savings.openClaims} open claims ×{" "}
+            {state.assumptions.claimsPerMonth.toLocaleString("en-IE")} claims per month ×{" "}
             {euro(reviewCost(state.assumptions))} per review
           </p>
           <p className="mt-1">
-            Missing information is not priced. Closed claims stay locked and are not counted. Inputs are on{" "}
-            <Link className="underline" to="/business">Cost impact</Link>.
+            Missing information is not priced. Closed claims stay locked and are not counted. Inputs
+            are on{" "}
+            <Link className="underline" to="/business">
+              Cost impact
+            </Link>
+            .
           </p>
         </details>
       </section>
