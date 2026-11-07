@@ -46,6 +46,8 @@ def oracle_from_policy_text(r):
         return "request_information"
     if not q:
         return "request_information"
+    if not r.get("repair_type", "").strip() or r.get("case_status", "").strip().lower() not in ("open", "closed"):
+        return "request_information"
     try:
         float(q)
     except ValueError:

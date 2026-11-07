@@ -8,6 +8,7 @@ Status labels carried through to the output:
   MEASURED-PROXY  computed by our code on a synthetic/practice file; the distribution is assumed
 """
 import csv
+import triage
 import json
 import sys
 from pathlib import Path
@@ -129,7 +130,7 @@ def policy_change_saving(policy_path):
     base = _policy.load(HERE / "policies" / "v1.json")
     new = _policy.load(policy_path)
     rows = list(_csv.DictReader(open(HERE / "final_synthetic_10k.csv", newline="", encoding="utf-8")))
-    open_rows = [r for r in rows if (r.get("case_status") or "").strip() != "closed"]
+    open_rows = [r for r in rows if triage.status_of(r) == "open"]
     flips = sum(1 for r in open_rows if _policy.decide(r, base)[0] != _policy.decide(r, new)[0])
     share = flips / len(open_rows) if open_rows else 0.0
     n_open_total = val("claims_per_year") * val("open_claims_share")

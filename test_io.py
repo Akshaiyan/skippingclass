@@ -51,7 +51,7 @@ with tempfile.TemporaryDirectory() as d:
     ok = res.returncode == 0 and 'VALIDATION PASSED' in res.stdout
     print(("PASS" if ok else "FAIL") + ": run.py on BOM + semicolon + German-format file validates")
     if not ok: FAILS.append('run.py messy'); print(res.stdout, res.stderr)
-BOM_TEXT = "﻿case_id,quote_eur\nA,\"1.500,00\"\n"
+BOM_TEXT = "﻿case_id,case_status,quote_eur\nA,open,\"1.500,00\"\n"
 rows_direct, _ = io_csv.read_claims_text(BOM_TEXT)
 ok_bom = len(rows_direct) == 1 and rows_direct[0]["case_id"] == "A" and rows_direct[0]["quote_eur"] == "1500.00"
 print(("PASS" if ok_bom else "FAIL") + ": parser alone strips a byte-order mark and reads German amounts")

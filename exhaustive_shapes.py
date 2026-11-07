@@ -14,10 +14,10 @@ base_fields = ["injury_reported", "liability_disputed", "duplicate_flag", "evide
 pol = policy.load(Path("policies/v1.json"))
 total = mis_oracle = mis_policy = 0
 examples = []
-for active, ctype, quote in itertools.product(ACTIVE, CTYPE, QUOTE):
+for active, ctype, quote, repair in itertools.product(ACTIVE, CTYPE, QUOTE, ["standard", ""]):
     for combo in itertools.product(BOOLS, repeat=len(base_fields)):
         row = {"case_id": "S", "case_status": "open", "policy_active_on_incident": active,
-               "claim_type": ctype, "quote_eur": quote}
+               "claim_type": ctype, "repair_type": repair, "quote_eur": quote}
         row.update(dict(zip(base_fields, combo)))
         total += 1
         e = engine.decide(row)[0]

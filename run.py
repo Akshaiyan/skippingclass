@@ -11,6 +11,7 @@ Evidence status: BUILT (not yet verified on the practice file by test_all.py; se
 The results file is validated before it is reported as written (method M6).
 """
 import argparse
+import triage
 import csv
 import sys
 from pathlib import Path
@@ -39,6 +40,9 @@ def main(argv=None):
     except (ValueError, OSError) as exc:
         print(f"ERROR: cannot read claims file: {exc}")
         return 1
+    if info.get("repaired_lines"):
+        print(f"Repaired {len(info['repaired_lines'])} row(s): unquoted commas merged back into claim_summary "
+              f"at line(s) {', '.join(map(str, info['repaired_lines'][:10]))}")
     if not claims:
         print("ERROR: input file has no claims")
         return 1
@@ -53,7 +57,7 @@ def main(argv=None):
         for r in claims:
             rec1, rule1, why = policy_mod.decide(r, v1pol)
             rec2, rule2, _ = policy_mod.decide(r, pol)
-            closed = (r.get("case_status") or "").strip() == "closed"
+            closed = triage.status_of(r) == "closed"
             if closed:
                 rec2, rule2, changed = rec1, "closed: retained v1 decision", False
             else:
@@ -74,7 +78,7 @@ def main(argv=None):
                 "recommendation_v2": rec,
                 "needs_recheck": False,
                 "rule_v1": f"v1:{rule}",
-                "rule_v2": "no v2 proposed" if (r.get("case_status") or "").strip() != "closed"
+                "rule_v2": "no v2 proposed" if triage.status_of(r) != "closed"
                 else "closed: retained v1 decision",
                 "explanation": why,
             })

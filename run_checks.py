@@ -17,7 +17,7 @@ STEPS = [
     ("batch run, policy v2 (the change notice: limit 1200 + EV battery)", ["run.py", "unlabelled_practice_cases.csv", "_out_v4.csv", "--policy", "policies/v2.json"]),
     ("policy v2 against the notice: 118,098 combinations, boundaries, closed claims kept", ["test_v2.py"]),
     ("flip report for each prepared change", ["compare_policies.py"]),
-    ("every allowed field combination (87,480 shapes)", ["exhaustive_shapes.py"]),
+    ("every allowed field combination, including blank repair type", ["exhaustive_shapes.py"]),
     ("JSON API over real sockets (four-eyes, override record, replay)", ["test_server.py"]),
     ("agreement statistics for a blinded labeller", ["test_agreement.py"]),
     ("document boundary: documents propose, never decide", ["test_doc_facts.py"]),
@@ -25,6 +25,7 @@ STEPS = [
     ("before-and-after quality report for the v2 change", ["quality_report.py"]),
     ("brief quality counts: unit checks on hand-built pairs", ["test_quality_metrics.py"]),
     ("app-facing API, policy change summary and the sign-off gate", ["test_ui_view.py"]),
+    ("input robustness: refusals, amounts, spellings (red-team findings)", ["test_robustness.py"]),
     ("brief quality counts: v1 against labels, v2 against the notice, changed cases", ["quality_metrics.py"]),
 ]
 failed = []

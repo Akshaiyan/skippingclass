@@ -11,6 +11,7 @@ Usage: python quality_report.py [claims.csv ...]   Exit 1 if any open claim is w
 Labels: on the labelled development file, v1 is also scored against the organiser labels (expected_v1).
 On the synthetic file the expectation comes from the same written policy, so it shows consistency, not accuracy."""
 import sys
+import triage
 from collections import Counter
 from pathlib import Path
 
@@ -27,8 +28,8 @@ DEFAULT = ["labelled_development_cases.csv", "unlabelled_practice_cases.csv", "f
 
 def report(path):
     rows, _ = io_csv.read_claims(HERE / path)
-    open_rows = [r for r in rows if r.get("case_status") != "closed"]
-    closed = [r for r in rows if r.get("case_status") == "closed"]
+    open_rows = [r for r in rows if triage.status_of(r) == "open"]
+    closed = [r for r in rows if triage.status_of(r) == "closed"]
     tally, moved = Counter(), []
     for r in open_rows:
         before, after, want = policy.decide(r, V1)[0], policy.decide(r, V2)[0], oracle_v2(r)

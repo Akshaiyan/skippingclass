@@ -12,6 +12,7 @@ Endpoints (see API.md):
 Errors are JSON: 400 for refused input, 404 for unknown route or case.
 """
 import json
+import triage
 import re
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -102,7 +103,7 @@ def handle(method, path, query, body):
         claims = list(_cases().values())
         base = policy.load(HERE / "policies" / "v1.json")
         flips = [c["case_id"] for c in claims
-                 if (c.get("case_status") or "").strip() != "closed"
+                 if triage.status_of(c) != "closed"
                  and policy.decide(c, base)[0] != policy.decide(c, new)[0]]
         into = [c["case_id"] for c in claims
                 if c["case_id"] in flips and policy.decide(c, new)[0] == "routine_processing"]

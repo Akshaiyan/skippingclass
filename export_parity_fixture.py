@@ -6,6 +6,7 @@ Claims: the labelled development file, the practice file and the adversarial fil
 regenerated and not shipped).
 Run: python export_parity_fixture.py <output.json>"""
 import json
+import triage
 import sys
 from pathlib import Path
 
@@ -25,7 +26,7 @@ def main(out_path):
         rows += data
     cases = []
     for r in rows:
-        open_ = r.get("case_status") != "closed"
+        open_ = triage.status_of(r) == "open"
         cases.append({
             "case_id": r["case_id"],
             "facts": {k: ui_view.typed(v) for k, v in r.items() if k not in ui_view.NOT_FACTS},

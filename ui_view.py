@@ -11,6 +11,7 @@ import hashlib
 from pathlib import Path
 
 import io_csv
+import triage
 import policy
 import suggest
 
@@ -64,6 +65,11 @@ def to_ui_rules(p):
         rules.append({"id": f"R2.false.{f}", "outcome": "request_information",
                       "description": f"{WORDS.get(f, f)} is false",
                       "condition": {"field": f, "op": "eq", "right": {"kind": "value", "value": False}}})
+    rules.append({"id": "R2.status_unknown", "outcome": "request_information",
+                  "description": "Case status is not open or closed",
+                  "condition": {"field": "case_status", "op": "not_in", "right": {"kind": "value", "value": ["open", "closed"]}}})
+    rules.append({"id": "R2.status_blank", "outcome": "request_information", "description": "Case status not provided",
+                  "condition": {"field": "case_status", "op": "is_blank"}})
     rules.append({"id": "R3.routine", "outcome": "routine_processing",
                   "description": "Otherwise: routine processing", "condition": None})
     return rules
@@ -78,11 +84,11 @@ def typed(v):
         return None
     if s in ("True", "False"):
         return s == "True"
-    try:
-        n = float(s)
-        return int(n) if n.is_integer() else n
-    except ValueError:
+    import triage
+    n = triage.amount_or_none(s)
+    if n is None:
         return s
+    return int(n) if n.is_integer() else n
 
 
 def checklist(row, p):
@@ -98,13 +104,13 @@ def checklist(row, p):
 
 
 def case_view(row, v1, v2, v1_hash, v2_hash):
-    open_ = row.get("case_status") != "closed"
+    open_ = triage.status_of(row) == "open"
     rec1, rule1, why1 = policy.decide(row, v1)
     rec2, rule2, _ = policy.decide(row, v2) if open_ else (None, None, None)
     facts = {k: typed(v) for k, v in row.items() if k not in NOT_FACTS}
     return {
         "case_id": row["case_id"],
-        "case_status": "open" if open_ else "closed",
+        "case_status": triage.status_of(row),
         "claim_summary": row.get("claim_summary", ""),
         "recommendation_v1": rec1,
         "recommendation_v2": rec2 if open_ else None,
@@ -148,7 +154,7 @@ def change_summary(cases_path, v1, v2, v1_hash, v2_hash):
     Closed claims are never re-decided (they keep v1). Any move into routine needs a named sign-off."""
     from collections import Counter
     rows, _ = io_csv.read_claims(cases_path)
-    open_rows = [r for r in rows if r.get("case_status") != "closed"]
+    open_rows = [r for r in rows if triage.status_of(r) == "open"]
     flips = []
     for r in open_rows:
         a, rule_a, _ = policy.decide(r, v1)
