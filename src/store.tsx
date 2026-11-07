@@ -1,5 +1,6 @@
 import { createContext, useContext } from "react";
 import type {
+  Account,
   Claim,
   Flow,
   LogEntry,
@@ -26,6 +27,8 @@ export type QuoteLimit = number;
 export type DataSource = "connecting" | "live" | "demo";
 
 interface State {
+  /** Signed-in profile; null shows the sign-in screen. The role comes from this profile. */
+  user: Account | null;
   claims: Claim[];
   draftRules: PolicyRule[];
   log: LogEntry[];
@@ -57,7 +60,8 @@ type Action =
       previousStatus?: "reviewed";
     }
   | { type: "override"; record: Omit<ReviewerOverride, "timestamp">; timestamp: string }
-  | { type: "setReviewer"; name: string }
+  | { type: "signIn"; account: Account }
+  | { type: "signOut" }
   | { type: "setRules"; rules: PolicyRule[] }
   | { type: "resetDraft" }
   | { type: "setQuoteLimit"; limit: QuoteLimit }
@@ -184,8 +188,10 @@ export function storeReducer(s: State, a: Action): State {
         log: appendLog(s.log, { ...a.record, timestamp: a.timestamp }),
       };
     }
-    case "setReviewer":
-      return { ...s, reviewer: a.name };
+    case "signIn":
+      return { ...s, user: a.account, reviewer: a.account.name };
+    case "signOut":
+      return { ...s, user: null };
     case "setRules":
       return { ...s, draftRules: a.rules };
     case "resetDraft":
@@ -203,6 +209,8 @@ export function storeReducer(s: State, a: Action): State {
 
 interface Ctx {
   state: State;
+  /** False until the saved session has been read on the client, so SSR never flashes sign-in. */
+  hydrated: boolean;
   dispatch: (a: Action) => void;
   derived: DerivedClaim[];
   v1Rules: PolicyRule[];
@@ -214,6 +222,7 @@ export const StoreCtx = createContext<Ctx | null>(null);
 export function initialStoreState(): State {
   // Seed data first, so the first paint never waits on the network. StoreProvider replaces it with the live snapshot.
   return {
+    user: null,
     claims: getClaims(),
     draftRules: getDraftPolicy().rules,
     log: getLog(),

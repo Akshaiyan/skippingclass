@@ -1,12 +1,13 @@
 import { fetchChange, postPolicyDecision, type EngineChange as ChangeSummary } from "@/data/live";
 import { EngineChange } from "@/components/EngineChange";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { ArrowRight, Check, Pause, Pencil, Plus, RotateCcw, Rocket, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { Condition, PolicyDecision, PolicyRule, Rec } from "@/types";
 import { ADD_RULE, HOLD_V2, IMPACT_COPY, REC_LABEL, REC_ORDER, RELEASE_V2 } from "@/copy";
 import { PolicyImpact } from "@/components/PolicyImpact";
 import { useStore } from "@/store";
+import { canOpen } from "@/lib/roles";
 import { exhaustiveChecks, flipList, ruleStatus } from "@/lib/report";
 import { validateGate } from "@/lib/guards";
 import { cn } from "@/lib/utils";
@@ -51,7 +52,7 @@ export const Route = createFileRoute("/policy")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: PolicyPage,
+  component: PolicyRoute,
 });
 
 function RuleDialog({
@@ -149,6 +150,13 @@ function RuleDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+/** Policy change is limited to operations leads; anyone else is sent to the dashboard. */
+function PolicyRoute() {
+  const { state } = useStore();
+  if (!canOpen(state.user?.role, "/policy")) return <Navigate to="/" replace />;
+  return <PolicyPage />;
 }
 
 function PolicyPage() {

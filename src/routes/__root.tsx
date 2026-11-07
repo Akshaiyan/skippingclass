@@ -14,6 +14,8 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { StoreProvider } from "@/store.provider";
 import { AppShell } from "@/components/AppShell";
+import { SignIn } from "@/components/SignIn";
+import { useStore } from "@/store";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -120,15 +122,25 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+/** Shows sign-in until a profile is active. Waits for the saved session so SSR never flashes it. */
+function AuthGate() {
+  const { state, hydrated } = useStore();
+  if (!hydrated) return <div className="min-h-screen bg-background" aria-busy="true" />;
+  if (!state.user) return <SignIn />;
+  return (
+    <AppShell>
+      <Outlet />
+    </AppShell>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
       <StoreProvider>
         <TooltipProvider delayDuration={200}>
-          <AppShell>
-            <Outlet />
-          </AppShell>
+          <AuthGate />
           <Toaster position="bottom-right" />
         </TooltipProvider>
       </StoreProvider>

@@ -1,4 +1,4 @@
-import type { Claim, LogEntry, Policy, PolicyRule } from "@/types";
+import type { Account, Claim, LogEntry, Policy, PolicyRule } from "@/types";
 import { evaluate, hashRules } from "@/lib/evaluate";
 import { FLOW_OF } from "@/copy";
 
@@ -356,3 +356,14 @@ export const SEED_LOG: LogEntry[] = (() => {
     .sort((a, b) => String(a["timestamp"]).localeCompare(String(b["timestamp"])))
     .map((e, i) => ({ ...e, seq: i + 1 }) as LogEntry);
 })();
+
+// Demo profiles. Each role lives on the account; the sign-in screen never asks for it.
+export const DEMO_ACCOUNTS: Account[] = [
+  {
+    id: "u-jonas",
+    name: "Jonas Weber",
+    email: "jonas.weber@aegis.example",
+    role: "insurance_claimer",
+  },
+  { id: "u-lena", name: "Lena Vogt", email: "lena.vogt@aegis.example", role: "operations_lead" },
+];

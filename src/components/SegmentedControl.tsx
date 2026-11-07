@@ -32,7 +32,7 @@ export function SegmentedControl<T extends string>({
       role="radiogroup"
       aria-label={label}
       className={cn(
-        "inline-flex flex-wrap rounded-lg border border-border bg-surface p-0.5",
+        "inline-flex flex-wrap rounded-lg border border-border bg-surface p-1",
         className,
       )}
     >
@@ -42,7 +42,7 @@ export function SegmentedControl<T extends string>({
           type="button"
           {...itemProps(o.value)}
           className={cn(
-            "inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors duration-150",
+            "inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors duration-(--dur-fast)",
             value === o.value
               ? "bg-background text-foreground shadow-card"
               : "text-text-2 hover:text-foreground",

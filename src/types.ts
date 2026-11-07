@@ -1,3 +1,13 @@
+export type Role = "insurance_claimer" | "operations_lead";
+
+/** A user profile. The role is stored on the profile and never chosen at sign-in. */
+export interface Account {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+}
+
 export type Rec = "routine_processing" | "request_information" | "human_review";
 export type Flow = "green" | "yellow" | "red";
 export type Tri = "true" | "false" | "unknown"; // fired / passed / undecidable
