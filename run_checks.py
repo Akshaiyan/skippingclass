@@ -26,6 +26,7 @@ STEPS = [
     ("brief quality counts: unit checks on hand-built pairs", ["test_quality_metrics.py"]),
     ("app-facing API, policy change summary and the sign-off gate", ["test_ui_view.py"]),
     ("input robustness: refusals, amounts, spellings (red-team findings)", ["test_robustness.py"]),
+    ("concurrent log writes: chain intact, every record once", ["test_concurrency.py"]),
     ("monitoring report runs without a decision log", ["monitor_report.py"]),
     ("demo readiness: files, Python, Bun and ports", ["demo_check.py"]),
     ("brief quality counts: v1 against labels, v2 against the notice, changed cases", ["quality_metrics.py"]),

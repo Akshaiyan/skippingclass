@@ -87,10 +87,9 @@ def handle(method, path, query, body):
                   "corrected_recommendation": body.get("corrected_recommendation") or body.get("to_rec", "")}
         log = DecisionLog(LOG_PATH)
         try:
-            log.append(record)
+            entry = log.append(record)
         except ValueError as exc:
             return 400, {"error": str(exc)}
-        entry = log.read()[-1]
         return 200, {"correction": {"from": original, "to": entry["corrected_recommendation"]},
                      "reason": entry["reason"], "reviewer": entry["actor"],
                      "policy_version": entry["policy_version"], "timestamp": entry["timestamp"],
@@ -132,10 +131,10 @@ def handle(method, path, query, body):
                   "proposed_by": body.get("proposed_by", ""), "signoff_for": named}
         log = DecisionLog(LOG_PATH)
         try:
-            log.append(record)
+            entry = log.append(record)
         except ValueError as exc:
             return 400, {"error": str(exc)}
-        return 200, {"recorded": log.read()[-1]}
+        return 200, {"recorded": entry}
     if method == "GET" and path == "/api/policy/diff":
         try:
             a, b = _policy(query.get("a", [""])[0]), _policy(query.get("b", [""])[0])

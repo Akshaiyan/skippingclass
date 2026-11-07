@@ -10,6 +10,9 @@ Two record types, each with its own required fields:
 """
 import hashlib
 import json
+import threading
+
+_APPEND_LOCK = threading.Lock()  # one writer at a time within this process
 from datetime import datetime, timezone
 
 RECOMMENDATIONS = {"routine_processing", "request_information", "human_review"}
@@ -78,13 +81,17 @@ class DecisionLog:
         self.path = path
 
     def append(self, record):
+        """Append one record and return the entry as written. The previous hash is read, the record hashed and
+        written under one lock, so two concurrent writers cannot both chain to the same record (a fork)."""
         _validate(record)
         entry = dict(record)
-        entry["timestamp"] = datetime.now(timezone.utc).isoformat()
-        entry["prev_hash"] = self._last_hash()
-        entry["hash"] = _digest(entry)
-        with open(self.path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(entry, ensure_ascii=False, sort_keys=True) + "\n")
+        with _APPEND_LOCK:
+            entry["timestamp"] = datetime.now(timezone.utc).isoformat()
+            entry["prev_hash"] = self._last_hash()
+            entry["hash"] = _digest(entry)
+            with open(self.path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(entry, ensure_ascii=False, sort_keys=True) + "\n")
+        return entry
 
     def _last_hash(self):
         entries = self.read()
