@@ -1,6 +1,7 @@
 import { createContext, useContext } from "react";
-import type { Claim, LogEntry, PolicyDecision, PolicyRule, Rec, ReviewerOverride } from "@/types";
-import { appendLog, getClaims, getDraftPolicy, getLog, getPolicy } from "@/data/api";
+import type { Claim, Flow, LogEntry, PolicyDecision, PolicyRule, Rec, ReviewerOverride } from "@/types";
+import { appendLog, getClaims, getDraftPolicy, getLog, getPolicy, getHandlingRates } from "@/data/api";
+import type { HandlingRates } from "@/lib/policy-impact";
 import { FLOW_OF } from "@/copy";
 import type { DerivedClaim } from "@/lib/report";
 
@@ -13,9 +14,11 @@ interface State {
   reviewer: string;
   quoteLimit: QuoteLimit;
   gateOpen: boolean;
+  handlingRates: HandlingRates;
 }
 
 type Action =
+  | { type: "setHandlingRate"; flow: Flow; rate: number | null }
   | { type: "confirm"; case_id: string }
   | { type: "override"; record: Omit<ReviewerOverride, "timestamp">; timestamp: string }
   | { type: "setReviewer"; name: string }
@@ -38,6 +41,9 @@ function withLimit(rules: PolicyRule[], limit: number): PolicyRule[] {
 
 export function storeReducer(s: State, a: Action): State {
   switch (a.type) {
+    case "setHandlingRate":
+      if (a.rate !== null && (!Number.isFinite(a.rate) || a.rate < 0)) return s;
+      return { ...s, handlingRates: { ...s.handlingRates, [a.flow]: a.rate } };
     case "confirm":
       return { ...s, claims: s.claims.map((c) => (c.case_id === a.case_id ? { ...c, ui_status: "reviewed" } : c)) };
     case "override": {
@@ -82,6 +88,7 @@ export function initialStoreState(): State {
     reviewer: "Jonas Weber",
     quoteLimit: 1200,
     gateOpen: false,
+    handlingRates: getHandlingRates(),
   };
 }
 

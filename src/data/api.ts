@@ -3,6 +3,8 @@
 import type { Claim, LogEntry, Policy, PolicyRule } from "@/types";
 import { SEED_CLAIMS, SEED_LOG, POLICY_V1, POLICY_V2_DRAFT } from "./seed";
 import { evaluate as evaluateLocal, type Facts, type Evaluation } from "@/lib/evaluate";
+import { policyImpact, type HandlingRates } from "@/lib/policy-impact";
+import type { DerivedClaim } from "@/lib/report";
 
 export const getClaims = (): Claim[] => structuredClone(SEED_CLAIMS);
 export const getPolicy = (): Policy => structuredClone(POLICY_V1);
@@ -15,3 +17,5 @@ export function appendLog<T extends Omit<LogEntry, "seq">>(log: LogEntry[], entr
 }
 
 export const evaluate = (rules: PolicyRule[], facts: Facts): Evaluation => evaluateLocal(rules, facts);
+export const getHandlingRates = (): HandlingRates => ({ green: null, yellow: null, red: null });
+export const getPolicyImpact = (claims: DerivedClaim[], rates: HandlingRates) => policyImpact(claims, rates);

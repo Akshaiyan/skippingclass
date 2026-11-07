@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowRight, Check, Pause, Pencil, Plus, RotateCcw, Rocket, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from "recharts";
 import type { Condition, PolicyDecision, PolicyRule, Rec } from "@/types";
-import { ADD_RULE, HOLD_V2, REC_LABEL, REC_ORDER, RELEASE_V2, RULE_BASED } from "@/copy";
+import { ADD_RULE, HOLD_V2, REC_LABEL, REC_ORDER, RELEASE_V2 } from "@/copy";
+import { PolicyImpact } from "@/components/PolicyImpact";
 import { useStore } from "@/store";
 import { exhaustiveChecks, flipList, ruleStatus } from "@/lib/report";
 import { validateGate } from "@/lib/guards";
@@ -33,11 +33,6 @@ export const Route = createFileRoute("/policy")({
 });
 
 const AUTHOR = "Lena Vogt";
-const CHART_LABEL: Record<Rec, string> = {
-  human_review: "Human review",
-  request_information: "Request info",
-  routine_processing: "Routine",
-};
 
 function RuleDialog({ rule, open, onClose, onSave, existingIds }: { rule: PolicyRule | null; open: boolean; onClose: () => void; onSave: (r: PolicyRule, prevId?: string) => void; existingIds: string[] }) {
   const [draft, setDraft] = useState<PolicyRule | null>(rule);
@@ -95,20 +90,6 @@ function RuleDialog({ rule, open, onClose, onSave, existingIds }: { rule: Policy
   );
 }
 
-function VolumeTip({ active, payload }: { active?: boolean; payload?: { name: string; value: number }[] }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="card-panel px-3 py-2 text-xs">
-      {payload.map((p) => (
-        <div key={p.name} className="tnum flex justify-between gap-5 text-text-2">
-          <span>{p.name}</span>
-          <span className="font-medium text-foreground">{p.value} claims</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function PolicyPage() {
   const { state, dispatch, derived, v1Rules, v1Hash, draftHash } = useStore();
   const rules = state.draftRules;
@@ -123,17 +104,8 @@ function PolicyPage() {
   const allPass = checks.every((c) => c.pass);
   const towardRoutine = flips.some((f) => f.towardRoutine);
   const gate = validateGate({ author: AUTHOR, approver, reason, checksPass: allPass });
-  const openFlips = flips.filter((f) => f.status === "recheck");
   const visibleRules = rules.filter((r) => r.id !== "R3.routine");
   const activeCount = visibleRules.filter((r) => r.active !== false).length;
-
-  const chartData = useMemo(() => REC_ORDER.map((rec) => ({
-    name: CHART_LABEL[rec],
-    current: derived.filter((c) => c.case_status === "open" && c.recommendation_v1 === rec).length,
-    draft: derived.filter((c) => c.case_status === "open" && c.recommendation_v2 === rec).length,
-  })), [derived]);
-  const chartMax = Math.max(1, ...chartData.flatMap((d) => [d.current, d.draft])) + 1;
-  const chartTicks = Array.from({ length: chartMax + 1 }, (_, i) => i);
 
   const save = (r: PolicyRule, prevId?: string) => {
     const next = prevId ? rules.map((x) => (x.id === prevId ? r : x)) : [...rules.filter((x) => x.id !== "R3.routine"), r, ...rules.filter((x) => x.id === "R3.routine")];
@@ -263,36 +235,7 @@ function PolicyPage() {
         </section>
 
         <section className="space-y-4 lg:sticky lg:top-6 lg:col-span-7 lg:self-start" aria-labelledby="impact-title">
-          <div className="card-panel p-5">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <h2 id="impact-title" className="section-title">Expected claim volume</h2>
-                <p className="mt-0.5 text-xs text-muted-foreground">Open stored claims · {RULE_BASED.toLowerCase()}</p>
-              </div>
-              <div className="text-right" aria-live="polite" aria-atomic="true">
-                <div className="tnum text-2xl font-medium">{openFlips.length}</div>
-                <div className="text-xs text-muted-foreground">open claims change</div>
-              </div>
-            </div>
-
-            <div className="mt-5 flex items-center justify-end gap-4 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-sm bg-chart-2" aria-hidden />Current</span>
-              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-sm bg-chart-1" aria-hidden />Draft</span>
-            </div>
-            <div className="mt-1 h-[420px] w-full" role="img" aria-label={chartData.map((d) => `${d.name}: current ${d.current}, draft ${d.draft}`).join(". ")}>
-              <ResponsiveContainer>
-                <BarChart data={chartData} barGap={5} margin={{ top: 12, right: 4, left: -6, bottom: 0 }}>
-                  <CartesianGrid vertical={false} stroke="var(--border)" />
-                  <XAxis dataKey="name" interval={0} tickLine={false} axisLine={{ stroke: "var(--border)" }} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                  <YAxis domain={[0, chartMax]} ticks={chartTicks} allowDecimals={false} tickLine={false} axisLine={false} width={30} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                  <ChartTooltip cursor={{ fill: "var(--surface)" }} content={<VolumeTip />} />
-                  <Bar isAnimationActive={false} dataKey="current" name="Current" fill="var(--chart-2)" radius={[3, 3, 0, 0]} maxBarSize={42} />
-                  <Bar isAnimationActive={false} dataKey="draft" name="Draft" fill="var(--chart-1)" radius={[3, 3, 0, 0]} maxBarSize={42} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
+          <PolicyImpact />
         </section>
       </div>
 
