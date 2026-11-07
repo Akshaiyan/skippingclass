@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useStore } from "@/store";
+import { REC_LABEL, REC_OF } from "@/copy";
 import { Dot, SectionTitle } from "@/components/status";
 import { FLOW_DOT } from "@/lib/flow-styles";
 import {
@@ -63,9 +64,9 @@ function ClaimsOverview({ flow, setFlow }: { flow: FlowFilter; setFlow: (f: Flow
   const openOf = (f?: Flow) =>
     list.filter((c) => c.case_status === "open" && (!f || c.flow === f)).length;
   const segs: { flow: Flow; label: string; n: number }[] = [
-    { flow: "red", label: "Red", n: count("red") },
-    { flow: "yellow", label: "Yellow", n: count("yellow") },
-    { flow: "green", label: "Green", n: count("green") },
+    { flow: "red", label: REC_LABEL.human_review, n: count("red") },
+    { flow: "yellow", label: REC_LABEL.request_information, n: count("yellow") },
+    { flow: "green", label: REC_LABEL.routine_processing, n: count("green") },
   ];
 
   return (
@@ -135,7 +136,7 @@ function ClaimsOverview({ flow, setFlow }: { flow: FlowFilter; setFlow: (f: Flow
               }`}
             >
               <div className="flex items-center gap-2 text-xs font-medium text-text-2">
-                <Dot flow={s.flow} /> {s.label} claims
+                <Dot flow={s.flow} /> {s.label}
               </div>
               <div className="mt-1 flex items-baseline gap-2">
                 <span className="display-num text-2xl font-medium">{s.n}</span>
@@ -173,10 +174,20 @@ function Dashboard() {
         <ClaimsOverview flow={flow} setFlow={setFlow} />
       )}
       <ClaimsList
+        compact
         flow={flow}
         setFlow={setFlow}
         hideFlowFilter
-        heading={<SectionTitle title="Claims" />}
+        heading={
+          <SectionTitle
+            title="Needs attention"
+            subtitle={
+              flow === "all"
+                ? "Open claims, human review first, then requests for information, then routine."
+                : `Open claims recommended for ${REC_LABEL[REC_OF[flow]].toLowerCase()}.`
+            }
+          />
+        }
       />
     </div>
   );
