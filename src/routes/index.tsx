@@ -69,14 +69,20 @@ function ClaimsOverview({ flow, setFlow }: { flow: FlowFilter; setFlow: (f: Flow
     { flow: "green", label: FLOW_NAME.green, n: count("green") },
   ];
 
+  const num = (n: number) => new Intl.NumberFormat("en-IE").format(n);
+
   return (
-    <section className="card-panel p-6">
+    <section aria-labelledby="overview-title" className="border-b border-border pb-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="text-sm font-medium text-text-2">Overall claims</div>
+          <h2 id="overview-title" className="text-sm font-medium text-text-2">
+            Overall claims
+          </h2>
           <div className="mt-2 flex items-baseline gap-3">
-            <span className="display-num text-5xl font-medium">{total}</span>
-            <span className="tnum text-xs text-muted-foreground">{openOf()} open</span>
+            <span className="display-num text-4xl font-medium">{num(total)}</span>
+            <span className="tnum text-sm text-muted-foreground">
+              {total === 1 ? "claim" : "claims"}, {num(openOf())} open
+            </span>
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">
@@ -84,7 +90,7 @@ function ClaimsOverview({ flow, setFlow }: { flow: FlowFilter; setFlow: (f: Flow
             Time horizon
           </label>
           <Select value={horizon} onValueChange={(v) => setHorizon(v as Horizon)}>
-            <SelectTrigger id="horizon" className="h-8 w-36 text-xs">
+            <SelectTrigger id="horizon" className="h-8 w-36 text-base md:text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent align="end">
@@ -99,8 +105,9 @@ function ClaimsOverview({ flow, setFlow }: { flow: FlowFilter; setFlow: (f: Flow
         </div>
       </div>
 
+      {/* The flow line in flow colours; the labels under it carry the meaning too. Empty flows are not drawn. */}
       <div
-        className="mt-6 flex h-2.5 w-full gap-1 overflow-hidden rounded-none bg-surface-2"
+        className="mt-6 flex h-1 w-full gap-px overflow-hidden bg-surface-2"
         role="img"
         aria-label={segs.map((s) => `${s.label} ${s.n} of ${total}`).join(", ")}
       >
@@ -117,7 +124,7 @@ function ClaimsOverview({ flow, setFlow }: { flow: FlowFilter; setFlow: (f: Flow
       </div>
 
       <div
-        className="mt-4 grid gap-3 sm:grid-cols-3"
+        className="mt-2 grid grid-cols-1 divide-y divide-border min-[400px]:grid-cols-3 min-[400px]:gap-x-6 min-[400px]:divide-y-0"
         role="group"
         aria-label="Filter claims by flow"
       >
@@ -129,22 +136,22 @@ function ClaimsOverview({ flow, setFlow }: { flow: FlowFilter; setFlow: (f: Flow
               type="button"
               aria-pressed={active}
               onClick={() => setFlow(active ? "all" : s.flow)}
-              className={`rounded-lg border px-4 py-3 text-left transition-colors duration-(--dur-fast) ease-(--ease-out) active:scale-[0.98] ${
-                active
-                  ? "border-foreground bg-surface"
-                  : "border-border hover:border-border-strong hover:bg-surface"
+              className={`group relative min-h-11 touch-manipulation select-none py-3 text-left transition-[color,opacity] duration-(--dur-fast) ease-(--ease-out) [-webkit-tap-highlight-color:transparent] active:opacity-70 ${
+                active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <div className="flex items-center gap-2 text-xs font-medium text-text-2">
-                {s.label}
-              </div>
+              <div className={`text-sm ${active ? "font-semibold" : "font-medium"}`}>{s.label}</div>
               <div className="mt-1 flex items-baseline gap-2">
-                <span className="display-num text-2xl font-medium">{s.n}</span>
-                <span className="tnum text-xs text-muted-foreground">of {total}</span>
-                <span className="tnum ml-auto text-xs text-muted-foreground">
-                  {openOf(s.flow)} open
-                </span>
+                <span className="display-num text-2xl font-medium text-foreground">{num(s.n)}</span>
+                <span className="tnum text-xs">of {num(total)}</span>
               </div>
+              <div className="tnum mt-1 text-xs">{num(openOf(s.flow))} open</div>
+              <span
+                aria-hidden
+                className={`absolute inset-x-0 bottom-0 h-0.5 origin-left bg-foreground transition-transform duration-(--dur-fast) ease-(--ease-out) ${
+                  active ? "scale-x-100" : "scale-x-0"
+                }`}
+              />
             </button>
           );
         })}
@@ -166,10 +173,25 @@ function Dashboard() {
     <div className="space-y-12">
       {state.source === "connecting" && state.claims.length === 0 ? (
         <div
-          className="card-panel h-[264px] animate-pulse bg-surface-2"
+          className="h-[232px] border-b border-border pb-8"
           role="status"
           aria-label="Loading claims overview"
-        />
+        >
+          <div className="animate-pulse space-y-2">
+            <div className="h-4 w-28 bg-surface-2" />
+            <div className="h-10 w-40 bg-surface-2" />
+          </div>
+          <div className="mt-6 h-1 w-full animate-pulse bg-surface-2" />
+          <div className="mt-2 grid grid-cols-3 gap-x-6 py-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="animate-pulse space-y-2">
+                <div className="h-4 w-24 bg-surface-2" />
+                <div className="h-8 w-16 bg-surface-2" />
+                <div className="h-3 w-14 bg-surface-2" />
+              </div>
+            ))}
+          </div>
+        </div>
       ) : (
         <ClaimsOverview flow={flow} setFlow={setFlow} />
       )}
