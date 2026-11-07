@@ -1,0 +1,3825 @@
+{
+ "source": "our engine (policy.py) on policies/v1.json and policies/v2.json",
+ "rules_v1": [
+  {
+   "id": "R1.policy_inactive",
+   "outcome": "human_review",
+   "description": "policy not active on incident date",
+   "condition": {
+    "field": "policy_active_on_incident",
+    "op": "eq",
+    "right": {
+     "kind": "value",
+     "value": false
+    }
+   }
+  },
+  {
+   "id": "R1.claim_type_not_own",
+   "outcome": "human_review",
+   "description": "claim type is not motor_own_damage",
+   "condition": {
+    "field": "claim_type",
+    "op": "neq",
+    "right": {
+     "kind": "value",
+     "value": "motor_own_damage"
+    }
+   }
+  },
+  {
+   "id": "R1.injury",
+   "outcome": "human_review",
+   "description": "injury reported",
+   "condition": {
+    "field": "injury_reported",
+    "op": "eq",
+    "right": {
+     "kind": "value",
+     "value": true
+    }
+   }
+  },
+  {
+   "id": "R1.liability",
+   "outcome": "human_review",
+   "description": "liability disputed",
+   "condition": {
+    "field": "liability_disputed",
+    "op": "eq",
+    "right": {
+     "kind": "value",
+     "value": true
+    }
+   }
+  },
+  {
+   "id": "R1.duplicate",
+   "outcome": "human_review",
+   "description": "duplicate flag",
+   "condition": {
+    "field": "duplicate_flag",
+    "op": "eq",
+    "right": {
+     "kind": "value",
+     "value": true
+    }
+   }
+  },
+  {
+   "id": "R1.evidence_conflict",
+   "outcome": "human_review",
+   "description": "evidence conflict",
+   "condition": {
+    "field": "evidence_conflict",
+    "op": "eq",
+    "right": {
+     "kind": "value",
+     "value": true
+    }
+   }
+  },
+  {
+   "id": "R1.quote_over_limit",
+   "outcome": "human_review",
+   "description": "quote above EUR 1,500",
+   "condition": {
+    "field": "quote_eur",
+    "op": "gt",
+    "right": {
+     "kind": "value",
+     "value": 1500
+    }
+   }
+  },
+  {
+   "id": "R2.unknown.R1.policy_inactive",
+   "outcome": "request_information",
+   "description": "Cannot yet rule out: policy not active on incident date",
+   "condition": {
+    "field": "policy_active_on_incident",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.unknown.R1.claim_type_not_own",
+   "outcome": "request_information",
+   "description": "Cannot yet rule out: claim type is not motor_own_damage",
+   "condition": {
+    "field": "claim_type",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.unknown.R1.injury",
+   "outcome": "request_information",
+   "description": "Cannot yet rule out: injury reported",
+   "condition": {
+    "field": "injury_reported",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.unknown.R1.liability",
+   "outcome": "request_information",
+   "description": "Cannot yet rule out: liability disputed",
+   "condition": {
+    "field": "liability_disputed",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.unknown.R1.duplicate",
+   "outcome": "request_information",
+   "description": "Cannot yet rule out: duplicate flag",
+   "condition": {
+    "field": "duplicate_flag",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.unknown.R1.evidence_conflict",
+   "outcome": "request_information",
+   "description": "Cannot yet rule out: evidence conflict",
+   "condition": {
+    "field": "evidence_conflict",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.unknown.R1.quote_over_limit",
+   "outcome": "request_information",
+   "description": "Cannot yet rule out: quote above EUR 1,500",
+   "condition": {
+    "field": "quote_eur",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.blank.policy_active_on_incident",
+   "outcome": "request_information",
+   "description": "Policy active on the incident date not provided",
+   "condition": {
+    "field": "policy_active_on_incident",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.blank.claim_type",
+   "outcome": "request_information",
+   "description": "Claim type not provided",
+   "condition": {
+    "field": "claim_type",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.blank.quote_eur",
+   "outcome": "request_information",
+   "description": "Repair quote (EUR) not provided",
+   "condition": {
+    "field": "quote_eur",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.blank.incident_report_present",
+   "outcome": "request_information",
+   "description": "Incident report not provided",
+   "condition": {
+    "field": "incident_report_present",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.blank.itemized_quote_present",
+   "outcome": "request_information",
+   "description": "Itemised repair quote not provided",
+   "condition": {
+    "field": "itemized_quote_present",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.blank.injury_reported",
+   "outcome": "request_information",
+   "description": "Injury reported not provided",
+   "condition": {
+    "field": "injury_reported",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.blank.liability_disputed",
+   "outcome": "request_information",
+   "description": "Liability disputed not provided",
+   "condition": {
+    "field": "liability_disputed",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.blank.duplicate_flag",
+   "outcome": "request_information",
+   "description": "Duplicate flag not provided",
+   "condition": {
+    "field": "duplicate_flag",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.blank.evidence_conflict",
+   "outcome": "request_information",
+   "description": "Evidence conflicts with the description not provided",
+   "condition": {
+    "field": "evidence_conflict",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.false.incident_report_present",
+   "outcome": "request_information",
+   "description": "Incident report is false",
+   "condition": {
+    "field": "incident_report_present",
+    "op": "eq",
+    "right": {
+     "kind": "value",
+     "value": false
+    }
+   }
+  },
+  {
+   "id": "R2.false.itemized_quote_present",
+   "outcome": "request_information",
+   "description": "Itemised repair quote is false",
+   "condition": {
+    "field": "itemized_quote_present",
+    "op": "eq",
+    "right": {
+     "kind": "value",
+     "value": false
+    }
+   }
+  },
+  {
+   "id": "R3.routine",
+   "outcome": "routine_processing",
+   "description": "Otherwise: routine processing",
+   "condition": null
+  }
+ ],
+ "rules_v2": [
+  {
+   "id": "R1.policy_inactive",
+   "outcome": "human_review",
+   "description": "policy not active on incident date",
+   "condition": {
+    "field": "policy_active_on_incident",
+    "op": "eq",
+    "right": {
+     "kind": "value",
+     "value": false
+    }
+   }
+  },
+  {
+   "id": "R1.claim_type_not_own",
+   "outcome": "human_review",
+   "description": "claim type is not motor_own_damage",
+   "condition": {
+    "field": "claim_type",
+    "op": "neq",
+    "right": {
+     "kind": "value",
+     "value": "motor_own_damage"
+    }
+   }
+  },
+  {
+   "id": "R1.injury",
+   "outcome": "human_review",
+   "description": "injury reported",
+   "condition": {
+    "field": "injury_reported",
+    "op": "eq",
+    "right": {
+     "kind": "value",
+     "value": true
+    }
+   }
+  },
+  {
+   "id": "R1.liability",
+   "outcome": "human_review",
+   "description": "liability disputed",
+   "condition": {
+    "field": "liability_disputed",
+    "op": "eq",
+    "right": {
+     "kind": "value",
+     "value": true
+    }
+   }
+  },
+  {
+   "id": "R1.duplicate",
+   "outcome": "human_review",
+   "description": "duplicate flag",
+   "condition": {
+    "field": "duplicate_flag",
+    "op": "eq",
+    "right": {
+     "kind": "value",
+     "value": true
+    }
+   }
+  },
+  {
+   "id": "R1.evidence_conflict",
+   "outcome": "human_review",
+   "description": "evidence conflict",
+   "condition": {
+    "field": "evidence_conflict",
+    "op": "eq",
+    "right": {
+     "kind": "value",
+     "value": true
+    }
+   }
+  },
+  {
+   "id": "R1.quote_over_limit",
+   "outcome": "human_review",
+   "description": "quote above EUR 1,200 (exactly 1,200 stays within the limit)",
+   "condition": {
+    "field": "quote_eur",
+    "op": "gt",
+    "right": {
+     "kind": "value",
+     "value": 1200
+    }
+   }
+  },
+  {
+   "id": "R1.ev_battery",
+   "outcome": "human_review",
+   "description": "EV high-voltage battery repair always needs human review; takes priority over missing documents",
+   "condition": {
+    "field": "repair_type",
+    "op": "eq",
+    "right": {
+     "kind": "value",
+     "value": "ev_high_voltage_battery"
+    }
+   }
+  },
+  {
+   "id": "R2.unknown.R1.policy_inactive",
+   "outcome": "request_information",
+   "description": "Cannot yet rule out: policy not active on incident date",
+   "condition": {
+    "field": "policy_active_on_incident",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.unknown.R1.claim_type_not_own",
+   "outcome": "request_information",
+   "description": "Cannot yet rule out: claim type is not motor_own_damage",
+   "condition": {
+    "field": "claim_type",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.unknown.R1.injury",
+   "outcome": "request_information",
+   "description": "Cannot yet rule out: injury reported",
+   "condition": {
+    "field": "injury_reported",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.unknown.R1.liability",
+   "outcome": "request_information",
+   "description": "Cannot yet rule out: liability disputed",
+   "condition": {
+    "field": "liability_disputed",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.unknown.R1.duplicate",
+   "outcome": "request_information",
+   "description": "Cannot yet rule out: duplicate flag",
+   "condition": {
+    "field": "duplicate_flag",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.unknown.R1.evidence_conflict",
+   "outcome": "request_information",
+   "description": "Cannot yet rule out: evidence conflict",
+   "condition": {
+    "field": "evidence_conflict",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.unknown.R1.quote_over_limit",
+   "outcome": "request_information",
+   "description": "Cannot yet rule out: quote above EUR 1,200 (exactly 1,200 stays within the limit)",
+   "condition": {
+    "field": "quote_eur",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.unknown.R1.ev_battery",
+   "outcome": "request_information",
+   "description": "Cannot yet rule out: EV high-voltage battery repair always needs human review; takes priority over missing documents",
+   "condition": {
+    "field": "repair_type",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.blank.policy_active_on_incident",
+   "outcome": "request_information",
+   "description": "Policy active on the incident date not provided",
+   "condition": {
+    "field": "policy_active_on_incident",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.blank.claim_type",
+   "outcome": "request_information",
+   "description": "Claim type not provided",
+   "condition": {
+    "field": "claim_type",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.blank.quote_eur",
+   "outcome": "request_information",
+   "description": "Repair quote (EUR) not provided",
+   "condition": {
+    "field": "quote_eur",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.blank.incident_report_present",
+   "outcome": "request_information",
+   "description": "Incident report not provided",
+   "condition": {
+    "field": "incident_report_present",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.blank.itemized_quote_present",
+   "outcome": "request_information",
+   "description": "Itemised repair quote not provided",
+   "condition": {
+    "field": "itemized_quote_present",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.blank.injury_reported",
+   "outcome": "request_information",
+   "description": "Injury reported not provided",
+   "condition": {
+    "field": "injury_reported",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.blank.liability_disputed",
+   "outcome": "request_information",
+   "description": "Liability disputed not provided",
+   "condition": {
+    "field": "liability_disputed",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.blank.duplicate_flag",
+   "outcome": "request_information",
+   "description": "Duplicate flag not provided",
+   "condition": {
+    "field": "duplicate_flag",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.blank.evidence_conflict",
+   "outcome": "request_information",
+   "description": "Evidence conflicts with the description not provided",
+   "condition": {
+    "field": "evidence_conflict",
+    "op": "is_blank"
+   }
+  },
+  {
+   "id": "R2.false.incident_report_present",
+   "outcome": "request_information",
+   "description": "Incident report is false",
+   "condition": {
+    "field": "incident_report_present",
+    "op": "eq",
+    "right": {
+     "kind": "value",
+     "value": false
+    }
+   }
+  },
+  {
+   "id": "R2.false.itemized_quote_present",
+   "outcome": "request_information",
+   "description": "Itemised repair quote is false",
+   "condition": {
+    "field": "itemized_quote_present",
+    "op": "eq",
+    "right": {
+     "kind": "value",
+     "value": false
+    }
+   }
+  },
+  {
+   "id": "R3.routine",
+   "outcome": "routine_processing",
+   "description": "Otherwise: routine processing",
+   "condition": null
+  }
+ ],
+ "cases": [
+  {
+   "case_id": "DEV-001",
+   "facts": {
+    "case_id": "DEV-001",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 650,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "routine_processing",
+   "expected_v2": "routine_processing",
+   "open": true
+  },
+  {
+   "case_id": "DEV-002",
+   "facts": {
+    "case_id": "DEV-002",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 750,
+    "incident_report_present": false,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "request_information",
+   "expected_v2": "request_information",
+   "open": true
+  },
+  {
+   "case_id": "DEV-003",
+   "facts": {
+    "case_id": "DEV-003",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 890,
+    "incident_report_present": true,
+    "itemized_quote_present": false,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "request_information",
+   "expected_v2": "request_information",
+   "open": true
+  },
+  {
+   "case_id": "DEV-004",
+   "facts": {
+    "case_id": "DEV-004",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "DEV-005",
+   "facts": {
+    "case_id": "DEV-005",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 400,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "DEV-006",
+   "facts": {
+    "case_id": "DEV-006",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 300,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "DEV-007",
+   "facts": {
+    "case_id": "DEV-007",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 700,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": true,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "DEV-008",
+   "facts": {
+    "case_id": "DEV-008",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 500,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": true,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "DEV-009",
+   "facts": {
+    "case_id": "DEV-009",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 600,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "DEV-010",
+   "facts": {
+    "case_id": "DEV-010",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1500,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "routine_processing",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "DEV-011",
+   "facts": {
+    "case_id": "DEV-011",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "ev_high_voltage_battery",
+    "quote_eur": 900,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "routine_processing",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "DEV-012",
+   "facts": {
+    "case_id": "DEV-012",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": 700,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "DEV-013",
+   "facts": {
+    "case_id": "DEV-013",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": null,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "request_information",
+   "expected_v2": "request_information",
+   "open": true
+  },
+  {
+   "case_id": "DEV-014",
+   "facts": {
+    "case_id": "DEV-014",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 350,
+    "incident_report_present": null,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "PRA-001",
+   "facts": {
+    "case_id": "PRA-001",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 320,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "routine_processing",
+   "expected_v2": "routine_processing",
+   "open": true
+  },
+  {
+   "case_id": "PRA-002",
+   "facts": {
+    "case_id": "PRA-002",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1200,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "routine_processing",
+   "expected_v2": "routine_processing",
+   "open": true
+  },
+  {
+   "case_id": "PRA-003",
+   "facts": {
+    "case_id": "PRA-003",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1201,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "routine_processing",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "PRA-004",
+   "facts": {
+    "case_id": "PRA-004",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1450,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "routine_processing",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "PRA-005",
+   "facts": {
+    "case_id": "PRA-005",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "ev_high_voltage_battery",
+    "quote_eur": 700,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "routine_processing",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "PRA-006",
+   "facts": {
+    "case_id": "PRA-006",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "ev_high_voltage_battery",
+    "quote_eur": 700,
+    "incident_report_present": true,
+    "itemized_quote_present": false,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "request_information",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "PRA-007",
+   "facts": {
+    "case_id": "PRA-007",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": false,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "PRA-008",
+   "facts": {
+    "case_id": "PRA-008",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 500,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "PRA-009",
+   "facts": {
+    "case_id": "PRA-009",
+    "case_status": "closed",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1350,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "routine_processing",
+   "expected_v2": null,
+   "open": false
+  },
+  {
+   "case_id": "PRA-010",
+   "facts": {
+    "case_id": "PRA-010",
+    "case_status": "closed",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "ev_high_voltage_battery",
+    "quote_eur": 900,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "routine_processing",
+   "expected_v2": null,
+   "open": false
+  },
+  {
+   "case_id": "PRA-011",
+   "facts": {
+    "case_id": "PRA-011",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 900,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "PRA-012",
+   "facts": {
+    "case_id": "PRA-012",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": false,
+    "itemized_quote_present": false,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "request_information",
+   "expected_v2": "request_information",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0001",
+   "facts": {
+    "case_id": "ADV-0001",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "routine_processing",
+   "expected_v2": "routine_processing",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0002",
+   "facts": {
+    "case_id": "ADV-0002",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1500,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "routine_processing",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0003",
+   "facts": {
+    "case_id": "ADV-0003",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1500.01,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0004",
+   "facts": {
+    "case_id": "ADV-0004",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1499.99,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "routine_processing",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0005",
+   "facts": {
+    "case_id": "ADV-0005",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0006",
+   "facts": {
+    "case_id": "ADV-0006",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0007",
+   "facts": {
+    "case_id": "ADV-0007",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0008",
+   "facts": {
+    "case_id": "ADV-0008",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": true,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0009",
+   "facts": {
+    "case_id": "ADV-0009",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": true,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0010",
+   "facts": {
+    "case_id": "ADV-0010",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0011",
+   "facts": {
+    "case_id": "ADV-0011",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1501,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0012",
+   "facts": {
+    "case_id": "ADV-0012",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": false,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "request_information",
+   "expected_v2": "request_information",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0013",
+   "facts": {
+    "case_id": "ADV-0013",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": false,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "request_information",
+   "expected_v2": "request_information",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0014",
+   "facts": {
+    "case_id": "ADV-0014",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": null,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "request_information",
+   "expected_v2": "request_information",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0015",
+   "facts": {
+    "case_id": "ADV-0015",
+    "case_status": null,
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "routine_processing",
+   "expected_v2": "routine_processing",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0016",
+   "facts": {
+    "case_id": "ADV-0016",
+    "case_status": "open",
+    "policy_active_on_incident": null,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "request_information",
+   "expected_v2": "request_information",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0017",
+   "facts": {
+    "case_id": "ADV-0017",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": null,
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "request_information",
+   "expected_v2": "request_information",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0018",
+   "facts": {
+    "case_id": "ADV-0018",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": null,
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "routine_processing",
+   "expected_v2": "request_information",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0019",
+   "facts": {
+    "case_id": "ADV-0019",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": null,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "request_information",
+   "expected_v2": "request_information",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0020",
+   "facts": {
+    "case_id": "ADV-0020",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": null,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "request_information",
+   "expected_v2": "request_information",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0021",
+   "facts": {
+    "case_id": "ADV-0021",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": null,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "request_information",
+   "expected_v2": "request_information",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0022",
+   "facts": {
+    "case_id": "ADV-0022",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": null,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "request_information",
+   "expected_v2": "request_information",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0023",
+   "facts": {
+    "case_id": "ADV-0023",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": null,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "request_information",
+   "expected_v2": "request_information",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0024",
+   "facts": {
+    "case_id": "ADV-0024",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": null,
+    "evidence_conflict": false
+   },
+   "expected_v1": "request_information",
+   "expected_v2": "request_information",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0025",
+   "facts": {
+    "case_id": "ADV-0025",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": null
+   },
+   "expected_v1": "request_information",
+   "expected_v2": "request_information",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0026",
+   "facts": {
+    "case_id": "ADV-0026",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0027",
+   "facts": {
+    "case_id": "ADV-0027",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0028",
+   "facts": {
+    "case_id": "ADV-0028",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": true,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0029",
+   "facts": {
+    "case_id": "ADV-0029",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": true,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0030",
+   "facts": {
+    "case_id": "ADV-0030",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0031",
+   "facts": {
+    "case_id": "ADV-0031",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1501,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0032",
+   "facts": {
+    "case_id": "ADV-0032",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0033",
+   "facts": {
+    "case_id": "ADV-0033",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": true,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0034",
+   "facts": {
+    "case_id": "ADV-0034",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": true,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0035",
+   "facts": {
+    "case_id": "ADV-0035",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0036",
+   "facts": {
+    "case_id": "ADV-0036",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": 1501,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0037",
+   "facts": {
+    "case_id": "ADV-0037",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": true,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0038",
+   "facts": {
+    "case_id": "ADV-0038",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": true,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0039",
+   "facts": {
+    "case_id": "ADV-0039",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0040",
+   "facts": {
+    "case_id": "ADV-0040",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1501,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0041",
+   "facts": {
+    "case_id": "ADV-0041",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": true,
+    "duplicate_flag": true,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0042",
+   "facts": {
+    "case_id": "ADV-0042",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": true,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0043",
+   "facts": {
+    "case_id": "ADV-0043",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1501,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": true,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0044",
+   "facts": {
+    "case_id": "ADV-0044",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": true,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0045",
+   "facts": {
+    "case_id": "ADV-0045",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1501,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": true,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0046",
+   "facts": {
+    "case_id": "ADV-0046",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1501,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0047",
+   "facts": {
+    "case_id": "ADV-0047",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": false,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0048",
+   "facts": {
+    "case_id": "ADV-0048",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": false,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0049",
+   "facts": {
+    "case_id": "ADV-0049",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": null,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0050",
+   "facts": {
+    "case_id": "ADV-0050",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": false,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0051",
+   "facts": {
+    "case_id": "ADV-0051",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": false,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0052",
+   "facts": {
+    "case_id": "ADV-0052",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": null,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0053",
+   "facts": {
+    "case_id": "ADV-0053",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": false,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0054",
+   "facts": {
+    "case_id": "ADV-0054",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": false,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0055",
+   "facts": {
+    "case_id": "ADV-0055",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": null,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0056",
+   "facts": {
+    "case_id": "ADV-0056",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": false,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": true,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0057",
+   "facts": {
+    "case_id": "ADV-0057",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": false,
+    "injury_reported": false,
+    "liability_disputed": true,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0058",
+   "facts": {
+    "case_id": "ADV-0058",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": null,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": true,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0059",
+   "facts": {
+    "case_id": "ADV-0059",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": false,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": true,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0060",
+   "facts": {
+    "case_id": "ADV-0060",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": false,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": true,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0061",
+   "facts": {
+    "case_id": "ADV-0061",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": null,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": true,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0062",
+   "facts": {
+    "case_id": "ADV-0062",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": false,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0063",
+   "facts": {
+    "case_id": "ADV-0063",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": false,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0064",
+   "facts": {
+    "case_id": "ADV-0064",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": null,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0065",
+   "facts": {
+    "case_id": "ADV-0065",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1501,
+    "incident_report_present": false,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0066",
+   "facts": {
+    "case_id": "ADV-0066",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1501,
+    "incident_report_present": true,
+    "itemized_quote_present": false,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0067",
+   "facts": {
+    "case_id": "ADV-0067",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": null,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "request_information",
+   "expected_v2": "request_information",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0068",
+   "facts": {
+    "case_id": "ADV-0068",
+    "case_status": null,
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0069",
+   "facts": {
+    "case_id": "ADV-0069",
+    "case_status": null,
+    "policy_active_on_incident": true,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0070",
+   "facts": {
+    "case_id": "ADV-0070",
+    "case_status": null,
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0071",
+   "facts": {
+    "case_id": "ADV-0071",
+    "case_status": null,
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": true,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0072",
+   "facts": {
+    "case_id": "ADV-0072",
+    "case_status": null,
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": true,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0073",
+   "facts": {
+    "case_id": "ADV-0073",
+    "case_status": null,
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0074",
+   "facts": {
+    "case_id": "ADV-0074",
+    "case_status": null,
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1501,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0075",
+   "facts": {
+    "case_id": "ADV-0075",
+    "case_status": "open",
+    "policy_active_on_incident": null,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0076",
+   "facts": {
+    "case_id": "ADV-0076",
+    "case_status": "open",
+    "policy_active_on_incident": null,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0077",
+   "facts": {
+    "case_id": "ADV-0077",
+    "case_status": "open",
+    "policy_active_on_incident": null,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": true,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0078",
+   "facts": {
+    "case_id": "ADV-0078",
+    "case_status": "open",
+    "policy_active_on_incident": null,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": true,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0079",
+   "facts": {
+    "case_id": "ADV-0079",
+    "case_status": "open",
+    "policy_active_on_incident": null,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0080",
+   "facts": {
+    "case_id": "ADV-0080",
+    "case_status": "open",
+    "policy_active_on_incident": null,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1501,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0081",
+   "facts": {
+    "case_id": "ADV-0081",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": null,
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0082",
+   "facts": {
+    "case_id": "ADV-0082",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": null,
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0083",
+   "facts": {
+    "case_id": "ADV-0083",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": null,
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": true,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0084",
+   "facts": {
+    "case_id": "ADV-0084",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": null,
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": true,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0085",
+   "facts": {
+    "case_id": "ADV-0085",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": null,
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0086",
+   "facts": {
+    "case_id": "ADV-0086",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": null,
+    "repair_type": "standard",
+    "quote_eur": 1501,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0087",
+   "facts": {
+    "case_id": "ADV-0087",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": null,
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0088",
+   "facts": {
+    "case_id": "ADV-0088",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "theft",
+    "repair_type": null,
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0089",
+   "facts": {
+    "case_id": "ADV-0089",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": null,
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0090",
+   "facts": {
+    "case_id": "ADV-0090",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": null,
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": true,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0091",
+   "facts": {
+    "case_id": "ADV-0091",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": null,
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": true,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0092",
+   "facts": {
+    "case_id": "ADV-0092",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": null,
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0093",
+   "facts": {
+    "case_id": "ADV-0093",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": null,
+    "quote_eur": 1501,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0094",
+   "facts": {
+    "case_id": "ADV-0094",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": null,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0095",
+   "facts": {
+    "case_id": "ADV-0095",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": null,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0096",
+   "facts": {
+    "case_id": "ADV-0096",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": null,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0097",
+   "facts": {
+    "case_id": "ADV-0097",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": null,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": true,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0098",
+   "facts": {
+    "case_id": "ADV-0098",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": null,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": true,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0099",
+   "facts": {
+    "case_id": "ADV-0099",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": null,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0100",
+   "facts": {
+    "case_id": "ADV-0100",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": null,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0101",
+   "facts": {
+    "case_id": "ADV-0101",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": null,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0102",
+   "facts": {
+    "case_id": "ADV-0102",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": null,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0103",
+   "facts": {
+    "case_id": "ADV-0103",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": null,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": true,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0104",
+   "facts": {
+    "case_id": "ADV-0104",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": null,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": true,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0105",
+   "facts": {
+    "case_id": "ADV-0105",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": null,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0106",
+   "facts": {
+    "case_id": "ADV-0106",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1501,
+    "incident_report_present": null,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0107",
+   "facts": {
+    "case_id": "ADV-0107",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": null,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0108",
+   "facts": {
+    "case_id": "ADV-0108",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": null,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0109",
+   "facts": {
+    "case_id": "ADV-0109",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": null,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0110",
+   "facts": {
+    "case_id": "ADV-0110",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": null,
+    "injury_reported": false,
+    "liability_disputed": true,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0111",
+   "facts": {
+    "case_id": "ADV-0111",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": null,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": true,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0112",
+   "facts": {
+    "case_id": "ADV-0112",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": null,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0113",
+   "facts": {
+    "case_id": "ADV-0113",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1501,
+    "incident_report_present": true,
+    "itemized_quote_present": null,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0114",
+   "facts": {
+    "case_id": "ADV-0114",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": null,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0115",
+   "facts": {
+    "case_id": "ADV-0115",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": null,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0116",
+   "facts": {
+    "case_id": "ADV-0116",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": null,
+    "liability_disputed": true,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0117",
+   "facts": {
+    "case_id": "ADV-0117",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": null,
+    "liability_disputed": false,
+    "duplicate_flag": true,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0118",
+   "facts": {
+    "case_id": "ADV-0118",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": null,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0119",
+   "facts": {
+    "case_id": "ADV-0119",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1501,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": null,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0120",
+   "facts": {
+    "case_id": "ADV-0120",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": null,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0121",
+   "facts": {
+    "case_id": "ADV-0121",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": null,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0122",
+   "facts": {
+    "case_id": "ADV-0122",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": null,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0123",
+   "facts": {
+    "case_id": "ADV-0123",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": null,
+    "duplicate_flag": true,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0124",
+   "facts": {
+    "case_id": "ADV-0124",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": null,
+    "duplicate_flag": false,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0125",
+   "facts": {
+    "case_id": "ADV-0125",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1501,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": null,
+    "duplicate_flag": false,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0126",
+   "facts": {
+    "case_id": "ADV-0126",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": null,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0127",
+   "facts": {
+    "case_id": "ADV-0127",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": null,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0128",
+   "facts": {
+    "case_id": "ADV-0128",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": null,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0129",
+   "facts": {
+    "case_id": "ADV-0129",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": true,
+    "duplicate_flag": null,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0130",
+   "facts": {
+    "case_id": "ADV-0130",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": null,
+    "evidence_conflict": true
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0131",
+   "facts": {
+    "case_id": "ADV-0131",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1501,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": null,
+    "evidence_conflict": false
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0132",
+   "facts": {
+    "case_id": "ADV-0132",
+    "case_status": "open",
+    "policy_active_on_incident": false,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": null
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0133",
+   "facts": {
+    "case_id": "ADV-0133",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "theft",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": null
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0134",
+   "facts": {
+    "case_id": "ADV-0134",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": true,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": null
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0135",
+   "facts": {
+    "case_id": "ADV-0135",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": true,
+    "duplicate_flag": false,
+    "evidence_conflict": null
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0136",
+   "facts": {
+    "case_id": "ADV-0136",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 800,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": true,
+    "evidence_conflict": null
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  },
+  {
+   "case_id": "ADV-0137",
+   "facts": {
+    "case_id": "ADV-0137",
+    "case_status": "open",
+    "policy_active_on_incident": true,
+    "claim_type": "motor_own_damage",
+    "repair_type": "standard",
+    "quote_eur": 1501,
+    "incident_report_present": true,
+    "itemized_quote_present": true,
+    "injury_reported": false,
+    "liability_disputed": false,
+    "duplicate_flag": false,
+    "evidence_conflict": null
+   },
+   "expected_v1": "human_review",
+   "expected_v2": "human_review",
+   "open": true
+  }
+ ]
+}
