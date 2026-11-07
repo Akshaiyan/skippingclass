@@ -53,7 +53,7 @@ export const IMPACT_COPY = {
   expected: "Expected",
   cost: "Handling cost per claim",
   rates: "Handling cost by flow · EUR / claim",
-  flows: { green: "Routine processing", yellow: "Request information", red: "Human review" },
+  flows: { green: "Routine processing", yellow: "Missing information", red: "Human review" },
 };
 
 export const CONFIRM_REC = "Confirm recommendation";

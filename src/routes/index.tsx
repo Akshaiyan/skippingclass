@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useStore } from "@/store";
 import { REC_LABEL, REC_OF } from "@/copy";
-import { Dot, SectionTitle } from "@/components/status";
-import { FLOW_DOT } from "@/lib/flow-styles";
+import { SectionTitle } from "@/components/status";
+import { FLOW_DOT, FLOW_NAME } from "@/lib/flow-styles";
 import {
   Select,
   SelectContent,
@@ -64,9 +64,9 @@ function ClaimsOverview({ flow, setFlow }: { flow: FlowFilter; setFlow: (f: Flow
   const openOf = (f?: Flow) =>
     list.filter((c) => c.case_status === "open" && (!f || c.flow === f)).length;
   const segs: { flow: Flow; label: string; n: number }[] = [
-    { flow: "red", label: REC_LABEL.human_review, n: count("red") },
-    { flow: "yellow", label: REC_LABEL.request_information, n: count("yellow") },
-    { flow: "green", label: REC_LABEL.routine_processing, n: count("green") },
+    { flow: "red", label: FLOW_NAME.red, n: count("red") },
+    { flow: "yellow", label: FLOW_NAME.yellow, n: count("yellow") },
+    { flow: "green", label: FLOW_NAME.green, n: count("green") },
   ];
 
   return (
@@ -100,7 +100,7 @@ function ClaimsOverview({ flow, setFlow }: { flow: FlowFilter; setFlow: (f: Flow
       </div>
 
       <div
-        className="mt-6 flex h-2.5 w-full gap-1 overflow-hidden rounded-full bg-surface-2"
+        className="mt-6 flex h-2.5 w-full gap-1 overflow-hidden rounded-none bg-surface-2"
         role="img"
         aria-label={segs.map((s) => `${s.label} ${s.n} of ${total}`).join(", ")}
       >
@@ -136,7 +136,7 @@ function ClaimsOverview({ flow, setFlow }: { flow: FlowFilter; setFlow: (f: Flow
               }`}
             >
               <div className="flex items-center gap-2 text-xs font-medium text-text-2">
-                <Dot flow={s.flow} /> {s.label}
+                {s.label}
               </div>
               <div className="mt-1 flex items-baseline gap-2">
                 <span className="display-num text-2xl font-medium">{s.n}</span>

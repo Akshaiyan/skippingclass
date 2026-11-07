@@ -517,7 +517,7 @@ function PolicyPage() {
             aria-live="polite"
           >
             <div className="flex items-center gap-2 text-sm font-semibold">
-              <span className="grid size-5 place-items-center rounded-full bg-primary text-primary-foreground">
+              <span className="grid size-5 place-items-center rounded-none bg-primary text-primary-foreground">
                 <Check className="size-3" aria-hidden />
               </span>
               {decision.type === "policy_approved" ? "Policy released" : "Policy held"}

@@ -64,12 +64,11 @@ function NavList({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: (
             {n.to === "/claims" && redOpen > 0 && (
               <span
                 className={cn(
-                  "tnum inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 text-xs font-medium text-foreground",
+                  "tnum text-xs font-bold text-foreground",
                   collapsed ? "absolute right-1 top-1" : "ml-auto",
                 )}
                 aria-label={`${redOpen} open claims need human review`}
               >
-                <span className="size-1.5 rounded-full bg-flow-red" aria-hidden />
                 {redOpen}
               </span>
             )}
@@ -101,7 +100,7 @@ function UserPanel({ collapsed }: { collapsed: boolean }) {
           <TooltipTrigger asChild>
             <span
               tabIndex={0}
-              className="grid size-8 place-items-center rounded-full bg-foreground text-xs font-semibold text-background"
+              className="grid size-8 place-items-center rounded-none bg-foreground text-xs font-semibold text-background"
               aria-label={`${user.name}, ${ROLE_LABEL[user.role]}`}
             >
               {initials(user.name)}
@@ -129,7 +128,7 @@ function UserPanel({ collapsed }: { collapsed: boolean }) {
       </div>
       <div className="flex items-center gap-3 rounded-lg border border-border bg-background p-3">
         <span
-          className="grid size-8 shrink-0 place-items-center rounded-full bg-foreground text-xs font-semibold text-background"
+          className="grid size-8 shrink-0 place-items-center rounded-none bg-foreground text-xs font-semibold text-background"
           aria-hidden
         >
           {initials(user.name)}

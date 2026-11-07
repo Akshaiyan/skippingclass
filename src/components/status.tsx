@@ -4,28 +4,17 @@ import type { Flow, Rec, Tri } from "@/types";
 import { FLOW_OF, LOCKED, NOT_PROVIDED, REC_LABEL } from "@/copy";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { FLOW_DOT, FLOW_TINT } from "@/lib/flow-styles";
 
-export function Dot({ flow, className }: { flow: Flow; className?: string }) {
-  return (
-    <span
-      aria-hidden
-      className={cn("inline-block size-2 shrink-0 rounded-full", FLOW_DOT[flow], className)}
-    />
-  );
-}
-
+/** A recommendation is plain text. Human review is the one that needs a person, so it is the only bold one. */
 export function FlowBadge({ rec, size = "md" }: { rec: Rec; size?: "sm" | "md" }) {
-  const flow = FLOW_OF[rec];
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-2 whitespace-nowrap rounded-full font-medium text-foreground",
-        FLOW_TINT[flow],
-        size === "sm" ? "px-2 py-1 text-xs leading-4" : "px-3 py-1 text-xs leading-5",
+        "whitespace-nowrap text-foreground",
+        size === "sm" ? "text-xs" : "text-sm",
+        rec === "human_review" ? "font-bold" : "font-normal",
       )}
     >
-      <Dot flow={flow} className={size === "sm" ? "size-1.5" : undefined} />
       {REC_LABEL[rec]}
     </span>
   );
@@ -50,7 +39,7 @@ export function Chip({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium leading-4",
+        "inline-flex items-center gap-1 whitespace-nowrap rounded-none px-2 py-1 text-xs font-medium leading-4",
         tones[tone],
         className,
       )}
@@ -72,7 +61,7 @@ export function PolicyStamp({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-border bg-surface px-2 py-1 font-mono text-xs leading-4 text-text-2",
+        "inline-flex items-center gap-2 whitespace-nowrap rounded-none border border-border bg-surface px-2 py-1 font-mono text-xs leading-4 text-text-2",
         className,
       )}
     >
@@ -91,13 +80,7 @@ export function LockedChip() {
   );
 }
 export function StatusChip({ status }: { status: "open" | "closed" }) {
-  return status === "closed" ? (
-    <LockedChip />
-  ) : (
-    <Chip tone="outline">
-      <span className="size-1.5 rounded-full bg-foreground" aria-hidden /> Open
-    </Chip>
-  );
+  return status === "closed" ? <LockedChip /> : <Chip tone="outline">Open</Chip>;
 }
 
 export function RuleChips({ rule }: { rule: string }) {
@@ -128,7 +111,7 @@ export function UnknownMarker({ className }: { className?: string }) {
     <span
       aria-hidden
       className={cn(
-        "inline-block size-2.5 shrink-0 rounded-full border border-dashed border-unknown",
+        "inline-block size-2.5 shrink-0 rounded-none border border-dashed border-unknown",
         className,
       )}
     />
@@ -147,15 +130,15 @@ export function TriGlyph({ result, outcome }: { result: Tri; outcome: Rec }) {
   if (result === "true")
     return (
       <span className="inline-flex items-center gap-2 text-xs font-medium text-foreground">
-        <Dot flow={FLOW_OF[outcome]} /> Fired
+        Fired
       </span>
     );
   if (result === "unknown")
     return (
-      <span className="inline-flex items-center gap-2 rounded-full bg-unknown-tint px-2 py-1 text-xs font-medium text-unknown">
+      <span className="inline-flex items-center gap-2 rounded-none bg-unknown-tint px-2 py-1 text-xs font-medium text-unknown">
         <span
           aria-hidden
-          className="grid size-3.5 place-items-center rounded-full border border-dashed border-unknown text-xs font-bold leading-none"
+          className="grid size-3.5 place-items-center rounded-none border border-dashed border-unknown text-xs font-bold leading-none"
         >
           ?
         </span>
@@ -175,9 +158,8 @@ export function RecheckChip({ from, to }: { from: Rec; to: Rec }) {
       <Chip tone="outline">
         <RefreshCw className="size-3" aria-hidden /> Needs recheck
       </Chip>
-      <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground">
-        v1 <Dot flow={FLOW_OF[from]} className="size-1.5" /> → v2{" "}
-        <Dot flow={FLOW_OF[to]} className="size-1.5" />
+      <span className="text-xs text-muted-foreground">
+        {REC_LABEL[from]} → {REC_LABEL[to]}
       </span>
     </span>
   );

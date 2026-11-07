@@ -166,7 +166,7 @@ function Leaf({
                       setRight(next.length ? { kind: "value", value: next } : undefined);
                     }}
                     className={cn(
-                      "rounded-full border px-2 py-1 font-mono text-xs",
+                      "rounded-none border px-2 py-1 font-mono text-xs",
                       on
                         ? "border-foreground bg-primary text-primary-foreground"
                         : "border-border hover:border-border-strong",

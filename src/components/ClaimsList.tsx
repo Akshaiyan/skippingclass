@@ -23,8 +23,8 @@ import {
   type NextStep,
 } from "@/lib/claim-view";
 import { cn } from "@/lib/utils";
-import { Chip, Dot, FlowBadge, NotProvided, StatusChip, WhyDisabled } from "@/components/status";
-import { FLOW_BORDER } from "@/lib/flow-styles";
+import { Chip, FlowBadge, NotProvided, StatusChip, WhyDisabled } from "@/components/status";
+import { FLOW_BORDER, FLOW_NAME } from "@/lib/flow-styles";
 import { CaseSheet } from "@/components/CaseSheet";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { Button } from "@/components/ui/button";
@@ -71,7 +71,7 @@ function QuickActions({
           <DropdownMenuContent align="end">
             {others.map((r) => (
               <DropdownMenuItem key={r} onSelect={() => onPick(r)} className="gap-2 text-xs">
-                <Dot flow={FLOW_OF[r]} /> {changeTo(r)}
+                {changeTo(r)}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -102,7 +102,7 @@ function RecheckFlag() {
   );
 }
 
-const groupLabel = (f: Flow) => REC_LABEL[REC_OF[f]];
+const groupLabel = (f: Flow) => FLOW_NAME[f];
 
 export function ClaimsList({
   flow,
@@ -236,15 +236,7 @@ export function ClaimsList({
               options={(["all", "red", "yellow", "green"] as FlowFilter[]).map((f) => ({
                 value: f,
                 count: counts[f],
-                label:
-                  f === "all" ? (
-                    "All"
-                  ) : (
-                    <>
-                      <Dot flow={f} />
-                      {groupLabel(f)}
-                    </>
-                  ),
+                label: f === "all" ? "All" : groupLabel(f),
               }))}
             />
           )}
@@ -270,7 +262,7 @@ export function ClaimsList({
             <button
               key={c.label}
               onClick={c.clear}
-              className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1 text-xs hover:border-border-strong"
+              className="inline-flex items-center gap-1 rounded-none border border-border bg-surface px-3 py-1 text-xs hover:border-border-strong"
             >
               {c.label} <X className="size-3" aria-hidden />{" "}
               <span className="sr-only">Remove filter</span>
@@ -340,7 +332,6 @@ export function ClaimsList({
                       className="border-b border-border bg-surface px-4 py-2 text-left text-xs font-semibold"
                     >
                       <span className="inline-flex items-center gap-2">
-                        <Dot flow={g.flow} />
                         {groupLabel(g.flow)}
                         <span className="tnum font-normal text-muted-foreground">
                           {g.items.length} {g.items.length === 1 ? "claim" : "claims"}
@@ -425,7 +416,6 @@ export function ClaimsList({
             {groups.map((g) => (
               <div key={g.flow} className="space-y-2">
                 <div className="flex items-center gap-2 text-xs font-semibold">
-                  <Dot flow={g.flow} />
                   {groupLabel(g.flow)}
                   <span className="tnum font-normal text-muted-foreground">
                     {g.items.length} {g.items.length === 1 ? "claim" : "claims"}

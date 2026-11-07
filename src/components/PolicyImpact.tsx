@@ -13,7 +13,6 @@ import {
 import { getPolicyImpact } from "@/data/api";
 import { IMPACT_COPY, NOT_PROVIDED } from "@/copy";
 import { useStore } from "@/store";
-import { Dot } from "./status";
 
 const euro = (value: number) =>
   new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" }).format(value);
@@ -113,7 +112,6 @@ export function PolicyImpact() {
                   style={{ background: flowGray[row.flow] }}
                   aria-hidden
                 />
-                <Dot flow={row.flow} className="size-1.5" />
                 {IMPACT_COPY.flows[row.flow]}
               </span>
               <span className="tnum text-right font-mono">{row.live}</span>

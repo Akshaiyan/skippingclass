@@ -7,13 +7,15 @@ export const FLOW_DOT: Record<Flow, string> = {
   yellow: "bg-flow-yellow",
   green: "bg-flow-green",
 };
-export const FLOW_TINT: Record<Flow, string> = {
-  red: "bg-flow-red-tint",
-  yellow: "bg-flow-yellow-tint",
-  green: "bg-flow-green-tint",
-};
 export const FLOW_BORDER: Record<Flow, string> = {
   red: "border-l-flow-red",
   yellow: "border-l-flow-yellow",
   green: "border-l-flow-green",
+};
+
+// Names for the three flows, used wherever a flow is a category (cards, filters, group headings).
+export const FLOW_NAME: Record<Flow, string> = {
+  red: "Human review",
+  yellow: "Missing information",
+  green: "Routine processing",
 };
