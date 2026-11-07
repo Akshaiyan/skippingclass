@@ -34,7 +34,8 @@ version behind each one.
 ## Layout
 
 Flat, so the tests run as-is. Policy and case data: `labelled_development_cases.csv`,
-`unlabelled_practice_cases.csv`, `adversarial_claims.csv`, `final_synthetic_10k.csv`.
+`unlabelled_practice_cases.csv`, `adversarial_claims.csv`. The synthetic file `final_synthetic_10k.csv` is not shipped:
+`run_checks.py` regenerates it first with `gen_synthetic.py` (10,000 claims, seed 1).
 Design: `DESIGN.md`. Architecture for the team: `Taktile_Architecture.pdf`.
 
 ## Constraints
@@ -51,7 +52,7 @@ No code copied from any other repository. No organiser data beyond the 14 dev ca
 | Hash-chained decision log, tamper detection, policy diff | BUILT + TESTED | `test_history.py` pinpoints an edited line |
 | JSON API for the UI (`server.py`, contract in `API.md`) | BUILT + TESTED | Real-socket tests in `test_server.py`; malformed input returns 400 |
 | Document fact check (documents propose, never decide) | DEMONSTRATION | Constructed cases in `test_doc_facts.py`; no accuracy claim |
-| Business saving per policy change (`business_model.py --policy`) | BUILT (inputs ASSUMED) | Reproduces EUR 70,122 for the EUR 1,200 test change |
+| Business saving per policy change (`business_model.py --policy`) | BUILT (inputs ASSUMED) | EUR 69,722 for the EUR 1,200 test change, from the seeded generator (seed 1); synthetic data is regenerated, not shipped |
 | Blinded labelling and agreement statistics | BUILT, awaiting a labeller | `agreement.py`, `test_agreement.py`; no numbers yet |
 | Exhaustive check of 87,480 allowed field combinations | BUILT + TESTED | Engine agrees with the written-policy oracle on all |
 | Mutation checks on new code | DONE | Each deliberate break is caught by a test |
