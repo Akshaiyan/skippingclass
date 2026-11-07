@@ -252,9 +252,9 @@ function ClaimsPage() {
                       tabIndex={0}
                       onClick={() => open(c.case_id)}
                       onKeyDown={(e) => onRowKey(e, c.case_id)}
-                      className="group cursor-pointer transition-colors duration-150 hover:bg-surface focus-visible:bg-surface"
+                      className="group h-16 cursor-pointer transition-colors duration-150 hover:bg-surface focus-visible:bg-surface"
                     >
-                      <td className={cn("border-b border-l-2 border-border px-4 py-3", FLOW_BORDER[c.flow])}>
+                      <td className={cn("border-b border-l-2 border-border px-4 py-2.5", FLOW_BORDER[c.flow])}>
                         <div className="flex items-center gap-2">
                           <span className="whitespace-nowrap font-mono text-[13px] font-medium">{c.case_id}</span>
                           {c.ui_status === "reviewed" && (
