@@ -1,7 +1,8 @@
 # Roadmap
 
 ## Open
-- (none)
+- [ ] Policy: full-color current and expected flow pie charts by count.
+- [ ] Policy: current and expected handling cost per claim, with editable unsupplied flow rates.
 
 ## Done
 - [x] Policy: two-column rule overview with edit/delete and activate/deactivate controls.
