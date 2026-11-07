@@ -1,4 +1,4 @@
-import { Bar, BarChart, CartesianGrid, Cell, LabelList, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { getPolicyImpact } from "@/data/api";
 import { IMPACT_COPY, NOT_PROVIDED, RULE_BASED } from "@/copy";
 import { useStore } from "@/store";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const euro = (value: number) => new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" }).format(value);
+const flowSwatches = { green: "bg-flow-green", yellow: "bg-flow-yellow", red: "bg-flow-red" };
 
 export function PolicyImpact() {
   const { state, derived, dispatch } = useStore();
@@ -34,7 +35,6 @@ export function PolicyImpact() {
                     <PieChart>
                       <Pie data={data} dataKey="value" nameKey="name" outerRadius="85%" stroke="var(--background)" strokeWidth={2} isAnimationActive={false}>
                         {data.map((row) => <Cell key={row.flow} fill={`var(--${row.flow})`} />)}
-                        <LabelList dataKey="value" position="inside" fill="var(--foreground)" fontSize={13} formatter={(value: number) => value || ""} />
                       </Pie>
                       <Tooltip formatter={(value: number) => [`${value} claims`]} />
                     </PieChart>
@@ -47,7 +47,7 @@ export function PolicyImpact() {
         <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-5 gap-y-2 text-xs">
           <span />{versions.map((version) => <span key={version.key} className="text-muted-foreground">{version.label}</span>)}
           {impact.counts.map((row) => <div key={row.flow} className="contents">
-            <span className="flex items-center gap-2"><span className={`size-2.5 shrink-0 rounded-sm bg-flow-${row.flow}`} aria-hidden />{IMPACT_COPY.flows[row.flow]}</span>
+            <span className="flex items-center gap-2"><span className={`size-2.5 shrink-0 rounded-sm ${flowSwatches[row.flow]}`} aria-hidden />{IMPACT_COPY.flows[row.flow]}</span>
             <span className="tnum text-right font-mono">{row.live}</span><span className="tnum text-right font-mono">{row.expected}</span>
           </div>)}
         </div>

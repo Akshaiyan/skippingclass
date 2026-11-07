@@ -1,10 +1,11 @@
 # Roadmap
 
 ## Open
-- [ ] Policy: full-color current and expected flow pie charts by count.
-- [ ] Policy: current and expected handling cost per claim, with editable unsupplied flow rates.
+- (none)
 
 ## Done
+- [x] Policy: full-color live and expected flow pie charts by count.
+- [x] Policy: live and expected weighted handling cost per claim; rates start blank and are editable for the session.
 - [x] Policy: two-column rule overview with edit/delete and activate/deactivate controls.
 - [x] Policy: live current-versus-draft claim volume chart and compact sign-off.
 - [x] Policy: quote limit is now a typed number field (was a 1,000 / 1,200 / 1,500 choice).
