@@ -56,6 +56,7 @@ No code copied from any other repository. No organiser data beyond the 14 dev ca
 | Policy v2 from the change notice (limit EUR 1,200, EV battery trigger) | BUILT + TESTED | `test_v2.py`: 118,098 field combinations against a separate oracle, boundary cases, closed claims kept |
 | Before-and-after quality report for the change | BUILT + TESTED | `quality_report.py`: fixed, worsened and still-wrong counts for open claims; agreement is with the notice, not with hidden labels |
 | Evaluation practice: stratified split, Wilson and bootstrap intervals, leakage and shift checks | BUILT | `evaluate_v2.py`; the split is a consistency check because the rules are not fitted; no accuracy claim |
+| Model-labelled checks on the 12 practice claims (Claude and gpt-oss-120b, policy text only) | MODEL-LABELLED, same source text, not human, not independent | Both agree with the engine's v1 recommendation on 12 of 12, and with each other on 12 of 12; too few cases for a kappa; no human labeller yet |
 | Blinded labelling and agreement statistics | BUILT, awaiting a labeller | `agreement.py`, `test_agreement.py`; no numbers yet |
 | Exhaustive check of 87,480 allowed field combinations | BUILT + TESTED | Engine agrees with the written-policy oracle on all |
 | Mutation checks on new code | DONE | Each deliberate break is caught by a test |
