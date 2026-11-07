@@ -12,6 +12,14 @@
  * Indigo is reserved for Unknown (a blank fact that is never guessed).
  */
 
+/*
+ * Design system (one rhythm, no improvisation):
+ *  Spacing  4pt grid only: 4, 8, 12, 16, 20, 24, 32 (Tailwind 1, 2, 3, 4, 5, 6, 8). No half steps.
+ *  Type     12/16 caption, 14/20 body, 16/24 section, 26/32 page title, 40/48 hero. Families: Oxanium for
+ *           titles and big numbers, Inter for text, JetBrains Mono only for ids and hashes (data, not decoration).
+ *  Radius   8px controls and chips (md), 10px containers: cards, tables, dialogs, sheets (lg). Pills are full.
+ *  Shadow   two only: shadow-card (resting containers) and shadow-sheet (floating: dialogs, menus, sheets).
+ */
 @theme inline {
   --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
@@ -185,7 +193,7 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     font-size: 14px;
-    line-height: 22px;
+    line-height: 20px;
     -webkit-font-smoothing: antialiased;
   }
   :focus-visible {
@@ -211,18 +219,17 @@
 }
 
 @utility eyebrow {
+  /* Sentence case on purpose: all-caps labels read as template chrome and carry no information. */
   font-size: 12px;
   line-height: 16px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   font-weight: 500;
   color: var(--muted-foreground);
 }
 
 @utility hero-type {
   font-family: var(--font-display);
-  font-size: 44px;
-  line-height: 52px;
+  font-size: 40px;
+  line-height: 48px;
   font-weight: 500;
   letter-spacing: -0.01em;
 }
@@ -238,7 +245,7 @@
 @utility section-title {
   font-family: var(--font-display);
   font-size: 16px;
-  line-height: 22px;
+  line-height: 24px;
   font-weight: 600;
 }
 

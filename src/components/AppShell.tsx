@@ -32,7 +32,7 @@ function NavList({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: (
             aria-current={active ? "page" : undefined}
             className={cn(
               "group relative flex rounded-md text-sm transition-colors duration-150",
-              collapsed ? "flex-col items-center gap-1 px-1 py-2" : "items-center gap-2.5 px-2.5 py-2",
+              collapsed ? "flex-col items-center gap-1 px-1 py-2" : "items-center gap-3 px-3 py-2",
               active ? "bg-background font-medium text-foreground shadow-card" : "text-text-2 hover:bg-surface-2 hover:text-foreground",
             )}
           >
@@ -41,7 +41,7 @@ function NavList({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: (
             {n.to === "/claims" && redOpen > 0 && (
               <span
                 className={cn(
-                  "tnum inline-flex items-center gap-1 rounded-full bg-flow-red-tint px-1.5 text-xs font-medium text-foreground",
+                  "tnum inline-flex items-center gap-1 rounded-full bg-flow-red-tint px-2 text-xs font-medium text-foreground",
                   collapsed ? "absolute right-1 top-1" : "ml-auto",
                 )}
                 aria-label={`${redOpen} open human review claims`}
@@ -119,7 +119,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <aside
         className={cn(
           "sticky top-0 hidden h-dvh shrink-0 flex-col justify-between border-r border-border bg-sidebar transition-[width] duration-200 ease-out md:flex",
-          collapsed ? "w-16 px-1.5 py-4" : "w-60 px-3 py-4",
+          collapsed ? "w-16 px-2 py-4" : "w-60 px-3 py-4",
         )}
       >
         <div className="space-y-6">
@@ -134,7 +134,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             onClick={() => setCollapsed((c) => !c)}
             className={cn(
               "flex w-full rounded-md text-xs text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground",
-              collapsed ? "flex-col items-center gap-1 py-2" : "items-center gap-2 px-2.5 py-2",
+              collapsed ? "flex-col items-center gap-1 py-2" : "items-center gap-2 px-3 py-2",
             )}
           >
             {collapsed ? <PanelLeftOpen className="size-4" aria-hidden /> : <PanelLeftClose className="size-4" aria-hidden />}

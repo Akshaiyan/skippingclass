@@ -26,7 +26,7 @@ function QuickActions({ c, onPick, compact }: { c: DerivedClaim; onPick: (r: Rec
         <WhyDisabled disabled={locked} reason={LOCKED_TOOLTIP}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild disabled={locked}>
-              <Button variant="outline" size="sm" aria-label={CHANGE_REC} className="h-8 whitespace-nowrap px-2.5 text-xs" disabled={locked}>
+              <Button variant="outline" size="sm" aria-label={CHANGE_REC} className="h-8 whitespace-nowrap px-3 text-xs" disabled={locked}>
                 {compact ? "Change" : CHANGE_REC} <ChevronDown aria-hidden />
               </Button>
             </DropdownMenuTrigger>
@@ -112,7 +112,7 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
           />
         </label>
         {!hideFlowFilter && (
-          <div role="radiogroup" aria-label="Flow" className="inline-flex flex-wrap rounded-lg border border-border bg-surface p-0.5">
+          <div role="radiogroup" aria-label="Flow" className="inline-flex flex-wrap rounded-lg border border-border bg-surface p-1">
             {(["all", "red", "yellow", "green"] as FlowFilter[]).map((f) => (
               <button
                 key={f}
@@ -120,7 +120,7 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
                 aria-checked={flow === f}
                 onClick={() => setFlow(f)}
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors duration-(--dur-fast)",
+                  "inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors duration-(--dur-fast)",
                   flow === f ? "bg-background text-foreground shadow-card" : "text-text-2 hover:text-foreground",
                 )}
               >
@@ -131,7 +131,7 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
             ))}
           </div>
         )}
-        <div role="radiogroup" aria-label="Status" className="inline-flex rounded-lg border border-border bg-surface p-0.5">
+        <div role="radiogroup" aria-label="Status" className="inline-flex rounded-lg border border-border bg-surface p-1">
           {(["open", "closed", "all"] as StatusFilter[]).map((s) => (
             <button
               key={s}
@@ -139,7 +139,7 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
               aria-checked={status === s}
               onClick={() => setStatus(s)}
               className={cn(
-                "rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-colors duration-(--dur-fast)",
+                "rounded-md px-3 py-2 text-xs font-medium capitalize transition-colors duration-(--dur-fast)",
                 status === s ? "bg-background text-foreground shadow-card" : "text-text-2 hover:text-foreground",
               )}
             >
@@ -155,7 +155,7 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
       {chips.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           {chips.map((c) => (
-            <button key={c.label} onClick={c.clear} className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs hover:border-border-strong">
+            <button key={c.label} onClick={c.clear} className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1 text-xs hover:border-border-strong">
               {c.label} <X className="size-3" aria-hidden /> <span className="sr-only">Remove filter</span>
             </button>
           ))}
@@ -224,9 +224,9 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
                       className="group cursor-pointer transition-colors duration-(--dur-fast) hover:bg-surface focus-visible:bg-surface"
                     >
                       <td className={cn("border-b border-l-2 border-border px-4 py-3 align-top", FLOW_BORDER[c.flow])}>
-                        <div className="flex flex-col items-start gap-1.5">
-                          <span className="whitespace-nowrap font-mono text-[13px] font-medium">{c.case_id}</span>
-                          <div className="flex flex-wrap items-center gap-1.5">
+                        <div className="flex flex-col items-start gap-2">
+                          <span className="whitespace-nowrap font-mono text-sm font-medium">{c.case_id}</span>
+                          <div className="flex flex-wrap items-center gap-2">
                             <StatusChip status={c.case_status} />
                             {c.ui_status === "reviewed" && (
                               <Chip><Check className="size-3" aria-hidden /> Reviewed</Chip>

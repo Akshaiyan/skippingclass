@@ -86,15 +86,32 @@ function LogPage() {
         <span className="text-xs text-muted-foreground">{LATEST_FIRST}</span>
       </div>
 
-      {rows.length === 0 ? (
-        <div className="card-panel py-16 text-center text-sm text-muted-foreground">No records match these filters.</div>
+      {state.source === "connecting" && state.log.length === 0 ? (
+        <div className="space-y-2" role="status" aria-label="Loading the decision log">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="card-panel h-12 animate-pulse bg-surface-2" />
+          ))}
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="card-panel flex flex-col items-center gap-3 px-6 py-16 text-center">
+          <p className="text-sm text-text-2">
+            {state.log.length === 0
+              ? "No decisions are recorded yet. Overrides and policy decisions appear here as soon as someone records one."
+              : "No records match these filters."}
+          </p>
+          {state.log.length > 0 && (
+            <Button variant="outline" size="sm" onClick={() => { setType("all"); setQ(""); }}>
+              Clear filters
+            </Button>
+          )}
+        </div>
       ) : (
         <div className="card-panel overflow-x-auto">
           <table className="w-full min-w-[1100px] text-sm">
             <thead>
               <tr className="text-left">
                 {["", "Seq", "Timestamp (UTC)", "Type", "Case", "Actor", "From → to", "Reason code", "Note", "Policy"].map((h, i) => (
-                  <th key={i} className="eyebrow border-b border-border px-3 py-2.5 font-medium">{h}</th>
+                  <th key={i} className="eyebrow border-b border-border px-3 py-3 font-medium">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -111,27 +128,27 @@ function LogPage() {
                       onKeyDown={(k) => (k.key === "Enter" || k.key === " ") && (k.preventDefault(), setOpen(isOpen ? null : e.seq))}
                       className="cursor-pointer border-b border-border hover:bg-surface"
                     >
-                      <td className="px-3 py-2.5"><ChevronRight className={cn("size-3.5 text-muted-foreground transition-transform", isOpen && "rotate-90")} aria-hidden /></td>
-                      <td className="tnum px-3 py-2.5 font-mono text-xs">{e.seq}</td>
-                      <td className="whitespace-nowrap px-3 py-2.5 font-mono text-xs text-text-2">{e.timestamp.replace("T", " ").slice(0, 19)}</td>
-                      <td className="px-3 py-2.5"><Chip tone={e.type === "reviewer_override" || e.type.startsWith("policy_a") || e.type === "policy_rejected" ? "solid" : "neutral"}>{LOG_TYPE_LABEL[e.type]}</Chip></td>
-                      <td className="px-3 py-2.5 font-mono text-xs">{"case_id" in e ? e.case_id ?? "—" : "—"}</td>
-                      <td className="whitespace-nowrap px-3 py-2.5">{e.actor}</td>
-                      <td className="px-3 py-2.5">
+                      <td className="px-3 py-3"><ChevronRight className={cn("size-3.5 text-muted-foreground transition-transform", isOpen && "rotate-90")} aria-hidden /></td>
+                      <td className="tnum px-3 py-3 font-mono text-xs">{e.seq}</td>
+                      <td className="whitespace-nowrap px-3 py-3 font-mono text-xs text-text-2">{e.timestamp.replace("T", " ").slice(0, 19)}</td>
+                      <td className="px-3 py-3"><Chip tone={e.type === "reviewer_override" || e.type.startsWith("policy_a") || e.type === "policy_rejected" ? "solid" : "neutral"}>{LOG_TYPE_LABEL[e.type]}</Chip></td>
+                      <td className="px-3 py-3 font-mono text-xs">{"case_id" in e ? e.case_id ?? "—" : "—"}</td>
+                      <td className="whitespace-nowrap px-3 py-3">{e.actor}</td>
+                      <td className="px-3 py-3">
                         <span className="inline-flex flex-wrap items-center gap-1">
                           {"from_rec" in e && e.from_rec && <><FlowBadge rec={e.from_rec} size="sm" /><ArrowRight className="size-3 text-muted-foreground" aria-label="to" /></>}
                           {"to_rec" in e && e.to_rec ? <FlowBadge rec={e.to_rec} size="sm" /> : <span className="text-muted-foreground">—</span>}
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 font-mono text-xs">{"reason_code" in e ? e.reason_code : "—"}</td>
-                      <td className="max-w-[240px] truncate px-3 py-2.5 text-text-2">{note ?? "—"}</td>
-                      <td className="px-3 py-2.5"><PolicyStamp version={e.policy_version} hash={e.policy_hash} /></td>
+                      <td className="px-3 py-3 font-mono text-xs">{"reason_code" in e ? e.reason_code : "—"}</td>
+                      <td className="max-w-[240px] truncate px-3 py-3 text-text-2">{note ?? "—"}</td>
+                      <td className="px-3 py-3"><PolicyStamp version={e.policy_version} hash={e.policy_hash} /></td>
                     </tr>
                     {isOpen && (
                       <tr className="border-b border-border bg-surface">
                         <td colSpan={10} className="px-6 py-4">
                           <div className="flex items-start justify-between gap-4">
-                            <pre className="overflow-x-auto font-mono text-[12px] leading-5 text-text-2">{JSON.stringify(e, null, 2)}</pre>
+                            <pre className="overflow-x-auto font-mono text-xs leading-5 text-text-2">{JSON.stringify(e, null, 2)}</pre>
                             <CopyJson text={JSON.stringify(e, null, 2)} />
                           </div>
                         </td>

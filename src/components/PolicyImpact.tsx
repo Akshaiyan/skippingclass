@@ -17,7 +17,7 @@ export function PolicyImpact() {
   return (
     <div className="space-y-6">
       <header>
-        <h2 id="impact-title" className="text-lg font-semibold">{IMPACT_COPY.title}</h2>
+        <h2 id="impact-title" className="text-base font-semibold">{IMPACT_COPY.title}</h2>
         <p className="mt-1 text-xs text-muted-foreground">{IMPACT_COPY.subtitle}</p>
       </header>
       <section className="border-b border-border pb-6" aria-labelledby="volume-title">
@@ -48,7 +48,7 @@ export function PolicyImpact() {
         <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 gap-y-2 text-xs" aria-live="polite">
           <span />{versions.map((version) => <span key={version.key} className="text-muted-foreground">{version.label}</span>)}<span className="text-muted-foreground">{IMPACT_COPY.delta}</span>
           {impact.counts.map((row) => <div key={row.flow} className="contents">
-            <span className="flex items-center gap-2"><span className={`size-2.5 shrink-0 rounded-sm ${flowSwatches[row.flow]}`} aria-hidden />{IMPACT_COPY.flows[row.flow]}</span>
+            <span className="flex items-center gap-2"><span className={`size-2.5 shrink-0 rounded-md ${flowSwatches[row.flow]}`} aria-hidden />{IMPACT_COPY.flows[row.flow]}</span>
             <span className="tnum text-right font-mono">{row.live}</span><span key={`${row.flow}-${row.expected}`} className="impact-change tnum text-right font-mono">{row.expected}</span>
             <span key={`${row.flow}-delta-${row.expected}`} className="impact-change tnum text-right font-mono">{row.expected - row.live > 0 ? "+" : ""}{row.expected - row.live}</span>
           </div>)}
@@ -59,7 +59,7 @@ export function PolicyImpact() {
         <div className="mt-4 grid grid-cols-2 gap-4">
           {versions.map((version) => <div key={version.key} className="min-w-0">
             <div className="text-xs text-muted-foreground">{version.label}</div>
-            <div key={`${version.key}-${version.cost}`} className="impact-change tnum mt-1 text-lg font-semibold" aria-live="polite">{version.cost === null ? <span className="text-xs font-normal text-muted-foreground">{NOT_PROVIDED}</span> : <>{euro(version.cost)}<span className="ml-2 font-mono text-[10px] font-normal text-muted-foreground">{IMPACT_COPY.assumed}</span></>}</div>
+            <div key={`${version.key}-${version.cost}`} className="impact-change tnum mt-1 text-base font-semibold" aria-live="polite">{version.cost === null ? <span className="text-xs font-normal text-muted-foreground">{NOT_PROVIDED}</span> : <>{euro(version.cost)}<span className="ml-2 font-mono text-xs font-normal text-muted-foreground">{IMPACT_COPY.assumed}</span></>}</div>
           </div>)}
         </div>
         <div className="mt-3 h-[180px]" role="img" aria-label={versions.map((version) => `${version.label} handling cost per claim: ${version.cost === null ? NOT_PROVIDED : euro(version.cost)}`).join(". ")}>

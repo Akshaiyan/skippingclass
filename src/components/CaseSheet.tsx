@@ -172,7 +172,7 @@ export function CaseSheet({
 
         <div className="flex-1 space-y-8 overflow-y-auto px-6 py-6">
           {locked && (
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text-2">
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-3 text-sm text-text-2">
               <Lock className="size-4 shrink-0" aria-hidden /> {LOCKED_BANNER}
             </div>
           )}
@@ -191,9 +191,9 @@ export function CaseSheet({
           ) : (
             <>
               <section aria-labelledby="case-overview-title">
-                <h3 id="case-overview-title" className="text-lg font-semibold">{REVIEW_COPY.why}</h3>
+                <h3 id="case-overview-title" className="text-base font-semibold">{REVIEW_COPY.why}</h3>
                 <ul className="mt-4 space-y-3 text-sm text-text-2">
-                  {notPassed.length ? notPassed.map((check) => <li key={check.id} className="flex items-start gap-2"><span className="mt-0.5 shrink-0"><TriGlyph result={check.result} outcome={check.outcome} /></span><span>{check.description}{check.result === "unknown" ? " · not provided, not assumed" : ""}</span></li>) : <li>{claim.explanation}</li>}
+                  {notPassed.length ? notPassed.map((check) => <li key={check.id} className="flex items-start gap-2"><span className="mt-1 shrink-0"><TriGlyph result={check.result} outcome={check.outcome} /></span><span>{check.description}{check.result === "unknown" ? " · not provided, not assumed" : ""}</span></li>) : <li>{claim.explanation}</li>}
                 </ul>
                 {!locked && claim.needs_recheck && <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-3 text-xs text-text-2">Needs recheck · Expected <FlowBadge rec={claim.recommendation_v2} size="sm" /></div>}
               </section>
@@ -218,13 +218,13 @@ export function CaseSheet({
                         c.result === "unknown" ? "border-unknown/30 bg-unknown-tint" : c.result === "true" ? "border-border-strong bg-background" : "border-border bg-background",
                       )}
                     >
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                         <span className="w-20 shrink-0"><TriGlyph result={c.result} outcome={c.outcome} /></span>
                         <span className="font-mono text-xs text-foreground">{c.id}</span>
                         <span className="text-sm text-text-2">{c.description}</span>
                         <span className="ml-auto"><FlowBadge rec={c.outcome} size="sm" /></span>
                       </div>
-                      <div className={cn("mt-2 rounded-md px-2 py-1.5 font-mono text-[12px] leading-5 text-text-2", c.result === "unknown" ? "bg-background/70" : "bg-surface")}>{c.evidence}</div>
+                      <div className={cn("mt-2 rounded-md px-2 py-2 font-mono text-xs leading-5 text-text-2", c.result === "unknown" ? "bg-background/70" : "bg-surface")}>{c.evidence}</div>
                     </li>
                   ))}
                 </ul>

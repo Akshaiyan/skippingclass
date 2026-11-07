@@ -164,25 +164,25 @@ export function OverrideFlow({ claim, initialTarget, onCancel, onDone }: { claim
         <legend className="eyebrow mb-2">3 · Note and reviewer</legend>
         <div>
           <Label htmlFor="ov-note">Note</Label>
-          <Textarea id="ov-note" className="mt-1.5" rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="What should the next person know?" />
+          <Textarea id="ov-note" className="mt-2" rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="What should the next person know?" />
           {(touched || note.length > 0) && errors.note && <Refusal>{errors.note}</Refusal>}
         </div>
         <div>
           <Label htmlFor="ov-actor">Reviewer</Label>
-          <Input id="ov-actor" className="mt-1.5" value={actor} onChange={(e) => setActor(e.target.value)} />
+          <Input id="ov-actor" className="mt-2" value={actor} onChange={(e) => setActor(e.target.value)} />
           {errors.actor && (touched || actor.length === 0) && <Refusal>{errors.actor}</Refusal>}
         </div>
       </fieldset>
 
       <div className="rounded-lg border border-border bg-surface p-4">
         <div className="eyebrow mb-2">This will be recorded</div>
-        <pre className="overflow-x-auto font-mono text-[12px] leading-5 text-text-2">{JSON.stringify(preview, null, 2)}</pre>
+        <pre className="overflow-x-auto font-mono text-xs leading-5 text-text-2">{JSON.stringify(preview, null, 2)}</pre>
       </div>
 
       <div className="flex flex-wrap gap-2">
         <WhyDisabled disabled={!valid} reason={Object.values(errors)[0]}>
           {sendError && <Refusal>{sendError}</Refusal>}
-          <Button onClick={submit} disabled={!valid || sending || claim.case_status === "closed"}>{sending ? "Recording…" : "Record override"}</Button>
+          <Button onClick={submit} loading={sending} disabled={!valid || claim.case_status === "closed"}>{sending ? "Recording…" : "Record override"}</Button>
         </WhyDisabled>
         <Button variant="ghost" onClick={onCancel}>Cancel</Button>
       </div>

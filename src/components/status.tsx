@@ -20,9 +20,9 @@ export function FlowBadge({ rec, size = "md" }: { rec: Rec; size?: "sm" | "md" }
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full font-medium text-foreground",
+        "inline-flex items-center gap-2 whitespace-nowrap rounded-full font-medium text-foreground",
         FLOW_TINT[flow],
-        size === "sm" ? "px-2 py-0.5 text-xs leading-4" : "px-2.5 py-0.5 text-xs leading-5",
+        size === "sm" ? "px-2 py-1 text-xs leading-4" : "px-3 py-1 text-xs leading-5",
       )}
     >
       <Dot flow={flow} className={size === "sm" ? "size-1.5" : undefined} />
@@ -40,7 +40,7 @@ export function Chip({ children, className, tone = "neutral" }: { children: Reac
     solid: "bg-primary text-primary-foreground",
   };
   return (
-    <span className={cn("inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium leading-4", tones[tone], className)}>
+    <span className={cn("inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium leading-4", tones[tone], className)}>
       {children}
     </span>
   );
@@ -48,7 +48,7 @@ export function Chip({ children, className, tone = "neutral" }: { children: Reac
 
 export function PolicyStamp({ version, hash, className }: { version: string; hash: string; className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-surface px-2 py-0.5 font-mono text-xs leading-4 text-text-2", className)}>
+    <span className={cn("inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-border bg-surface px-2 py-1 font-mono text-xs leading-4 text-text-2", className)}>
       <span className="font-semibold text-foreground">{version}</span>
       <span className="text-faint">·</span>
       {hash}
@@ -81,7 +81,7 @@ export function RuleChips({ rule }: { rule: string }) {
         <span
           key={p}
           className={cn(
-            "break-all rounded-md px-1.5 py-0.5 font-mono text-xs leading-4",
+            "break-all rounded-md px-2 py-1 font-mono text-xs leading-4",
             p.startsWith("ABSENT") ? "bg-unknown-tint text-unknown" : p === "R3.routine" ? "bg-surface-2 text-muted-foreground" : "border border-border bg-background text-foreground",
           )}
         >
@@ -98,7 +98,7 @@ export function UnknownMarker({ className }: { className?: string }) {
 
 export function NotProvided() {
   return (
-    <span className="inline-flex items-center gap-1.5 italic text-muted-foreground">
+    <span className="inline-flex items-center gap-2 italic text-muted-foreground">
       <UnknownMarker /> {NOT_PROVIDED}
     </span>
   );
@@ -107,19 +107,19 @@ export function NotProvided() {
 export function TriGlyph({ result, outcome }: { result: Tri; outcome: Rec }) {
   if (result === "true")
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground">
+      <span className="inline-flex items-center gap-2 text-xs font-medium text-foreground">
         <Dot flow={FLOW_OF[outcome]} /> Fired
       </span>
     );
   if (result === "unknown")
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-unknown-tint px-1.5 py-0.5 text-xs font-medium text-unknown">
+      <span className="inline-flex items-center gap-2 rounded-full bg-unknown-tint px-2 py-1 text-xs font-medium text-unknown">
         <span aria-hidden className="grid size-3.5 place-items-center rounded-full border border-dashed border-unknown text-xs font-bold leading-none">?</span>
         Unknown
       </span>
     );
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+    <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
       <Check className="size-3.5" aria-hidden /> Passed
     </span>
   );
@@ -127,7 +127,7 @@ export function TriGlyph({ result, outcome }: { result: Tri; outcome: Rec }) {
 
 export function RecheckChip({ from, to }: { from: Rec; to: Rec }) {
   return (
-    <span className="inline-flex flex-wrap items-center gap-1.5">
+    <span className="inline-flex flex-wrap items-center gap-2">
       <Chip tone="outline">
         <RefreshCw className="size-3" aria-hidden /> Needs recheck
       </Chip>
@@ -194,7 +194,7 @@ export function SectionTitle({ title, subtitle, right }: { title: string; subtit
 
 export function Refusal({ children }: { children: ReactNode }) {
   return (
-    <p role="alert" aria-live="polite" className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-destructive">
+    <p role="alert" aria-live="polite" className="mt-2 flex items-center gap-2 text-xs font-medium text-destructive">
       <AlertCircle className="size-3.5 shrink-0" aria-hidden />
       {children}
     </p>

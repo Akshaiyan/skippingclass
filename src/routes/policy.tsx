@@ -49,17 +49,17 @@ function RuleDialog({ rule, open, onClose, onSave, existingIds }: { rule: Policy
         <div className="space-y-4">
           <div>
             <Label htmlFor="r-desc">Rule name</Label>
-            <Input id="r-desc" className="mt-1.5" value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
+            <Input id="r-desc" className="mt-2" value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label htmlFor="r-id">Rule id</Label>
-              <Input id="r-id" className="mt-1.5 font-mono" value={draft.id} disabled={fixed} onChange={(e) => setDraft({ ...draft, id: e.target.value })} />
+              <Input id="r-id" className="mt-2 font-mono" value={draft.id} disabled={fixed} onChange={(e) => setDraft({ ...draft, id: e.target.value })} />
               {idErr && <Refusal>{idErr}</Refusal>}
             </div>
             <div>
               <Label htmlFor="r-out">Outcome</Label>
-              <select id="r-out" disabled={fixed} className="mt-1.5 h-9 w-full rounded-md border border-border bg-background px-2 text-sm" value={draft.outcome} onChange={(e) => setDraft({ ...draft, outcome: e.target.value as Rec })}>
+              <select id="r-out" disabled={fixed} className="mt-2 h-9 w-full rounded-md border border-border bg-background px-2 text-sm" value={draft.outcome} onChange={(e) => setDraft({ ...draft, outcome: e.target.value as Rec })}>
                 {REC_ORDER.map((r) => (
                   <option key={r} value={r}>{REC_LABEL[r]}</option>
                 ))}
@@ -68,7 +68,7 @@ function RuleDialog({ rule, open, onClose, onSave, existingIds }: { rule: Policy
           </div>
           <div>
             <Label>Condition</Label>
-            <div className="mt-1.5">
+            <div className="mt-2">
               {fixed ? (
                 <p className="rounded-md bg-surface p-3 text-sm text-muted-foreground">Applies when no other rule decides the claim.</p>
               ) : (
@@ -101,6 +101,7 @@ function PolicyPage() {
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [signed, setSigned] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [posting, setPosting] = useState<PolicyDecision["type"] | null>(null);
   const [change, setChange] = useState<ChangeSummary | null>(null);
   // In live mode the engine checks only the released v2 file. A browser draft that differs cannot be released.
   const draftIsEngineV2 = state.source !== "live" || JSON.stringify(rules) === state.engineV2;
@@ -144,6 +145,7 @@ function PolicyPage() {
     }
     // Live: the engine records the decision and enforces the sign-off. The screen changes only after it is recorded.
     setSendError(null);
+    setPosting(type);
     postPolicyDecision({
       decision: type === "policy_approved" ? "approved" : "rejected",
       actor: approver.trim(),
@@ -157,7 +159,8 @@ function PolicyPage() {
         dispatch({ type: "policyDecision", record });
         setDecision(record);
       })
-      .catch((e: unknown) => setSendError(e instanceof Error ? e.message : "The decision was not recorded."));
+      .catch((e: unknown) => setSendError(e instanceof Error ? e.message : "The decision was not recorded."))
+      .finally(() => setPosting(null));
   };
 
   const quoteRule = rules.find((r) => r.id === "R1.quote_over_limit");
@@ -193,7 +196,7 @@ function PolicyPage() {
               <h2 id="rules-title" className="section-title">Rules, in order</h2>
               <p className="tnum text-xs text-muted-foreground">{activeCount} of {visibleRules.length} active</p>
             </div>
-            <div className="flex gap-1.5">
+            <div className="flex gap-2">
               <Button variant="ghost" size="sm" onClick={() => dispatch({ type: "resetDraft" })}>
                 <RotateCcw aria-hidden /> Reset
               </Button>
@@ -228,10 +231,10 @@ function PolicyPage() {
               return (
                 <li key={r.id} className={cn("px-2 py-4 transition-colors", (!active || st === "changed") && "bg-surface", st === "changed" && "border-l-2 border-l-foreground")}>
                   <div className="flex items-start gap-3">
-                    <span className="tnum mt-0.5 w-5 shrink-0 font-mono text-xs text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>
+                    <span className="tnum mt-1 w-5 shrink-0 font-mono text-xs text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>
                     <div className="min-w-0 flex-1">
                       <h3 className={cn("text-sm font-medium leading-5", !active && "text-muted-foreground")}>{r.description || "Untitled rule"}</h3>
-                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
                         <FlowBadge rec={r.outcome} size="sm" />
                         {st === "changed" && <Chip tone="solid">Changed</Chip>}
                         {st === "added" && <Chip tone="solid">Added</Chip>}
@@ -247,7 +250,7 @@ function PolicyPage() {
                       />
                     </div>
                   </div>
-                  <div className="mt-3 flex justify-end gap-1.5 border-t border-border pt-3">
+                  <div className="mt-3 flex justify-end gap-2 border-t border-border pt-3">
                     <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setEditing({ rule: r, key: Date.now() })}>
                       <Pencil aria-hidden /> Edit
                     </Button>
@@ -295,7 +298,7 @@ function PolicyPage() {
                 <ul className="mt-3 space-y-2 rounded-lg bg-surface p-3">
                   {checks.map((c) => (
                     <li key={c.id} className="flex items-start gap-2">
-                      {c.pass ? <Check className="mt-0.5 size-3.5 shrink-0 text-foreground" aria-hidden /> : <X className="mt-0.5 size-3.5 shrink-0 text-destructive" aria-hidden />}
+                      {c.pass ? <Check className="mt-1 size-3.5 shrink-0 text-foreground" aria-hidden /> : <X className="mt-1 size-3.5 shrink-0 text-destructive" aria-hidden />}
                       <span>{c.label} <span className={cn("ml-1", c.pass ? "text-muted-foreground" : "text-destructive")}>{c.pass ? "Passing" : c.message ?? "Failing"}</span></span>
                     </li>
                   ))}
@@ -305,11 +308,11 @@ function PolicyPage() {
             <div className="grid gap-3 md:grid-cols-2">
               <div>
                 <Label htmlFor="g-author">Author</Label>
-                <Input id="g-author" className="mt-1.5" value={state.reviewer} readOnly disabled />
+                <Input id="g-author" className="mt-2" value={state.reviewer} readOnly disabled />
               </div>
               <div>
                 <Label htmlFor="g-appr">Approver</Label>
-                <Input id="g-appr" className="mt-1.5" value={approver} onChange={(e) => setApprover(e.target.value)} placeholder="A different person" />
+                <Input id="g-appr" className="mt-2" value={approver} onChange={(e) => setApprover(e.target.value)} placeholder="A different person" />
                 {(touched || approver) && gate.approverErr && <Refusal>{gate.approverErr}</Refusal>}
                 {needsSignoff && (
                   <label className="mt-3 flex items-start gap-2 text-sm">
@@ -325,17 +328,17 @@ function PolicyPage() {
             </div>
             <div>
               <Label htmlFor="g-reason">{towardRoutine ? "Named sign-off for flips toward routine" : "Sign-off reason"}</Label>
-              <Textarea id="g-reason" className="mt-1.5" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why this draft should or should not go live" />
+              <Textarea id="g-reason" className="mt-2" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why this draft should or should not go live" />
               {touched && gate.reasonErr && <Refusal>{gate.reasonErr}</Refusal>}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <WhyDisabled disabled={!gate.canRelease} reason={releaseReason}>
-                <Button disabled={!canRelease} onClick={() => setSummaryOpen(true)}>
-                  <Rocket aria-hidden /> {RELEASE_V2}
+                <Button loading={posting === "policy_approved"} disabled={!canRelease} onClick={() => setSummaryOpen(true)}>
+                  {posting !== "policy_approved" && <Rocket aria-hidden />} {RELEASE_V2}
                 </Button>
               </WhyDisabled>
               <WhyDisabled disabled={!gate.canHold} reason={gate.approverErr ?? gate.reasonErr ?? undefined}>
-                <Button variant="outline" disabled={!gate.canHold} onClick={() => decide("policy_rejected")}>
+                <Button variant="outline" loading={posting === "policy_rejected"} disabled={!gate.canHold} onClick={() => decide("policy_rejected")}>
                   <Pause aria-hidden /> {HOLD_V2}
                 </Button>
               </WhyDisabled>

@@ -26,7 +26,7 @@ const HORIZONS: { value: Horizon; label: string; days: number | null; caption: s
   { value: "weekly", label: "Weekly", days: 7, caption: "Last 7 days" },
   { value: "monthly", label: "Monthly", days: 30, caption: "Last 30 days" },
   { value: "yearly", label: "Yearly", days: 365, caption: "Last 12 months" },
-  { value: "all", label: "All time", days: null, caption: "All time" },
+  { value: "all", label: "All time", days: null, caption: "Every claim on file" },
 ];
 
 function ClaimsOverview({ flow, setFlow }: { flow: FlowFilter; setFlow: (f: FlowFilter) => void }) {
@@ -77,7 +77,7 @@ function ClaimsOverview({ flow, setFlow }: { flow: FlowFilter; setFlow: (f: Flow
         </div>
       </div>
 
-      <div className="mt-6 flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full bg-surface-2" role="img" aria-label={segs.map((s) => `${s.label} ${s.n} of ${total}`).join(", ")}>
+      <div className="mt-6 flex h-2.5 w-full gap-1 overflow-hidden rounded-full bg-surface-2" role="img" aria-label={segs.map((s) => `${s.label} ${s.n} of ${total}`).join(", ")}>
         {total > 0 && segs.filter((s) => s.n > 0).map((s) => (
           <div key={s.flow} className={`h-full ${FLOW_DOT[s.flow]}`} style={{ width: `${(s.n / total) * 100}%` }} />
         ))}
@@ -115,10 +115,15 @@ function ClaimsOverview({ flow, setFlow }: { flow: FlowFilter; setFlow: (f: Flow
 }
 
 function Dashboard() {
+  const { state } = useStore();
   const [flow, setFlow] = useState<FlowFilter>("all");
   return (
     <div className="space-y-12">
-      <ClaimsOverview flow={flow} setFlow={setFlow} />
+      {state.source === "connecting" && state.claims.length === 0 ? (
+        <div className="card-panel h-[264px] animate-pulse bg-surface-2" role="status" aria-label="Loading claims overview" />
+      ) : (
+        <ClaimsOverview flow={flow} setFlow={setFlow} />
+      )}
       <ClaimsList flow={flow} setFlow={setFlow} hideFlowFilter heading={<SectionTitle title="Claims" />} />
     </div>
   );

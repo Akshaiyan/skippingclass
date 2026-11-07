@@ -42,7 +42,7 @@ function Leaf({ c, onChange }: { c: Extract<Condition, { field: string }>; onCha
   const sameTypeFields = FIELDS.filter((f) => f.type === type && f.name !== c.field);
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
+    <div className="flex flex-wrap items-center gap-2">
       <select
         aria-label="Field"
         className={cn(sel, "font-mono")}
@@ -127,7 +127,7 @@ function Leaf({ c, onChange }: { c: Extract<Condition, { field: string }>; onCha
                       const next = on ? arr.filter((x) => x !== o) : [...arr, o];
                       setRight(next.length ? { kind: "value", value: next } : undefined);
                     }}
-                    className={cn("rounded-full border px-2 py-0.5 font-mono text-xs", on ? "border-foreground bg-primary text-primary-foreground" : "border-border hover:border-border-strong")}
+                    className={cn("rounded-full border px-2 py-1 font-mono text-xs", on ? "border-foreground bg-primary text-primary-foreground" : "border-border hover:border-border-strong")}
                   >
                     {o}
                   </button>
@@ -205,7 +205,7 @@ export function ConditionBuilder({ value, onChange, onRemove, depth = 0 }: { val
               }}
             />
           ))}
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             <Button
               type="button"
               variant="outline"

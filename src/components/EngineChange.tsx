@@ -57,7 +57,7 @@ export function EngineChange() {
                   <span>
                     {REC_LABEL[f.from as Rec]} → <strong>{REC_LABEL[f.to as Rec]}</strong>
                   </span>
-                  <span className="font-mono text-[12px] text-muted-foreground">{f.rule_to}</span>
+                  <span className="font-mono text-xs text-muted-foreground">{f.rule_to}</span>
                 </li>
               ))}
             </ul>
