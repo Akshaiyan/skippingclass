@@ -96,7 +96,7 @@ export function CaseSheet({
   onOpenChange: (o: boolean) => void;
   initialOverride?: Rec | "open";
 }) {
-  const { dispatch, state } = useStore();
+  const { dispatch } = useStore();
   const [mode, setMode] = useState<"view" | "override">("view");
   const [target, setTarget] = useState<Rec | undefined>();
   const [infoOpen, setInfoOpen] = useState(false);
@@ -118,7 +118,7 @@ export function CaseSheet({
   const sorted = [...claim.checklist].sort((a, b) => order[a.result] - order[b.result]);
   const passed = sorted.filter((c) => c.result === "false");
   const notPassed = sorted.filter((c) => c.result !== "false");
-  const sug = yellow ? suggestion(claim, state.quoteLimit === 1500 ? 1500 : 1500) : null;
+  const sug = yellow ? suggestion(claim, 1500) : null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
