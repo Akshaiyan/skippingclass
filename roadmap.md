@@ -1,7 +1,8 @@
 # Roadmap
 
 ## Open
-- (none)
+- [ ] Policy: two-column rule overview with edit/delete and activate/deactivate controls.
+- [ ] Policy: live current-versus-draft claim volume chart and compact sign-off.
 
 ## Done
 - [x] Policy: quote limit is now a typed number field (was a 1,000 / 1,200 / 1,500 choice).

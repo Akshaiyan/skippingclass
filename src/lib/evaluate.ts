@@ -122,7 +122,7 @@ export function evaluate(rules: PolicyRule[], facts: Facts): Evaluation {
   const checklist: RuleCheck[] = [];
   const absent: string[] = [];
   for (const rule of rules) {
-    if (rule.condition === null) continue;
+    if (rule.active === false || rule.condition === null) continue;
     const out = evalCondition(rule.condition, facts);
     if (out.result === "unknown") out.blanks.forEach((b) => !absent.includes(b) && absent.push(b));
     checklist.push({
@@ -133,7 +133,7 @@ export function evaluate(rules: PolicyRule[], facts: Facts): Evaluation {
       evidence: out.evidence.join("; "),
     });
   }
-  const fallback = rules.find((r) => r.condition === null);
+  const fallback = rules.find((r) => r.active !== false && r.condition === null);
   const firedRed = checklist.filter((c) => c.outcome === "human_review" && c.result === "true");
   const firedInfo = checklist.filter((c) => c.outcome === "request_information" && c.result === "true");
   const anyUnknown = checklist.some((c) => c.result === "unknown");
