@@ -23,5 +23,10 @@ export function policyImpact(claims: DerivedClaim[], rates?: Partial<HandlingRat
     }
     return total / open.length;
   };
-  return { counts, total: open.length, liveCost: average("live"), expectedCost: average("expected") };
+  return {
+    counts,
+    total: open.length,
+    liveCost: average("live"),
+    expectedCost: average("expected"),
+  };
 }

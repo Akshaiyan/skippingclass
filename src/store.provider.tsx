@@ -19,17 +19,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (!cancelled) dispatch({ type: "live", snapshot });
       })
       .catch((e: unknown) => {
-        if (!cancelled) dispatch({ type: "sourceError", message: e instanceof Error ? e.message : "Unknown error" });
+        if (!cancelled)
+          dispatch({
+            type: "sourceError",
+            message: e instanceof Error ? e.message : "Unknown error",
+          });
       });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const derived = useMemo(() => deriveClaims(state.claims, state.draftRules), [state.claims, state.draftRules]);
+  const derived = useMemo(
+    () => deriveClaims(state.claims, state.draftRules),
+    [state.claims, state.draftRules],
+  );
   const draftHash = useMemo(() => hashRules(state.draftRules), [state.draftRules]);
   return (
-    <StoreCtx.Provider value={{ state, dispatch, derived, v1Rules: state.v1Rules, v1Hash: state.v1Hash, draftHash }}>
+    <StoreCtx.Provider
+      value={{ state, dispatch, derived, v1Rules: state.v1Rules, v1Hash: state.v1Hash, draftHash }}
+    >
       {children}
     </StoreCtx.Provider>
   );

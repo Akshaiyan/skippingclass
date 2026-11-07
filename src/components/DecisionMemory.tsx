@@ -10,14 +10,18 @@ type Hashed = LogEntry & { hash?: string; prev_hash?: string };
 export function DecisionMemory({ caseId }: { caseId: string }) {
   const { state } = useStore();
   const events = state.log
-    .filter((e): e is ReviewerOverride & Hashed => e.type === "reviewer_override" && e.case_id === caseId)
+    .filter(
+      (e): e is ReviewerOverride & Hashed => e.type === "reviewer_override" && e.case_id === caseId,
+    )
     .slice()
     .reverse();
 
   return (
     <section aria-labelledby="memory-title" className="space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 id="memory-title" className="section-title">Decision memory</h3>
+        <h3 id="memory-title" className="section-title">
+          Decision memory
+        </h3>
         <span className="tnum text-sm text-muted-foreground">
           {events.length} {events.length === 1 ? "decision" : "decisions"}
         </span>
@@ -27,7 +31,8 @@ export function DecisionMemory({ caseId }: { caseId: string }) {
         {state.source === "live" && state.integrity ? (
           state.integrity.intact ? (
             <span className="font-medium text-flow-green">
-              ✓ Log intact, checked at {new Date(state.integrity.checkedAt).toLocaleTimeString("en-GB")}
+              ✓ Log intact, checked at{" "}
+              {new Date(state.integrity.checkedAt).toLocaleTimeString("en-GB")}
             </span>
           ) : (
             <span className="font-medium text-flow-red">
@@ -35,7 +40,9 @@ export function DecisionMemory({ caseId }: { caseId: string }) {
             </span>
           )
         ) : (
-          <span className="text-muted-foreground">Demo data: decisions here are not written to the engine log.</span>
+          <span className="text-muted-foreground">
+            Demo data: decisions here are not written to the engine log.
+          </span>
         )}
       </p>
 
@@ -47,13 +54,18 @@ export function DecisionMemory({ caseId }: { caseId: string }) {
         <ol className="mt-4 space-y-4 border-l border-border pl-5">
           {events.map((e) => (
             <li key={e.seq} className="relative">
-              <span aria-hidden className="absolute -left-[26px] top-1.5 block size-2.5 rounded-full border-2 border-accent bg-background" />
+              <span
+                aria-hidden
+                className="absolute -left-[26px] top-1.5 block size-2.5 rounded-full border-2 border-accent bg-background"
+              />
               <p className="flex flex-wrap items-center gap-2 text-sm">
                 <strong>{e.actor}</strong>
                 <span className="text-muted-foreground">changed</span>
                 <span className="inline-flex items-center gap-2 whitespace-nowrap">
                   <FlowBadge rec={e.from_rec} size="sm" />
-                  <span aria-hidden className="text-muted-foreground">→</span>
+                  <span aria-hidden className="text-muted-foreground">
+                    →
+                  </span>
                   <FlowBadge rec={e.to_rec} size="sm" />
                 </span>
                 <span className="sr-only">
@@ -63,11 +75,16 @@ export function DecisionMemory({ caseId }: { caseId: string }) {
               <p className="mt-1 text-sm text-text-2">“{e.note}”</p>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <time dateTime={e.timestamp} className="tnum">
-                  {new Date(e.timestamp).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  {new Date(e.timestamp).toLocaleString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </time>
                 <Chip tone="outline">policy {e.policy_version}</Chip>
                 {e.hash && (
-                  <Chip tone="neutral" className="font-mono" >
+                  <Chip tone="neutral" className="font-mono">
                     <span title="Record fingerprint">#{e.hash.slice(0, 12)}</span>
                   </Chip>
                 )}

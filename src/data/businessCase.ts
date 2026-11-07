@@ -22,13 +22,58 @@ export const LABEL_HELP: Record<EvidenceLabel, string> = {
   "NOT MEASURED": "Not known yet. Shown so the gap is visible.",
 };
 
-export const ASSUMPTIONS: { assumption: string; value: string; label: EvidenceLabel; source: string }[] = [
-  { assumption: "Claims handler salary", value: "EUR 44,400 per year", label: "SOURCED", source: "StepStone salary data" },
-  { assumption: "Claims involving fraud indicators", value: "~10% of claims", label: "SOURCED", source: "GDV" },
-  { assumption: "Motor insurance contracts in Germany", value: "69.5M", label: "SOURCED", source: "GDV" },
-  { assumption: "Loaded cost per reviewer hour", value: "EUR 34", label: "DERIVED", source: "Salary ÷ 1,650 hours × 1.25 assumed overhead" },
-  { assumption: "Minutes per manual triage", value: "4 to 12", label: "ASSUMED", source: "Team estimate from reviewer interviews" },
-  { assumption: "Share of claims routed routine", value: "40% to 60%", label: "ASSUMED", source: "Team estimate, to be checked on pilot data" },
-  { assumption: "Recommendations replaying identically", value: "12 of 12", label: "MEASURED", source: "Decision log replay" },
-  { assumption: "Real error rate of routine decisions", value: "Unknown", label: "NOT MEASURED", source: "Needs audited outcomes" },
+export const ASSUMPTIONS: {
+  assumption: string;
+  value: string;
+  label: EvidenceLabel;
+  source: string;
+}[] = [
+  {
+    assumption: "Claims handler salary",
+    value: "EUR 44,400 per year",
+    label: "SOURCED",
+    source: "StepStone salary data",
+  },
+  {
+    assumption: "Claims involving fraud indicators",
+    value: "~10% of claims",
+    label: "SOURCED",
+    source: "GDV",
+  },
+  {
+    assumption: "Motor insurance contracts in Germany",
+    value: "69.5M",
+    label: "SOURCED",
+    source: "GDV",
+  },
+  {
+    assumption: "Loaded cost per reviewer hour",
+    value: "EUR 34",
+    label: "DERIVED",
+    source: "Salary ÷ 1,650 hours × 1.25 assumed overhead",
+  },
+  {
+    assumption: "Minutes per manual triage",
+    value: "4 to 12",
+    label: "ASSUMED",
+    source: "Team estimate from reviewer interviews",
+  },
+  {
+    assumption: "Share of claims routed routine",
+    value: "40% to 60%",
+    label: "ASSUMED",
+    source: "Team estimate, to be checked on pilot data",
+  },
+  {
+    assumption: "Recommendations replaying identically",
+    value: "12 of 12",
+    label: "MEASURED",
+    source: "Decision log replay",
+  },
+  {
+    assumption: "Real error rate of routine decisions",
+    value: "Unknown",
+    label: "NOT MEASURED",
+    source: "Needs audited outcomes",
+  },
 ];

@@ -16,6 +16,8 @@ export function appendLog<T extends Omit<LogEntry, "seq">>(log: LogEntry[], entr
   return [...log, { ...entry, seq } as LogEntry];
 }
 
-export const evaluate = (rules: PolicyRule[], facts: Facts): Evaluation => evaluateLocal(rules, facts);
+export const evaluate = (rules: PolicyRule[], facts: Facts): Evaluation =>
+  evaluateLocal(rules, facts);
 export const getHandlingRates = (): HandlingRates => ({ green: null, yellow: null, red: null });
-export const getPolicyImpact = (claims: DerivedClaim[], rates: HandlingRates) => policyImpact(claims, rates);
+export const getPolicyImpact = (claims: DerivedClaim[], rates: HandlingRates) =>
+  policyImpact(claims, rates);

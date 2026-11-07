@@ -7,12 +7,29 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { EvidenceLabel } from "@/data/businessCase";
 import { LABEL_HELP } from "@/data/businessCase";
 
-export const FLOW_DOT: Record<Flow, string> = { red: "bg-flow-red", yellow: "bg-flow-yellow", green: "bg-flow-green" };
-export const FLOW_TINT: Record<Flow, string> = { red: "bg-flow-red-tint", yellow: "bg-flow-yellow-tint", green: "bg-flow-green-tint" };
-export const FLOW_BORDER: Record<Flow, string> = { red: "border-l-flow-red", yellow: "border-l-flow-yellow", green: "border-l-flow-green" };
+export const FLOW_DOT: Record<Flow, string> = {
+  red: "bg-flow-red",
+  yellow: "bg-flow-yellow",
+  green: "bg-flow-green",
+};
+export const FLOW_TINT: Record<Flow, string> = {
+  red: "bg-flow-red-tint",
+  yellow: "bg-flow-yellow-tint",
+  green: "bg-flow-green-tint",
+};
+export const FLOW_BORDER: Record<Flow, string> = {
+  red: "border-l-flow-red",
+  yellow: "border-l-flow-yellow",
+  green: "border-l-flow-green",
+};
 
 export function Dot({ flow, className }: { flow: Flow; className?: string }) {
-  return <span aria-hidden className={cn("inline-block size-2 shrink-0 rounded-full", FLOW_DOT[flow], className)} />;
+  return (
+    <span
+      aria-hidden
+      className={cn("inline-block size-2 shrink-0 rounded-full", FLOW_DOT[flow], className)}
+    />
+  );
 }
 
 export function FlowBadge({ rec, size = "md" }: { rec: Rec; size?: "sm" | "md" }) {
@@ -31,7 +48,15 @@ export function FlowBadge({ rec, size = "md" }: { rec: Rec; size?: "sm" | "md" }
   );
 }
 
-export function Chip({ children, className, tone = "neutral" }: { children: ReactNode; className?: string; tone?: "neutral" | "outline" | "unknown" | "amber" | "solid" }) {
+export function Chip({
+  children,
+  className,
+  tone = "neutral",
+}: {
+  children: ReactNode;
+  className?: string;
+  tone?: "neutral" | "outline" | "unknown" | "amber" | "solid";
+}) {
   const tones = {
     neutral: "bg-surface-2 text-text-2",
     outline: "border border-border-strong text-text-2",
@@ -40,15 +65,34 @@ export function Chip({ children, className, tone = "neutral" }: { children: Reac
     solid: "bg-primary text-primary-foreground",
   };
   return (
-    <span className={cn("inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium leading-4", tones[tone], className)}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium leading-4",
+        tones[tone],
+        className,
+      )}
+    >
       {children}
     </span>
   );
 }
 
-export function PolicyStamp({ version, hash, className }: { version: string; hash: string; className?: string }) {
+export function PolicyStamp({
+  version,
+  hash,
+  className,
+}: {
+  version: string;
+  hash: string;
+  className?: string;
+}) {
   return (
-    <span className={cn("inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-border bg-surface px-2 py-1 font-mono text-xs leading-4 text-text-2", className)}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-border bg-surface px-2 py-1 font-mono text-xs leading-4 text-text-2",
+        className,
+      )}
+    >
       <span className="font-semibold text-foreground">{version}</span>
       <span className="text-faint">·</span>
       {hash}
@@ -82,7 +126,11 @@ export function RuleChips({ rule }: { rule: string }) {
           key={p}
           className={cn(
             "break-all rounded-md px-2 py-1 font-mono text-xs leading-4",
-            p.startsWith("ABSENT") ? "bg-unknown-tint text-unknown" : p === "R3.routine" ? "bg-surface-2 text-muted-foreground" : "border border-border bg-background text-foreground",
+            p.startsWith("ABSENT")
+              ? "bg-unknown-tint text-unknown"
+              : p === "R3.routine"
+                ? "bg-surface-2 text-muted-foreground"
+                : "border border-border bg-background text-foreground",
           )}
         >
           {p}
@@ -93,7 +141,15 @@ export function RuleChips({ rule }: { rule: string }) {
 }
 
 export function UnknownMarker({ className }: { className?: string }) {
-  return <span aria-hidden className={cn("inline-block size-2.5 shrink-0 rounded-full border border-dashed border-unknown", className)} />;
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "inline-block size-2.5 shrink-0 rounded-full border border-dashed border-unknown",
+        className,
+      )}
+    />
+  );
 }
 
 export function NotProvided() {
@@ -114,7 +170,12 @@ export function TriGlyph({ result, outcome }: { result: Tri; outcome: Rec }) {
   if (result === "unknown")
     return (
       <span className="inline-flex items-center gap-2 rounded-full bg-unknown-tint px-2 py-1 text-xs font-medium text-unknown">
-        <span aria-hidden className="grid size-3.5 place-items-center rounded-full border border-dashed border-unknown text-xs font-bold leading-none">?</span>
+        <span
+          aria-hidden
+          className="grid size-3.5 place-items-center rounded-full border border-dashed border-unknown text-xs font-bold leading-none"
+        >
+          ?
+        </span>
         Unknown
       </span>
     );
@@ -132,7 +193,8 @@ export function RecheckChip({ from, to }: { from: Rec; to: Rec }) {
         <RefreshCw className="size-3" aria-hidden /> Needs recheck
       </Chip>
       <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground">
-        v1 <Dot flow={FLOW_OF[from]} className="size-1.5" /> → v2 <Dot flow={FLOW_OF[to]} className="size-1.5" />
+        v1 <Dot flow={FLOW_OF[from]} className="size-1.5" /> → v2{" "}
+        <Dot flow={FLOW_OF[to]} className="size-1.5" />
       </span>
     </span>
   );
@@ -143,7 +205,10 @@ export function EvidenceChip({ label }: { label: EvidenceLabel }) {
     <Tooltip>
       <TooltipTrigger asChild>
         <span tabIndex={0} className="inline-flex">
-          <Chip tone={label === "NOT MEASURED" ? "outline" : label === "MEASURED" ? "solid" : "neutral"} className="font-mono tracking-wide">
+          <Chip
+            tone={label === "NOT MEASURED" ? "outline" : label === "MEASURED" ? "solid" : "neutral"}
+            className="font-mono tracking-wide"
+          >
             {label}
           </Chip>
         </span>
@@ -154,7 +219,15 @@ export function EvidenceChip({ label }: { label: EvidenceLabel }) {
 }
 
 /** Wraps a disabled control so its tooltip still explains why. */
-export function WhyDisabled({ reason, children, disabled }: { reason?: string; children: ReactNode; disabled: boolean }) {
+export function WhyDisabled({
+  reason,
+  children,
+  disabled,
+}: {
+  reason?: string;
+  children: ReactNode;
+  disabled: boolean;
+}) {
   if (!disabled || !reason) return <>{children}</>;
   return (
     <Tooltip>
@@ -168,7 +241,15 @@ export function WhyDisabled({ reason, children, disabled }: { reason?: string; c
   );
 }
 
-export function PageHeader({ title, description, action }: { title: string; description?: ReactNode; action?: ReactNode }) {
+export function PageHeader({
+  title,
+  description,
+  action,
+}: {
+  title: string;
+  description?: ReactNode;
+  action?: ReactNode;
+}) {
   return (
     <header className="flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-end md:justify-between">
       <div className="min-w-0">
@@ -180,7 +261,15 @@ export function PageHeader({ title, description, action }: { title: string; desc
   );
 }
 
-export function SectionTitle({ title, subtitle, right }: { title: string; subtitle?: string; right?: ReactNode }) {
+export function SectionTitle({
+  title,
+  subtitle,
+  right,
+}: {
+  title: string;
+  subtitle?: string;
+  right?: ReactNode;
+}) {
   return (
     <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
       <div>
@@ -194,7 +283,11 @@ export function SectionTitle({ title, subtitle, right }: { title: string; subtit
 
 export function Refusal({ children }: { children: ReactNode }) {
   return (
-    <p role="alert" aria-live="polite" className="mt-2 flex items-center gap-2 text-xs font-medium text-destructive">
+    <p
+      role="alert"
+      aria-live="polite"
+      className="mt-2 flex items-center gap-2 text-xs font-medium text-destructive"
+    >
       <AlertCircle className="size-3.5 shrink-0" aria-hidden />
       {children}
     </p>

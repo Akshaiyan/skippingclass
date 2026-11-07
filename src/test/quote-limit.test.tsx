@@ -11,7 +11,9 @@ function Probe() {
   return (
     <div>
       <span data-testid="limit">{state.quoteLimit}</span>
-      <span data-testid="value">{(rule.condition as { right: { value: number } }).right.value}</span>
+      <span data-testid="value">
+        {(rule.condition as { right: { value: number } }).right.value}
+      </span>
       <span data-testid="desc">{rule.description}</span>
       <button onClick={() => dispatch({ type: "setQuoteLimit", limit: 900 })}>set 900</button>
       <button onClick={() => dispatch({ type: "setQuoteLimit", limit: 2500 })}>set 2500</button>

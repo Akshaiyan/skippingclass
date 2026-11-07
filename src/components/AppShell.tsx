@@ -1,6 +1,14 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { AegisLogo, AegisMark } from "@/components/AegisLogo";
-import { Inbox, LayoutDashboard, Menu, PanelLeftClose, PanelLeftOpen, Scale, ScrollText } from "lucide-react";
+import {
+  Inbox,
+  LayoutDashboard,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Scale,
+  ScrollText,
+} from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useStore } from "@/store";
 import { cn } from "@/lib/utils";
@@ -33,11 +41,15 @@ function NavList({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: (
             className={cn(
               "group relative flex rounded-md text-sm transition-colors duration-150",
               collapsed ? "flex-col items-center gap-1 px-1 py-2" : "items-center gap-3 px-3 py-2",
-              active ? "bg-background font-medium text-foreground shadow-card" : "text-text-2 hover:bg-surface-2 hover:text-foreground",
+              active
+                ? "bg-background font-medium text-foreground shadow-card"
+                : "text-text-2 hover:bg-surface-2 hover:text-foreground",
             )}
           >
             <Icon className="size-4 shrink-0" aria-hidden />
-            <span className={cn(collapsed && "text-xs leading-3")}>{collapsed ? n.short : n.label}</span>
+            <span className={cn(collapsed && "text-xs leading-3")}>
+              {collapsed ? n.short : n.label}
+            </span>
             {n.to === "/claims" && redOpen > 0 && (
               <span
                 className={cn(
@@ -71,7 +83,11 @@ function SidebarFooter({ collapsed }: { collapsed: boolean }) {
     return (
       <div className="flex flex-col items-center gap-1 text-center">
         <span className="grid size-8 place-items-center rounded-full bg-surface-2 text-xs font-semibold">
-          {state.reviewer.split(" ").map((p) => p[0]).join("").slice(0, 2) || "?"}
+          {state.reviewer
+            .split(" ")
+            .map((p) => p[0])
+            .join("")
+            .slice(0, 2) || "?"}
         </span>
         <span className="font-mono text-xs text-muted-foreground">v1</span>
       </div>
@@ -137,7 +153,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               collapsed ? "flex-col items-center gap-1 py-2" : "items-center gap-2 px-3 py-2",
             )}
           >
-            {collapsed ? <PanelLeftOpen className="size-4" aria-hidden /> : <PanelLeftClose className="size-4" aria-hidden />}
+            {collapsed ? (
+              <PanelLeftOpen className="size-4" aria-hidden />
+            ) : (
+              <PanelLeftClose className="size-4" aria-hidden />
+            )}
             {collapsed ? "Expand" : "Collapse"}
           </button>
         </div>
@@ -161,12 +181,19 @@ export function AppShell({ children }: { children: ReactNode }) {
           </SheetContent>
         </Sheet>
         {state.source !== "live" && (
-          <div role="status" className="border-b border-border bg-surface px-4 py-2 text-sm md:px-8">
+          <div
+            role="status"
+            className="border-b border-border bg-surface px-4 py-2 text-sm md:px-8"
+          >
             <strong className="font-medium">Demo data.</strong>{" "}
-            {state.source === "connecting" ? "Connecting to the triage service…" : "The triage service is not reachable, so decisions shown here are not from the engine and are not recorded."}
+            {state.source === "connecting"
+              ? "Connecting to the triage service…"
+              : "The triage service is not reachable, so decisions shown here are not from the engine and are not recorded."}
           </div>
         )}
-        <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 md:px-8 md:py-8">{children}</main>
+        <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 md:px-8 md:py-8">
+          {children}
+        </main>
       </div>
     </div>
   );

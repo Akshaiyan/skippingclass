@@ -44,7 +44,8 @@ export const IMPACT_COPY = {
   subtitle: "If you release v2 · rule-based, not a prediction",
   delta: "Δ",
   assumed: "ASSUMED",
-  session: "Draft edits are session only. Release records your decision for this session; Reset restores live rules.",
+  session:
+    "Draft edits are session only. Release records your decision for this session; Reset restores live rules.",
   locked: "Closed claims stay locked.",
   releaseSummary: "Review v2 before release",
   volume: "Claim volume",
@@ -83,7 +84,8 @@ export const HOLD_V2 = "Hold v2";
 export const ADD_RULE = "Add rule";
 export const LATEST_FIRST = "Latest first";
 
-export const INFO_FOOTNOTE = "Copy and send from your usual channel. This tool never sends anything.";
+export const INFO_FOOTNOTE =
+  "Copy and send from your usual channel. This tool never sends anything.";
 export const EMAIL_LABEL = "AI-drafted placeholder text. Nothing is generated or sent here.";
 export const CONSISTENCY_CAPTION =
   "Consistency, not accuracy. Labels are past reviewer outcomes, not ground truth.";

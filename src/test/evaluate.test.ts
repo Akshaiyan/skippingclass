@@ -28,10 +28,14 @@ describe("evaluator v1 seed", () => {
     expect(ev.recommendation).toBe("human_review");
   });
   it("an inactive rule neither fires nor creates an unknown", () => {
-    const rules = V1_RULES.map((r) => r.id === "R1.duplicate" || r.id === "R1.liability_disputed" ? { ...r, active: false } : r);
+    const rules = V1_RULES.map((r) =>
+      r.id === "R1.duplicate" || r.id === "R1.liability_disputed" ? { ...r, active: false } : r,
+    );
     expect(evaluate(rules, byId("PRA-004").facts).recommendation).toBe("routine_processing");
     expect(evaluate(rules, byId("PRA-006").facts).recommendation).toBe("routine_processing");
-    expect(evaluate(rules, byId("PRA-004").facts).checklist.some((c) => c.id === "R1.duplicate")).toBe(false);
+    expect(
+      evaluate(rules, byId("PRA-004").facts).checklist.some((c) => c.id === "R1.duplicate"),
+    ).toBe(false);
   });
 });
 
@@ -53,32 +57,101 @@ describe("draft v2", () => {
     expect(d2.find((c) => c.case_id === "PRA-011")!.recommendation_v2).toBe("human_review");
   });
   it("all five checks pass for the seeded draft", () => {
-    expect(exhaustiveChecks(SEED_CLAIMS, V1_RULES, buildV2Rules(1200)).every((c) => c.pass)).toBe(true);
+    expect(exhaustiveChecks(SEED_CLAIMS, V1_RULES, buildV2Rules(1200)).every((c) => c.pass)).toBe(
+      true,
+    );
   });
   it("an incomplete rule fails check 3", () => {
-    const rules = [...buildV2Rules(1200), { id: "R1.x", outcome: "human_review" as const, description: "x", condition: { all: [] } }];
+    const rules = [
+      ...buildV2Rules(1200),
+      { id: "R1.x", outcome: "human_review" as const, description: "x", condition: { all: [] } },
+    ];
     expect(isConditionComplete({ all: [] })).toBe(false);
     const c3 = exhaustiveChecks(SEED_CLAIMS, V1_RULES, rules)[2]!;
     expect(c3.pass).toBe(false);
     expect(c3.message).toBe("Rule R1.x has an incomplete condition");
   });
   it("an inactive incomplete rule does not block the draft", () => {
-    const rules = [...buildV2Rules(1200), { id: "R1.x", outcome: "human_review" as const, description: "x", condition: { all: [] }, active: false }];
+    const rules = [
+      ...buildV2Rules(1200),
+      {
+        id: "R1.x",
+        outcome: "human_review" as const,
+        description: "x",
+        condition: { all: [] },
+        active: false,
+      },
+    ];
     expect(exhaustiveChecks(SEED_CLAIMS, V1_RULES, rules)[2]!.pass).toBe(true);
   });
 });
 
 describe("guards", () => {
   it("override needs a different step, reason, note and actor", () => {
-    expect(validateOverride({ from: "human_review", to: "human_review", reason: "judgement", note: "x", actor: "a" }).to).toBe(REFUSAL.same);
-    expect(validateOverride({ from: "human_review", to: "routine_processing", reason: "judgement", note: "  ", actor: "a" }).note).toBe(REFUSAL.note);
-    expect(validateOverride({ from: "human_review", to: "routine_processing", reason: "judgement", note: "x", actor: "" }).actor).toBe(REFUSAL.actor);
-    expect(validateOverride({ from: "human_review", to: "bogus", reason: "judgement", note: "x", actor: "a" }).to).toBe(REFUSAL.unknownRec);
-    expect(Object.keys(validateOverride({ from: "human_review", to: "routine_processing", reason: "judgement", note: "x", actor: "a" }))).toHaveLength(0);
+    expect(
+      validateOverride({
+        from: "human_review",
+        to: "human_review",
+        reason: "judgement",
+        note: "x",
+        actor: "a",
+      }).to,
+    ).toBe(REFUSAL.same);
+    expect(
+      validateOverride({
+        from: "human_review",
+        to: "routine_processing",
+        reason: "judgement",
+        note: "  ",
+        actor: "a",
+      }).note,
+    ).toBe(REFUSAL.note);
+    expect(
+      validateOverride({
+        from: "human_review",
+        to: "routine_processing",
+        reason: "judgement",
+        note: "x",
+        actor: "",
+      }).actor,
+    ).toBe(REFUSAL.actor);
+    expect(
+      validateOverride({
+        from: "human_review",
+        to: "bogus",
+        reason: "judgement",
+        note: "x",
+        actor: "a",
+      }).to,
+    ).toBe(REFUSAL.unknownRec);
+    expect(
+      Object.keys(
+        validateOverride({
+          from: "human_review",
+          to: "routine_processing",
+          reason: "judgement",
+          note: "x",
+          actor: "a",
+        }),
+      ),
+    ).toHaveLength(0);
   });
   it("four-eyes: approver must differ from author", () => {
-    expect(validateGate({ author: "Lena Vogt", approver: " lena vogt ", reason: "ok", checksPass: true }).approverErr).toBe(REFUSAL.fourEyes);
-    expect(validateGate({ author: "Lena Vogt", approver: "Jonas Weber", reason: "ok", checksPass: true }).canRelease).toBe(true);
-    expect(validateGate({ author: "Lena Vogt", approver: "Jonas Weber", reason: "ok", checksPass: false }).canRelease).toBe(false);
+    expect(
+      validateGate({ author: "Lena Vogt", approver: " lena vogt ", reason: "ok", checksPass: true })
+        .approverErr,
+    ).toBe(REFUSAL.fourEyes);
+    expect(
+      validateGate({ author: "Lena Vogt", approver: "Jonas Weber", reason: "ok", checksPass: true })
+        .canRelease,
+    ).toBe(true);
+    expect(
+      validateGate({
+        author: "Lena Vogt",
+        approver: "Jonas Weber",
+        reason: "ok",
+        checksPass: false,
+      }).canRelease,
+    ).toBe(false);
   });
 });

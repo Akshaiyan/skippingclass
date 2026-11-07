@@ -30,14 +30,23 @@ describe("Policy comparisons", () => {
     expect(impact.expectedCost).toBeNull();
   });
   it("keeps live counts unchanged when a draft rule changes", () => {
-    const draft = getDraftPolicy().rules.map((rule) => ({ ...rule, active: rule.condition === null }));
-    const impact = policyImpact(deriveClaims(getClaims(), draft), { green: 10, yellow: 20, red: 40 });
+    const draft = getDraftPolicy().rules.map((rule) => ({
+      ...rule,
+      active: rule.condition === null,
+    }));
+    const impact = policyImpact(deriveClaims(getClaims(), draft), {
+      green: 10,
+      yellow: 20,
+      red: 40,
+    });
     expect(impact.counts.map((row) => row.live)).toEqual([3, 3, 3]);
     expect(impact.expectedCost).toBe(10);
   });
   it("accepts zero handling cost and refuses negative rates", () => {
     const state = initialStoreState();
-    expect(storeReducer(state, { type: "setHandlingRate", flow: "green", rate: 0 }).handlingRates.green).toBe(0);
+    expect(
+      storeReducer(state, { type: "setHandlingRate", flow: "green", rate: 0 }).handlingRates.green,
+    ).toBe(0);
     expect(storeReducer(state, { type: "setHandlingRate", flow: "green", rate: -1 })).toBe(state);
   });
 });

@@ -11,13 +11,17 @@ const rulesV2 = fixture.rules_v2 as unknown as PolicyRule[];
 
 describe("app evaluator agrees with the engine on the fixture", () => {
   it("v1 recommendations match on every claim", () => {
-    const bad = fixture.cases.filter((c) => evaluate(rulesV1, c.facts as Facts).recommendation !== c.expected_v1);
+    const bad = fixture.cases.filter(
+      (c) => evaluate(rulesV1, c.facts as Facts).recommendation !== c.expected_v1,
+    );
     expect(bad.map((c) => c.case_id)).toEqual([]);
   });
 
   it("v2 recommendations match on every open claim", () => {
     const open = fixture.cases.filter((c) => c.open);
-    const bad = open.filter((c) => evaluate(rulesV2, c.facts as Facts).recommendation !== c.expected_v2);
+    const bad = open.filter(
+      (c) => evaluate(rulesV2, c.facts as Facts).recommendation !== c.expected_v2,
+    );
     expect(bad.map((c) => c.case_id)).toEqual([]);
   });
 

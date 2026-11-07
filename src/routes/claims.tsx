@@ -11,9 +11,17 @@ export const Route = createFileRoute("/claims")({
   head: () => ({
     meta: [
       { title: "Claims · Motor claims triage" },
-      { name: "description", content: "Reviewer cockpit: every claim with its recommended next step and the rules behind it." },
+      {
+        name: "description",
+        content:
+          "Reviewer cockpit: every claim with its recommended next step and the rules behind it.",
+      },
       { property: "og:title", content: "Claims · Motor claims triage" },
-      { property: "og:description", content: "A concise claims overview with complete case details and reviewer actions in a side window." },
+      {
+        property: "og:description",
+        content:
+          "A concise claims overview with complete case details and reviewer actions in a side window.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -25,6 +33,7 @@ function ClaimsPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/claims" });
   const flow: FlowFilter = search.flow ?? "all";
-  const setFlow = (f: FlowFilter) => navigate({ search: f === "all" ? {} : { flow: f }, replace: true });
+  const setFlow = (f: FlowFilter) =>
+    navigate({ search: f === "all" ? {} : { flow: f }, replace: true });
   return <ClaimsList flow={flow} setFlow={setFlow} heading={<PageHeader title="Claims" />} />;
 }

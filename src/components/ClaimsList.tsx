@@ -5,19 +5,41 @@ import { CHANGE_REC, FLOW_OF, LOCKED_TOOLTIP, REC_LABEL, REC_ORDER, changeTo } f
 import { useStore } from "@/store";
 import type { DerivedClaim } from "@/lib/report";
 import { cn } from "@/lib/utils";
-import { Chip, Dot, FLOW_BORDER, FlowBadge, RecheckChip, RuleChips, StatusChip, WhyDisabled } from "@/components/status";
+import {
+  Chip,
+  Dot,
+  FLOW_BORDER,
+  FlowBadge,
+  RecheckChip,
+  RuleChips,
+  StatusChip,
+  WhyDisabled,
+} from "@/components/status";
 import { CaseSheet } from "@/components/CaseSheet";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export type FlowFilter = "all" | Flow;
 type StatusFilter = "open" | "closed" | "all";
 
 const FLOW_ORDER: Record<Flow, number> = { red: 0, yellow: 1, green: 2 };
 
-function QuickActions({ c, onPick, compact }: { c: DerivedClaim; onPick: (r: Rec) => void; compact?: boolean }) {
+function QuickActions({
+  c,
+  onPick,
+  compact,
+}: {
+  c: DerivedClaim;
+  onPick: (r: Rec) => void;
+  compact?: boolean;
+}) {
   const locked = c.case_status === "closed";
   const others = REC_ORDER.filter((r) => r !== c.recommendation_v1);
   return (
@@ -26,7 +48,13 @@ function QuickActions({ c, onPick, compact }: { c: DerivedClaim; onPick: (r: Rec
         <WhyDisabled disabled={locked} reason={LOCKED_TOOLTIP}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild disabled={locked}>
-              <Button variant="outline" size="sm" aria-label={CHANGE_REC} className="h-8 whitespace-nowrap px-3 text-xs" disabled={locked}>
+              <Button
+                variant="outline"
+                size="sm"
+                aria-label={CHANGE_REC}
+                className="h-8 whitespace-nowrap px-3 text-xs"
+                disabled={locked}
+              >
                 {compact ? "Change" : CHANGE_REC} <ChevronDown aria-hidden />
               </Button>
             </DropdownMenuTrigger>
@@ -44,7 +72,17 @@ function QuickActions({ c, onPick, compact }: { c: DerivedClaim; onPick: (r: Rec
   );
 }
 
-export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: FlowFilter; setFlow: (f: FlowFilter) => void; heading?: ReactNode; hideFlowFilter?: boolean }) {
+export function ClaimsList({
+  flow,
+  setFlow,
+  heading,
+  hideFlowFilter,
+}: {
+  flow: FlowFilter;
+  setFlow: (f: FlowFilter) => void;
+  heading?: ReactNode;
+  hideFlowFilter?: boolean;
+}) {
   const { derived, state } = useStore();
   const [status, setStatus] = useState<StatusFilter>("all");
   const [q, setQ] = useState("");
@@ -67,10 +105,20 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
         .filter((c) => status === "all" || c.case_status === status)
         .filter((c) => !q.trim() || c.case_id.toLowerCase().includes(q.trim().toLowerCase()))
         .filter((c) => !recheckOnly || c.needs_recheck)
-        .sort((a, b) => FLOW_ORDER[a.flow] - FLOW_ORDER[b.flow] || (a.case_status === b.case_status ? a.case_id.localeCompare(b.case_id) : a.case_status === "open" ? -1 : 1)),
+        .sort(
+          (a, b) =>
+            FLOW_ORDER[a.flow] - FLOW_ORDER[b.flow] ||
+            (a.case_status === b.case_status
+              ? a.case_id.localeCompare(b.case_id)
+              : a.case_status === "open"
+                ? -1
+                : 1),
+        ),
     [derived, flow, status, q, recheckOnly],
   );
-  const groups = (["red", "yellow", "green"] as Flow[]).map((f) => ({ flow: f, items: rows.filter((r) => r.flow === f) })).filter((g) => g.items.length);
+  const groups = (["red", "yellow", "green"] as Flow[])
+    .map((f) => ({ flow: f, items: rows.filter((r) => r.flow === f) }))
+    .filter((g) => g.items.length);
   const counts = { all: derived.length, red: 0, yellow: 0, green: 0 } as Record<FlowFilter, number>;
   derived.forEach((c) => counts[c.flow]++);
 
@@ -91,8 +139,16 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
   };
 
   const chips: { label: string; clear: () => void }[] = [];
-  if (flow !== "all") chips.push({ label: `Flow: ${REC_LABEL[{ red: "human_review", yellow: "request_information", green: "routine_processing" }[flow] as Rec]}`, clear: () => setFlow("all") });
-  if (status !== "all") chips.push({ label: `Status: ${status === "open" ? "Open" : "Closed"}`, clear: () => setStatus("all") });
+  if (flow !== "all")
+    chips.push({
+      label: `Flow: ${REC_LABEL[{ red: "human_review", yellow: "request_information", green: "routine_processing" }[flow] as Rec]}`,
+      clear: () => setFlow("all"),
+    });
+  if (status !== "all")
+    chips.push({
+      label: `Status: ${status === "open" ? "Open" : "Closed"}`,
+      clear: () => setStatus("all"),
+    });
   if (q.trim()) chips.push({ label: `Case: ${q.trim()}`, clear: () => setQ("") });
   if (recheckOnly) chips.push({ label: "Needs recheck only", clear: () => setRecheckOnly(false) });
 
@@ -102,7 +158,10 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
 
       <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
         <label className="relative flex w-fit items-center">
-          <Search className="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" aria-hidden />
+          <Search
+            className="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground"
+            aria-hidden
+          />
           <span className="sr-only">Search by case id</span>
           <input
             value={q}
@@ -112,7 +171,11 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
           />
         </label>
         {!hideFlowFilter && (
-          <div role="radiogroup" aria-label="Flow" className="inline-flex flex-wrap rounded-lg border border-border bg-surface p-1">
+          <div
+            role="radiogroup"
+            aria-label="Flow"
+            className="inline-flex flex-wrap rounded-lg border border-border bg-surface p-1"
+          >
             {(["all", "red", "yellow", "green"] as FlowFilter[]).map((f) => (
               <button
                 key={f}
@@ -121,7 +184,9 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
                 onClick={() => setFlow(f)}
                 className={cn(
                   "inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors duration-(--dur-fast)",
-                  flow === f ? "bg-background text-foreground shadow-card" : "text-text-2 hover:text-foreground",
+                  flow === f
+                    ? "bg-background text-foreground shadow-card"
+                    : "text-text-2 hover:text-foreground",
                 )}
               >
                 {f !== "all" && <Dot flow={f} />}
@@ -131,7 +196,11 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
             ))}
           </div>
         )}
-        <div role="radiogroup" aria-label="Status" className="inline-flex rounded-lg border border-border bg-surface p-1">
+        <div
+          role="radiogroup"
+          aria-label="Status"
+          className="inline-flex rounded-lg border border-border bg-surface p-1"
+        >
           {(["open", "closed", "all"] as StatusFilter[]).map((s) => (
             <button
               key={s}
@@ -140,7 +209,9 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
               onClick={() => setStatus(s)}
               className={cn(
                 "rounded-md px-3 py-2 text-xs font-medium capitalize transition-colors duration-(--dur-fast)",
-                status === s ? "bg-background text-foreground shadow-card" : "text-text-2 hover:text-foreground",
+                status === s
+                  ? "bg-background text-foreground shadow-card"
+                  : "text-text-2 hover:text-foreground",
               )}
             >
               {s}
@@ -155,11 +226,19 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
       {chips.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           {chips.map((c) => (
-            <button key={c.label} onClick={c.clear} className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1 text-xs hover:border-border-strong">
-              {c.label} <X className="size-3" aria-hidden /> <span className="sr-only">Remove filter</span>
+            <button
+              key={c.label}
+              onClick={c.clear}
+              className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1 text-xs hover:border-border-strong"
+            >
+              {c.label} <X className="size-3" aria-hidden />{" "}
+              <span className="sr-only">Remove filter</span>
             </button>
           ))}
-          <button onClick={clear} className="text-xs font-medium underline underline-offset-4 hover:text-text-2">
+          <button
+            onClick={clear}
+            className="text-xs font-medium underline underline-offset-4 hover:text-text-2"
+          >
             Clear filters
           </button>
         </div>
@@ -174,7 +253,9 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
       ) : rows.length === 0 ? (
         <div className="card-panel flex flex-col items-center gap-3 px-6 py-16 text-center">
           <p className="text-sm text-text-2">
-            {derived.length === 0 ? "There are no claims to show. They appear here once the triage service returns cases." : "No claims match these filters."}
+            {derived.length === 0
+              ? "There are no claims to show. They appear here once the triage service returns cases."
+              : "No claims match these filters."}
           </p>
           {derived.length > 0 && (
             <Button variant="outline" size="sm" onClick={clear}>
@@ -196,19 +277,41 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
               </colgroup>
               <thead>
                 <tr className="text-left">
-                  {["Case", "Recommendation", "Rule", "Explanation", "Recheck", "Action"].map((h) => (
-                    <th key={h} scope="col" className="border-b border-border px-4 py-3 text-xs font-medium text-muted-foreground">{h}</th>
-                  ))}
+                  {["Case", "Recommendation", "Rule", "Explanation", "Recheck", "Action"].map(
+                    (h) => (
+                      <th
+                        key={h}
+                        scope="col"
+                        className="border-b border-border px-4 py-3 text-xs font-medium text-muted-foreground"
+                      >
+                        {h}
+                      </th>
+                    ),
+                  )}
                 </tr>
               </thead>
               {groups.map((g) => (
                 <tbody key={g.flow}>
                   <tr>
-                    <th colSpan={6} scope="rowgroup" className="sticky top-0 z-10 border-b border-border bg-surface px-4 py-2 text-left text-xs font-semibold">
+                    <th
+                      colSpan={6}
+                      scope="rowgroup"
+                      className="sticky top-0 z-10 border-b border-border bg-surface px-4 py-2 text-left text-xs font-semibold"
+                    >
                       <span className="inline-flex items-center gap-2">
                         <Dot flow={g.flow} />
-                        {REC_LABEL[{ red: "human_review", yellow: "request_information", green: "routine_processing" }[g.flow] as Rec]}
-                        <span className="font-normal text-muted-foreground">· {g.items.filter((i) => i.case_status === "open").length} open</span>
+                        {
+                          REC_LABEL[
+                            {
+                              red: "human_review",
+                              yellow: "request_information",
+                              green: "routine_processing",
+                            }[g.flow] as Rec
+                          ]
+                        }
+                        <span className="font-normal text-muted-foreground">
+                          · {g.items.filter((i) => i.case_status === "open").length} open
+                        </span>
                       </span>
                     </th>
                   </tr>
@@ -223,24 +326,41 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
                       onKeyDown={(e) => onRowKey(e, c.case_id)}
                       className="group cursor-pointer transition-colors duration-(--dur-fast) hover:bg-surface focus-visible:bg-surface"
                     >
-                      <td className={cn("border-b border-l-2 border-border px-4 py-3 align-top", FLOW_BORDER[c.flow])}>
+                      <td
+                        className={cn(
+                          "border-b border-l-2 border-border px-4 py-3 align-top",
+                          FLOW_BORDER[c.flow],
+                        )}
+                      >
                         <div className="flex flex-col items-start gap-2">
-                          <span className="whitespace-nowrap font-mono text-sm font-medium">{c.case_id}</span>
+                          <span className="whitespace-nowrap font-mono text-sm font-medium">
+                            {c.case_id}
+                          </span>
                           <div className="flex flex-wrap items-center gap-2">
                             <StatusChip status={c.case_status} />
                             {c.ui_status === "reviewed" && (
-                              <Chip><Check className="size-3" aria-hidden /> Reviewed</Chip>
+                              <Chip>
+                                <Check className="size-3" aria-hidden /> Reviewed
+                              </Chip>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="border-b border-border px-4 py-3 align-top"><FlowBadge rec={c.recommendation_v1} /></td>
-                      <td className="border-b border-border px-4 py-3 align-top"><RuleChips rule={c.rule_v1} /></td>
                       <td className="border-b border-border px-4 py-3 align-top">
-                        <p className="line-clamp-2 text-text-2" title={c.explanation}>{c.explanation}</p>
+                        <FlowBadge rec={c.recommendation_v1} />
                       </td>
                       <td className="border-b border-border px-4 py-3 align-top">
-                        {c.case_status === "open" && c.needs_recheck && <RecheckChip from={c.recommendation_v1} to={c.recommendation_v2} />}
+                        <RuleChips rule={c.rule_v1} />
+                      </td>
+                      <td className="border-b border-border px-4 py-3 align-top">
+                        <p className="line-clamp-2 text-text-2" title={c.explanation}>
+                          {c.explanation}
+                        </p>
+                      </td>
+                      <td className="border-b border-border px-4 py-3 align-top">
+                        {c.case_status === "open" && c.needs_recheck && (
+                          <RecheckChip from={c.recommendation_v1} to={c.recommendation_v2} />
+                        )}
                       </td>
                       <td className="border-b border-border px-3 py-3 align-top">
                         <QuickActions compact c={c} onPick={(r) => open(c.case_id, r)} />
@@ -257,8 +377,18 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
               <div key={g.flow} className="space-y-2">
                 <div className="flex items-center gap-2 text-xs font-semibold">
                   <Dot flow={g.flow} />
-                  {REC_LABEL[{ red: "human_review", yellow: "request_information", green: "routine_processing" }[g.flow] as Rec]}
-                  <span className="font-normal text-muted-foreground">· {g.items.filter((i) => i.case_status === "open").length} open</span>
+                  {
+                    REC_LABEL[
+                      {
+                        red: "human_review",
+                        yellow: "request_information",
+                        green: "routine_processing",
+                      }[g.flow] as Rec
+                    ]
+                  }
+                  <span className="font-normal text-muted-foreground">
+                    · {g.items.filter((i) => i.case_status === "open").length} open
+                  </span>
                 </div>
                 {g.items.map((c) => (
                   <div
@@ -267,7 +397,10 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
                     tabIndex={0}
                     onClick={() => open(c.case_id)}
                     onKeyDown={(e) => e.key === "Enter" && open(c.case_id)}
-                    className={cn("card-panel space-y-2 border-l-2 p-4 hover:bg-surface", FLOW_BORDER[c.flow])}
+                    className={cn(
+                      "card-panel space-y-2 border-l-2 p-4 hover:bg-surface",
+                      FLOW_BORDER[c.flow],
+                    )}
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-mono text-sm font-medium">{c.case_id}</span>
@@ -276,7 +409,9 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
                     </div>
                     <RuleChips rule={c.rule_v1} />
                     <p className="line-clamp-2 text-sm text-text-2">{c.explanation}</p>
-                    {c.case_status === "open" && c.needs_recheck && <RecheckChip from={c.recommendation_v1} to={c.recommendation_v2} />}
+                    {c.case_status === "open" && c.needs_recheck && (
+                      <RecheckChip from={c.recommendation_v1} to={c.recommendation_v2} />
+                    )}
                     <QuickActions c={c} onPick={(r) => open(c.case_id, r)} />
                   </div>
                 ))}
@@ -286,7 +421,12 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
         </>
       )}
 
-      <CaseSheet claim={openClaim} open={!!openClaim} onOpenChange={(o) => !o && setOpenId(null)} initialOverride={initialOverride} />
+      <CaseSheet
+        claim={openClaim}
+        open={!!openClaim}
+        onOpenChange={(o) => !o && setOpenId(null)}
+        initialOverride={initialOverride}
+      />
     </div>
   );
 }
