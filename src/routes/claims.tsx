@@ -177,16 +177,6 @@ function ClaimsPage() {
             </button>
           ))}
         </div>
-        <label className="relative flex items-center">
-          <Search className="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" aria-hidden />
-          <span className="sr-only">Search by case id</span>
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search case id"
-            className="h-8 w-48 rounded-md border border-border bg-background pl-8 pr-2 font-mono text-xs hover:border-border-strong"
-          />
-        </label>
         <label className="inline-flex items-center gap-2 text-xs font-medium text-text-2">
           <Switch checked={recheckOnly} onCheckedChange={setRecheckOnly} /> Needs recheck only
         </label>
