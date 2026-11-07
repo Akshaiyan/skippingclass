@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { evaluate, isConditionComplete } from "@/lib/evaluate";
 import { SEED_CLAIMS, V1_RULES, buildV2Rules } from "@/data/seed";
-import { deriveClaims, exhaustiveChecks, flipList } from "@/lib/report";
+import { deriveClaims, exhaustiveChecks, flipList, replaysStored } from "@/lib/report";
 import { validateGate, validateOverride } from "@/lib/guards";
 import { REFUSAL } from "@/copy";
 
@@ -153,5 +153,19 @@ describe("guards", () => {
         checksPass: false,
       }).canRelease,
     ).toBe(false);
+  });
+});
+
+describe("replay against the stored baseline", () => {
+  it("passes when the live rules reproduce every stored rule result", () => {
+    expect(replaysStored(SEED_CLAIMS, V1_RULES)).toBe(true);
+  });
+  it("fails when a stored result no longer matches the facts", () => {
+    const tampered = SEED_CLAIMS.map((c) =>
+      c.case_id === "PRA-001"
+        ? { ...c, checklist: c.checklist.map((k) => ({ ...k, result: "false" as const })) }
+        : c,
+    );
+    expect(replaysStored(tampered, V1_RULES)).toBe(false);
   });
 });

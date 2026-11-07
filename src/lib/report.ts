@@ -140,11 +140,15 @@ export function flipList(d: DerivedClaim[]): Flip[] {
     }));
 }
 
-/** True when the given rules reproduce each claim's stored rule and checklist from its facts. */
+/**
+ * True when the given rules reproduce each claim's stored decision from its facts: every rule in the
+ * stored checklist must come out the same (fired, passed or unknown). Compares outcomes, not wording,
+ * because the engine and the browser format rule ids and evidence text differently.
+ */
 export function replaysStored(claims: Claim[], rules: PolicyRule[]): boolean {
   return claims.every((c) => {
-    const ev = evaluate(rules, c.facts);
-    return ev.rule === c.rule_v1 && JSON.stringify(ev.checklist) === JSON.stringify(c.checklist);
+    const now = new Map(evaluate(rules, c.facts).checklist.map((k) => [k.id, k.result]));
+    return c.checklist.every((k) => !now.has(k.id) || now.get(k.id) === k.result);
   });
 }
 
