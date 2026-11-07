@@ -30,7 +30,13 @@ type Props = { className?: string };
 
 export function AegisMark({ className }: Props) {
   return (
-    <svg viewBox="284 284 484 426" fill="currentColor" className={className} role="img" aria-label="Aegis">
+    <svg
+      viewBox="284 284 484 426"
+      fill="currentColor"
+      className={className}
+      role="img"
+      aria-label="Aegis"
+    >
       {MARK}
     </svg>
   );
@@ -38,7 +44,13 @@ export function AegisMark({ className }: Props) {
 
 export function AegisLogo({ className }: Props) {
   return (
-    <svg viewBox="284 284 1832 426" fill="currentColor" className={className} role="img" aria-label="Aegis">
+    <svg
+      viewBox="284 284 1832 426"
+      fill="currentColor"
+      className={className}
+      role="img"
+      aria-label="Aegis"
+    >
       {MARK}
       {WORD}
     </svg>

@@ -24,9 +24,9 @@ export const REC_OF: Record<Flow, Rec> = {
 export const REC_ORDER: Rec[] = ["human_review", "request_information", "routine_processing"];
 
 export const NOT_PROVIDED = "not provided, not assumed";
-export const LOCKED = "Locked";
-export const LOCKED_TOOLTIP = "Locked: closed claims cannot change";
-export const LOCKED_BANNER = "Locked: this claim is closed and is not affected by policy changes.";
+export const LOCKED = "Closed";
+export const LOCKED_TOOLTIP = "Closed claims cannot change";
+export const LOCKED_BANNER = "This claim is closed. Policy changes do not affect it.";
 export const RULE_BASED = "Rule-based, not a prediction";
 export const CASE_OVERVIEW = "Case overview";
 export const CASE_DETAILS = "Rules and evidence";
@@ -41,10 +41,11 @@ export const REVIEW_COPY = {
 export const confirmAction = (rec: Rec) => `Confirm: ${REC_LABEL[rec]}`;
 export const IMPACT_COPY = {
   title: "Expected impact",
-  subtitle: "If you release v2 · rule-based, not a prediction",
+  subtitle: "If you release v2. Rule-based, not a prediction.",
   delta: "Δ",
   assumed: "ASSUMED",
-  session: "Draft edits are session only. Release records your decision for this session; Reset restores live rules.",
+  session:
+    "Draft edits are session only. Release records your decision for this session; Reset restores live rules.",
   locked: "Closed claims stay locked.",
   releaseSummary: "Review v2 before release",
   volume: "Claim volume",
@@ -52,7 +53,7 @@ export const IMPACT_COPY = {
   expected: "Expected",
   cost: "Handling cost per claim",
   rates: "Handling cost by flow · EUR / claim",
-  flows: { green: "Routine processing", yellow: "Missing information", red: "Human review" },
+  flows: { green: "Routine processing", yellow: "Request information", red: "Human review" },
 };
 
 export const CONFIRM_REC = "Confirm recommendation";
@@ -81,13 +82,11 @@ export const REFUSAL = {
 export const RELEASE_V2 = "Release v2";
 export const HOLD_V2 = "Hold v2";
 export const ADD_RULE = "Add rule";
-export const LATEST_FIRST = "Latest first";
+export const SORT_RECENT = "Sorted most recent to oldest";
 
-export const INFO_FOOTNOTE = "Copy and send from your usual channel. This tool never sends anything.";
+export const INFO_FOOTNOTE =
+  "Copy and send from your usual channel. This tool never sends anything.";
 export const EMAIL_LABEL = "AI-drafted placeholder text. Nothing is generated or sent here.";
-export const CONSISTENCY_CAPTION =
-  "Consistency, not accuracy. Labels are past reviewer outcomes, not ground truth.";
-
 export const LOG_TYPE_LABEL: Record<LogEntry["type"], string> = {
   system_decision: "System decision",
   reviewer_accept: "Reviewer accepted",
@@ -96,4 +95,5 @@ export const LOG_TYPE_LABEL: Record<LogEntry["type"], string> = {
   policy_approved: "Policy released",
   policy_rejected: "Policy held",
   final_decision: "Final decision",
+  info_request_prepared: "Information request prepared",
 };

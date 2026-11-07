@@ -30,8 +30,14 @@ export const FIELDS: FieldMeta[] = [
   { name: "itemized_quote_present", type: "bool", label: "Itemized repair quote" },
   { name: "liability_disputed", type: "bool", label: "Whether liability is disputed" },
   { name: "duplicate_flag", type: "bool", label: "Duplicate check" },
-  { name: "evidence_conflict", type: "bool", label: "Whether evidence conflicts with the description" },
+  {
+    name: "evidence_conflict",
+    type: "bool",
+    label: "Whether evidence conflicts with the description",
+  },
 ];
 
-export const FIELD_MAP: Record<string, FieldMeta> = Object.fromEntries(FIELDS.map((f) => [f.name, f]));
+export const FIELD_MAP: Record<string, FieldMeta> = Object.fromEntries(
+  FIELDS.map((f) => [f.name, f]),
+);
 export const fieldLabel = (n: string) => FIELD_MAP[n]?.label ?? n;
