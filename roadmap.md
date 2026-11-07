@@ -10,3 +10,5 @@
 - [x] Blank-screen crash after store edits: provider moved to its own module so hot reload keeps the context.
 - [x] Claims table: even column widths and one row height for every line.
 - [x] Claims: search box moved to the left of the filter row.
+- [x] Policy: fallback rule row ("Otherwise: routine processing") removed from the rule list; the rule itself stays in the data so routing is unchanged.
+- [x] Policy: "Changed claims" panel removed; the volume chart panel now follows the rule list as you scroll.
