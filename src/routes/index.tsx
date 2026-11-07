@@ -4,7 +4,8 @@ import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, Res
 import { useStore } from "@/store";
 import { REC_LABEL } from "@/copy";
 import { ASSUMPTIONS, BUSINESS_CASE as BC, LABEL_HELP, type EvidenceLabel } from "@/data/businessCase";
-import { Dot, EvidenceChip, FLOW_DOT, SectionTitle } from "@/components/status";
+import { Dot, FLOW_DOT, SectionTitle, StatusChip } from "@/components/status";
+import { CaseSheet } from "@/components/CaseSheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -155,6 +156,37 @@ function RangeBar({ label, lo, hi, max, tone }: { label: string; lo: number; hi:
   );
 }
 
+function DashboardClaims() {
+  const { derived } = useStore();
+  const [openId, setOpenId] = useState<string | null>(null);
+  const order: Record<Flow, number> = { red: 0, yellow: 1, green: 2 };
+  const rows = [...derived].sort((a, b) => order[a.flow] - order[b.flow] || (a.case_status === b.case_status ? a.case_id.localeCompare(b.case_id) : a.case_status === "open" ? -1 : 1));
+  const openClaim = derived.find((c) => c.case_id === openId) ?? null;
+  return (
+    <section>
+      <SectionTitle title="Claims" />
+      <div className="overflow-hidden rounded-lg border border-border">
+        <table className="w-full table-fixed border-collapse text-sm">
+          <colgroup><col className="w-[29%]" /><col className="w-[23%]" /><col className="w-[48%]" /></colgroup>
+          <thead className="bg-surface">
+            <tr>{["Case", "Status", "Recommendation"].map((x) => <th key={x} scope="col" className="border-b border-border px-3 py-3 text-left text-xs font-medium text-muted-foreground sm:px-6">{x}</th>)}</tr>
+          </thead>
+          <tbody>
+            {rows.map((c) => (
+              <tr key={c.case_id} tabIndex={0} aria-label={`Open case ${c.case_id}`} onClick={() => setOpenId(c.case_id)} onKeyDown={(e) => { if (e.key === "Enter") setOpenId(c.case_id); }} className="h-16 cursor-pointer border-b border-border transition-colors last:border-b-0 hover:bg-surface focus-visible:bg-surface">
+                <td className="px-3 py-3 font-mono text-xs sm:px-6 sm:text-sm">{c.case_id}</td>
+                <td className="px-3 py-3 sm:px-6"><StatusChip status={c.case_status} /></td>
+                <td className="px-3 py-3 sm:px-6"><span className="inline-flex items-center gap-2 text-xs font-medium sm:text-sm"><Dot flow={c.flow} /><span>{REC_LABEL[c.recommendation_v1]}</span></span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <CaseSheet claim={openClaim} open={!!openClaim} onOpenChange={(o) => !o && setOpenId(null)} />
+    </section>
+  );
+}
+
 function Dashboard() {
   const { derived, state, v1Rules } = useStore();
   const checks = exhaustiveChecks(state.claims, v1Rules, state.draftRules);
@@ -178,84 +210,7 @@ function Dashboard() {
 
       <ClaimsOverview />
 
-      <section>
-        <SectionTitle title="Claims at a glance" right={<span className="eyebrow">Illustrative data</span>} />
-        <div className="grid gap-4 lg:grid-cols-3">
-          <figure className="card-panel p-5">
-            <figcaption className="mb-4 text-sm font-medium">Claims by flow, open vs closed</figcaption>
-            <div className="h-56">
-              <ResponsiveContainer>
-                <BarChart data={barData} barGap={4}>
-                  <CartesianGrid vertical={false} stroke="var(--border)" />
-                  <XAxis
-                    dataKey="flow"
-                    tickLine={false}
-                    axisLine={{ stroke: "var(--border)" }}
-                    tick={({ x, y, payload }) => (
-                      <g transform={`translate(${x},${y + 12})`}>
-                        <circle cx={-26} cy={-4} r={3.5} fill={`var(--${payload.value})`} />
-                        <text x={-18} y={0} fontSize={11} fill="var(--muted-foreground)">
-                          {payload.value === "red" ? "Review" : payload.value === "yellow" ? "Info" : "Routine"}
-                        </text>
-                      </g>
-                    )}
-                  />
-                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={24} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                  <RTooltip cursor={{ fill: "var(--surface)" }} content={<ChartTip />} />
-                  <Bar isAnimationActive={false} dataKey="Open" fill="var(--chart-1)" radius={[3, 3, 0, 0]} />
-                  <Bar isAnimationActive={false} dataKey="Closed" fill="var(--chart-2)" radius={[3, 3, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-sm bg-chart-1" />Open</span>
-              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-sm bg-chart-2" />Closed</span>
-            </div>
-          </figure>
-          <figure className="card-panel p-5">
-            <figcaption className="mb-4 text-sm font-medium">Claim volume, last 12 weeks</figcaption>
-            <div className="h-56">
-              <ResponsiveContainer>
-                <LineChart data={WEEKS}>
-                  <CartesianGrid vertical={false} stroke="var(--border)" />
-                  <XAxis dataKey="week" tickLine={false} axisLine={{ stroke: "var(--border)" }} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                  <YAxis tickLine={false} axisLine={false} width={24} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                  <RTooltip content={<ChartTip />} cursor={{ stroke: "var(--border-strong)" }} />
-                  <Line isAnimationActive={false} type="monotone" dataKey="claims" name="Claims" stroke="var(--foreground)" strokeWidth={1.75} dot={false} activeDot={{ r: 3.5 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </figure>
-          <figure className="card-panel p-5">
-            <figcaption className="mb-4 text-sm font-medium">Distribution by flow</figcaption>
-            <div className="relative h-56">
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie isAnimationActive={false} data={pieData} dataKey="value" nameKey="name" innerRadius="62%" outerRadius="86%" paddingAngle={2} stroke="var(--background)">
-                    {pieData.map((d) => (
-                      <Cell key={d.flow} fill={pieColor[d.flow]} />
-                    ))}
-                  </Pie>
-                  <RTooltip content={<ChartTip />} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="pointer-events-none absolute inset-0 grid place-items-center text-center">
-                <div>
-                  <div className="tnum text-2xl font-medium">{derived.length}</div>
-                  <div className="text-[11px] text-muted-foreground">claims</div>
-                </div>
-              </div>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
-              {pieData.map((d) => (
-                <span key={d.flow} className="inline-flex items-center gap-1.5">
-                  <Dot flow={d.flow} /> {d.name} <span className="tnum">{d.value}</span>
-                </span>
-              ))}
-            </div>
-          </figure>
-        </div>
-      </section>
+      <DashboardClaims />
 
     </div>
   );
