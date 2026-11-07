@@ -256,19 +256,7 @@ function Dashboard() {
       </section>
 
       <section>
-        <SectionTitle title="Business case" subtitle="Honest ranges. Every number carries its evidence label." />
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className="card-panel p-6 lg:col-span-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="eyebrow">Efficiency-only floor</span>
-              <EvidenceChip label="DERIVED" />
-            </div>
-            <div className="tnum mt-3 text-3xl font-medium tracking-tight">
-              {h(BC.efficiencyFloorHours[0])} to {h(BC.efficiencyFloorHours[1])} reviewer hours a year
-            </div>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">What the tool is worth even if it prevents zero errors: time no longer spent hand-triaging claims that clear rules can route.</p>
-          </div>
-
           <div className="card-panel p-6">
             <div className="flex items-center justify-between gap-2">
               <h3 className="section-title">Cost of a policy change</h3>
