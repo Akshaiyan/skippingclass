@@ -8,24 +8,15 @@ import type { EvidenceLabel } from "@/data/businessCase";
 import { LABEL_HELP } from "@/data/businessCase";
 
 export const FLOW_DOT: Record<Flow, string> = { red: "bg-flow-red", yellow: "bg-flow-yellow", green: "bg-flow-green" };
-export const FLOW_TINT: Record<Flow, string> = { red: "bg-flow-red-tint", yellow: "bg-flow-yellow-tint", green: "bg-flow-green-tint" };
 export const FLOW_BORDER: Record<Flow, string> = { red: "border-l-flow-red", yellow: "border-l-flow-yellow", green: "border-l-flow-green" };
 
-export function Dot({ flow, className }: { flow: Flow; className?: string }) {
-  return <span aria-hidden className={cn("inline-block size-2 shrink-0 rounded-full", FLOW_DOT[flow], className)} />;
-}
+/** Names for the three flows. Used wherever a flow is a category (cards, filters, group headings). */
+export const FLOW_NAME: Record<Flow, string> = { red: "Human review", yellow: "Missing information", green: "Routine processing" };
 
+/** A recommendation is plain text. Human review is the one that needs a person, so it is the only bold one. */
 export function FlowBadge({ rec, size = "md" }: { rec: Rec; size?: "sm" | "md" }) {
-  const flow = FLOW_OF[rec];
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-2 whitespace-nowrap rounded-full font-medium text-foreground",
-        FLOW_TINT[flow],
-        size === "sm" ? "px-2 py-1 text-xs leading-4" : "px-3 py-1 text-xs leading-5",
-      )}
-    >
-      <Dot flow={flow} className={size === "sm" ? "size-1.5" : undefined} />
+    <span className={cn("whitespace-nowrap text-foreground", size === "sm" ? "text-xs" : "text-sm", rec === "human_review" ? "font-bold" : "font-normal")}>
       {REC_LABEL[rec]}
     </span>
   );
@@ -40,7 +31,7 @@ export function Chip({ children, className, tone = "neutral" }: { children: Reac
     solid: "bg-primary text-primary-foreground",
   };
   return (
-    <span className={cn("inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium leading-4", tones[tone], className)}>
+    <span className={cn("inline-flex items-center gap-1 whitespace-nowrap rounded-none px-2 py-1 text-xs font-medium leading-4", tones[tone], className)}>
       {children}
     </span>
   );
@@ -48,7 +39,7 @@ export function Chip({ children, className, tone = "neutral" }: { children: Reac
 
 export function PolicyStamp({ version, hash, className }: { version: string; hash: string; className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-border bg-surface px-2 py-1 font-mono text-xs leading-4 text-text-2", className)}>
+    <span className={cn("inline-flex items-center gap-2 whitespace-nowrap rounded-none border border-border bg-surface px-2 py-1 font-mono text-xs leading-4 text-text-2", className)}>
       <span className="font-semibold text-foreground">{version}</span>
       <span className="text-faint">·</span>
       {hash}
@@ -68,7 +59,7 @@ export function StatusChip({ status }: { status: "open" | "closed" }) {
     <LockedChip />
   ) : (
     <Chip tone="outline">
-      <span className="size-1.5 rounded-full bg-foreground" aria-hidden /> Open
+      Open
     </Chip>
   );
 }
@@ -93,7 +84,7 @@ export function RuleChips({ rule }: { rule: string }) {
 }
 
 export function UnknownMarker({ className }: { className?: string }) {
-  return <span aria-hidden className={cn("inline-block size-2.5 shrink-0 rounded-full border border-dashed border-unknown", className)} />;
+  return <span aria-hidden className={cn("inline-block size-2.5 shrink-0 rounded-none border border-dashed border-unknown", className)} />;
 }
 
 export function NotProvided() {
@@ -108,13 +99,13 @@ export function TriGlyph({ result, outcome }: { result: Tri; outcome: Rec }) {
   if (result === "true")
     return (
       <span className="inline-flex items-center gap-2 text-xs font-medium text-foreground">
-        <Dot flow={FLOW_OF[outcome]} /> Fired
+        Fired
       </span>
     );
   if (result === "unknown")
     return (
-      <span className="inline-flex items-center gap-2 rounded-full bg-unknown-tint px-2 py-1 text-xs font-medium text-unknown">
-        <span aria-hidden className="grid size-3.5 place-items-center rounded-full border border-dashed border-unknown text-xs font-bold leading-none">?</span>
+      <span className="inline-flex items-center gap-2 rounded-none bg-unknown-tint px-2 py-1 text-xs font-medium text-unknown">
+        <span aria-hidden className="grid size-3.5 place-items-center rounded-none border border-dashed border-unknown text-xs font-bold leading-none">?</span>
         Unknown
       </span>
     );
@@ -131,8 +122,8 @@ export function RecheckChip({ from, to }: { from: Rec; to: Rec }) {
       <Chip tone="outline">
         <RefreshCw className="size-3" aria-hidden /> Needs recheck
       </Chip>
-      <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground">
-        v1 <Dot flow={FLOW_OF[from]} className="size-1.5" /> → v2 <Dot flow={FLOW_OF[to]} className="size-1.5" />
+      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+        {REC_LABEL[from]} → {REC_LABEL[to]}
       </span>
     </span>
   );

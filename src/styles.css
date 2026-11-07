@@ -17,7 +17,7 @@
  *  Spacing  4pt grid only: 4, 8, 12, 16, 20, 24, 32 (Tailwind 1, 2, 3, 4, 5, 6, 8). No half steps.
  *  Type     12/16 caption, 14/20 body, 16/24 section, 26/32 page title, 40/48 hero. Families: Oxanium for
  *           titles and big numbers, Inter for text, JetBrains Mono only for ids and hashes (data, not decoration).
- *  Radius   8px controls and chips (md), 10px containers: cards, tables, dialogs, sheets (lg). Pills are full.
+ *  Radius   0. Square corners everywhere: boxes, controls, chips, dialogs. Only the switch keeps its round shape.
  *  Shadow   two only: shadow-card (resting containers) and shadow-sheet (floating: dialogs, menus, sheets).
  */
 @theme inline {
@@ -25,10 +25,10 @@
   --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   /* Display face: squared letterforms that sit next to the Aegis wordmark. Titles and big numbers only. */
   --font-display: "Oxanium Variable", "Oxanium", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: 8px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: 0px;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -80,7 +80,7 @@
 }
 
 :root {
-  --radius: 10px;
+  --radius: 0px;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);

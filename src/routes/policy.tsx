@@ -284,7 +284,7 @@ function PolicyPage() {
         {decision ? (
           <div className="flex flex-wrap items-center justify-between gap-4" role="status" aria-live="polite">
             <div className="flex items-center gap-2 text-sm font-semibold">
-              <span className="grid size-5 place-items-center rounded-full bg-primary text-primary-foreground"><Check className="size-3" aria-hidden /></span>
+              <span className="grid size-5 place-items-center rounded-none bg-primary text-primary-foreground"><Check className="size-3" aria-hidden /></span>
               {decision.type === "policy_approved" ? "Policy released" : "Policy held"}
             </div>
             <Button variant="outline" size="sm" onClick={() => setDecision(null)}>Done</Button>

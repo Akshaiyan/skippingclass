@@ -5,7 +5,7 @@ import { CHANGE_REC, FLOW_OF, LOCKED_TOOLTIP, REC_LABEL, REC_ORDER, changeTo } f
 import { useStore } from "@/store";
 import type { DerivedClaim } from "@/lib/report";
 import { cn } from "@/lib/utils";
-import { Chip, Dot, FLOW_BORDER, FlowBadge, RecheckChip, RuleChips, StatusChip, WhyDisabled } from "@/components/status";
+import { Chip, FLOW_BORDER, FLOW_NAME, FlowBadge, RecheckChip, RuleChips, StatusChip, WhyDisabled } from "@/components/status";
 import { CaseSheet } from "@/components/CaseSheet";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -33,7 +33,7 @@ function QuickActions({ c, onPick, compact }: { c: DerivedClaim; onPick: (r: Rec
             <DropdownMenuContent align="end">
               {others.map((r) => (
                 <DropdownMenuItem key={r} onSelect={() => onPick(r)} className="gap-2 text-xs">
-                  <Dot flow={FLOW_OF[r]} /> {changeTo(r)}
+                  {changeTo(r)}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -91,7 +91,7 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
   };
 
   const chips: { label: string; clear: () => void }[] = [];
-  if (flow !== "all") chips.push({ label: `Flow: ${REC_LABEL[{ red: "human_review", yellow: "request_information", green: "routine_processing" }[flow] as Rec]}`, clear: () => setFlow("all") });
+  if (flow !== "all") chips.push({ label: `Flow: ${FLOW_NAME[flow]}`, clear: () => setFlow("all") });
   if (status !== "all") chips.push({ label: `Status: ${status === "open" ? "Open" : "Closed"}`, clear: () => setStatus("all") });
   if (q.trim()) chips.push({ label: `Case: ${q.trim()}`, clear: () => setQ("") });
   if (recheckOnly) chips.push({ label: "Needs recheck only", clear: () => setRecheckOnly(false) });
@@ -124,8 +124,7 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
                   flow === f ? "bg-background text-foreground shadow-card" : "text-text-2 hover:text-foreground",
                 )}
               >
-                {f !== "all" && <Dot flow={f} />}
-                {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
+                {f === "all" ? "All" : FLOW_NAME[f]}
                 <span className="tnum text-muted-foreground">{counts[f]}</span>
               </button>
             ))}
@@ -155,7 +154,7 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
       {chips.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           {chips.map((c) => (
-            <button key={c.label} onClick={c.clear} className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1 text-xs hover:border-border-strong">
+            <button key={c.label} onClick={c.clear} className="inline-flex items-center gap-1 rounded-none border border-border bg-surface px-3 py-1 text-xs hover:border-border-strong">
               {c.label} <X className="size-3" aria-hidden /> <span className="sr-only">Remove filter</span>
             </button>
           ))}
@@ -206,8 +205,7 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
                   <tr>
                     <th colSpan={6} scope="rowgroup" className="sticky top-0 z-10 border-b border-border bg-surface px-4 py-2 text-left text-xs font-semibold">
                       <span className="inline-flex items-center gap-2">
-                        <Dot flow={g.flow} />
-                        {REC_LABEL[{ red: "human_review", yellow: "request_information", green: "routine_processing" }[g.flow] as Rec]}
+                        {FLOW_NAME[g.flow]}
                         <span className="font-normal text-muted-foreground">· {g.items.filter((i) => i.case_status === "open").length} open</span>
                       </span>
                     </th>
@@ -256,8 +254,7 @@ export function ClaimsList({ flow, setFlow, heading, hideFlowFilter }: { flow: F
             {groups.map((g) => (
               <div key={g.flow} className="space-y-2">
                 <div className="flex items-center gap-2 text-xs font-semibold">
-                  <Dot flow={g.flow} />
-                  {REC_LABEL[{ red: "human_review", yellow: "request_information", green: "routine_processing" }[g.flow] as Rec]}
+                  {FLOW_NAME[g.flow]}
                   <span className="font-normal text-muted-foreground">· {g.items.filter((i) => i.case_status === "open").length} open</span>
                 </div>
                 {g.items.map((c) => (

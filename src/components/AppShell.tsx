@@ -40,13 +40,9 @@ function NavList({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: (
             <span className={cn(collapsed && "text-xs leading-3")}>{collapsed ? n.short : n.label}</span>
             {n.to === "/claims" && redOpen > 0 && (
               <span
-                className={cn(
-                  "tnum inline-flex items-center gap-1 rounded-full bg-flow-red-tint px-2 text-xs font-medium text-foreground",
-                  collapsed ? "absolute right-1 top-1" : "ml-auto",
-                )}
+                className={cn("tnum text-xs font-bold text-foreground", collapsed ? "absolute right-1 top-1" : "ml-auto")}
                 aria-label={`${redOpen} open human review claims`}
               >
-                <span className="size-1.5 rounded-full bg-flow-red" aria-hidden />
                 {redOpen}
               </span>
             )}
@@ -70,7 +66,7 @@ function SidebarFooter({ collapsed }: { collapsed: boolean }) {
   if (collapsed)
     return (
       <div className="flex flex-col items-center gap-1 text-center">
-        <span className="grid size-8 place-items-center rounded-full bg-surface-2 text-xs font-semibold">
+        <span className="grid size-8 place-items-center rounded-none bg-surface-2 text-xs font-semibold">
           {state.reviewer.split(" ").map((p) => p[0]).join("").slice(0, 2) || "?"}
         </span>
         <span className="font-mono text-xs text-muted-foreground">v1</span>

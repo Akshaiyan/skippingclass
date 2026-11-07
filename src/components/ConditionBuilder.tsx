@@ -127,7 +127,7 @@ function Leaf({ c, onChange }: { c: Extract<Condition, { field: string }>; onCha
                       const next = on ? arr.filter((x) => x !== o) : [...arr, o];
                       setRight(next.length ? { kind: "value", value: next } : undefined);
                     }}
-                    className={cn("rounded-full border px-2 py-1 font-mono text-xs", on ? "border-foreground bg-primary text-primary-foreground" : "border-border hover:border-border-strong")}
+                    className={cn("rounded-none border px-2 py-1 font-mono text-xs", on ? "border-foreground bg-primary text-primary-foreground" : "border-border hover:border-border-strong")}
                   >
                     {o}
                   </button>

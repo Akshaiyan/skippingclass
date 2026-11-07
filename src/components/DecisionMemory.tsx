@@ -47,7 +47,7 @@ export function DecisionMemory({ caseId }: { caseId: string }) {
         <ol className="mt-4 space-y-4 border-l border-border pl-5">
           {events.map((e) => (
             <li key={e.seq} className="relative">
-              <span aria-hidden className="absolute -left-[26px] top-1.5 block size-2.5 rounded-full border-2 border-accent bg-background" />
+              <span aria-hidden className="absolute -left-[26px] top-1.5 block size-2.5 rounded-none border-2 border-accent bg-background" />
               <p className="flex flex-wrap items-center gap-2 text-sm">
                 <strong>{e.actor}</strong>
                 <span className="text-muted-foreground">changed</span>

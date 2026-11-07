@@ -6,7 +6,7 @@ import { REASON_LABEL, REC_LABEL, REC_ORDER } from "@/copy";
 import { useStore } from "@/store";
 import { validateOverride } from "@/lib/guards";
 import { cn } from "@/lib/utils";
-import { Dot, FlowBadge, PolicyStamp, Refusal, WhyDisabled } from "./status";
+import { FlowBadge, PolicyStamp, Refusal, WhyDisabled } from "./status";
 import { FLOW_OF } from "@/copy";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -79,7 +79,7 @@ export function OverrideFlow({ claim, initialTarget, onCancel, onDone }: { claim
     return (
       <div className="card-panel space-y-4 p-5" role="status" aria-live="polite">
         <div className="flex items-center gap-2 text-sm font-semibold">
-          <span className="grid size-5 place-items-center rounded-full bg-primary text-primary-foreground"><Check className="size-3" aria-hidden /></span>
+          <span className="grid size-5 place-items-center rounded-none bg-primary text-primary-foreground"><Check className="size-3" aria-hidden /></span>
           Override recorded
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -128,7 +128,7 @@ export function OverrideFlow({ claim, initialTarget, onCancel, onDone }: { claim
                   current && "cursor-not-allowed opacity-60 hover:bg-transparent",
                 )}
               >
-                <span className="inline-flex items-center gap-2 font-medium"><Dot flow={FLOW_OF[r]} />{REC_LABEL[r]}</span>
+                <span className="inline-flex items-center gap-2 font-medium">{REC_LABEL[r]}</span>
                 <span className="text-xs text-muted-foreground">{current ? "Current" : sel ? "Selected" : "Choose"}</span>
               </Button>
             );

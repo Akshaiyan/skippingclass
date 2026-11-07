@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useStore } from "@/store";
-import { Dot, FLOW_DOT, SectionTitle } from "@/components/status";
+import { FLOW_DOT, FLOW_NAME, SectionTitle } from "@/components/status";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { ClaimsList, type FlowFilter } from "@/components/ClaimsList";
@@ -46,9 +46,9 @@ function ClaimsOverview({ flow, setFlow }: { flow: FlowFilter; setFlow: (f: Flow
   const count = (f: Flow) => list.filter((c) => c.flow === f).length;
   const openOf = (f?: Flow) => list.filter((c) => c.case_status === "open" && (!f || c.flow === f)).length;
   const segs: { flow: Flow; label: string; n: number }[] = [
-    { flow: "red", label: "Red", n: count("red") },
-    { flow: "yellow", label: "Yellow", n: count("yellow") },
-    { flow: "green", label: "Green", n: count("green") },
+    { flow: "red", label: FLOW_NAME.red, n: count("red") },
+    { flow: "yellow", label: FLOW_NAME.yellow, n: count("yellow") },
+    { flow: "green", label: FLOW_NAME.green, n: count("green") },
   ];
 
   return (
@@ -77,7 +77,7 @@ function ClaimsOverview({ flow, setFlow }: { flow: FlowFilter; setFlow: (f: Flow
         </div>
       </div>
 
-      <div className="mt-6 flex h-2.5 w-full gap-1 overflow-hidden rounded-full bg-surface-2" role="img" aria-label={segs.map((s) => `${s.label} ${s.n} of ${total}`).join(", ")}>
+      <div className="mt-6 flex h-2.5 w-full gap-1 overflow-hidden rounded-none bg-surface-2" role="img" aria-label={segs.map((s) => `${s.label} ${s.n} of ${total}`).join(", ")}>
         {total > 0 && segs.filter((s) => s.n > 0).map((s) => (
           <div key={s.flow} className={`h-full ${FLOW_DOT[s.flow]}`} style={{ width: `${(s.n / total) * 100}%` }} />
         ))}
@@ -97,7 +97,7 @@ function ClaimsOverview({ flow, setFlow }: { flow: FlowFilter; setFlow: (f: Flow
               }`}
             >
               <div className="flex items-center gap-2 text-xs font-medium text-text-2">
-                <Dot flow={s.flow} /> {s.label} claims
+                {s.label}
               </div>
               <div className="mt-1 flex items-baseline gap-2">
                 <span className="display-num text-2xl font-medium">{s.n}</span>
