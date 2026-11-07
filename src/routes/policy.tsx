@@ -177,7 +177,7 @@ function PolicyPage() {
         }
       />
 
-      <div className="grid items-start gap-6 lg:grid-cols-12">
+      <div className="grid gap-6 lg:grid-cols-12">
         <section className="space-y-4 lg:col-span-5" aria-labelledby="rules-title">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
@@ -263,7 +263,7 @@ function PolicyPage() {
         </section>
 
         <section className="space-y-4 lg:col-span-7" aria-labelledby="impact-title">
-          <div className="card-panel p-5">
+          <div className="card-panel flex h-full flex-col p-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h2 id="impact-title" className="section-title">Expected claim volume</h2>
@@ -279,9 +279,9 @@ function PolicyPage() {
               <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-sm bg-chart-2" aria-hidden />Current</span>
               <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-sm bg-chart-1" aria-hidden />Draft</span>
             </div>
-            <div className="mt-1 h-64 w-full" role="img" aria-label={chartData.map((d) => `${d.name}: current ${d.current}, draft ${d.draft}`).join(". ")}>
+            <div className="mt-1 min-h-64 w-full flex-1" role="img" aria-label={chartData.map((d) => `${d.name}: current ${d.current}, draft ${d.draft}`).join(". ")}>
               <ResponsiveContainer>
-                <BarChart data={chartData} barGap={5} margin={{ top: 12, right: 4, left: -18, bottom: 0 }}>
+                <BarChart data={chartData} barGap={5} margin={{ top: 12, right: 4, left: -6, bottom: 0 }}>
                   <CartesianGrid vertical={false} stroke="var(--border)" />
                   <XAxis dataKey="name" interval={0} tickLine={false} axisLine={{ stroke: "var(--border)" }} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                   <YAxis domain={[0, chartMax]} ticks={chartTicks} allowDecimals={false} tickLine={false} axisLine={false} width={30} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
