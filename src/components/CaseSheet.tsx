@@ -229,217 +229,224 @@ export function CaseSheet({
         }}
       >
         {/* Header, always visible: who, what it is about, and what the rules decided */}
-        <header className="shrink-0 border-b border-border">
-          <div className="flex flex-wrap items-center gap-2 px-6 pb-4 pr-16 pt-6">
-            <SheetTitle className="font-mono text-xl font-semibold">{claim.case_id}</SheetTitle>
-            <FlowBadge rec={claim.recommendation_v1} />
-            <StatusChip status={claim.case_status} />
-            {reviewed && (
-              <Chip tone="outline">
-                <Check className="size-3" aria-hidden />
-                {REVIEW_COPY.reviewed}
-              </Chip>
-            )}
-          </div>
-
-          <div className="grid gap-4 px-6 pb-5 sm:grid-cols-[auto_1fr] sm:gap-8">
-            <div>
-              <div className="text-xs text-muted-foreground">Repair quote</div>
-              <div className="display-num mt-1 text-2xl font-medium">
-                {quote === null ? (
-                  <span className="text-sm font-normal">
-                    <NotProvided />
-                  </span>
-                ) : (
-                  eur(quote)
-                )}
-              </div>
-            </div>
-            <SheetDescription className="self-end text-sm text-foreground">
-              {claim.claim_summary || NOT_PROVIDED}
-            </SheetDescription>
-          </div>
-
-          <div className="grid gap-4 border-t border-border bg-surface px-6 py-4 sm:grid-cols-2 sm:gap-8">
-            <div className="min-w-0">
-              <div className="text-xs text-muted-foreground">
-                Why {REC_LABEL[claim.recommendation_v1].toLowerCase()}
-              </div>
-              <p className="mt-1 line-clamp-2 text-sm font-medium">
-                {shortReason(claim, state.log)}
-              </p>
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs text-muted-foreground">
-                {step.kind === "done" ? "Latest step" : "Next step"}
-              </div>
-              <p className="mt-1 text-sm font-medium">
-                {step.kind === "done" && (
-                  <Check
-                    className="mr-1 inline size-3.5 -translate-y-px text-muted-foreground"
-                    aria-hidden
-                  />
-                )}
-                {step.kind === "suggested"
-                  ? `Suggested next step: ${REC_LABEL[claim.recommendation_v1]}`
-                  : step.label}
-                {step.timestamp && (
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">
-                    {shortDate(step.timestamp)}
-                  </span>
-                )}
-              </p>
-            </div>
-            {!locked && claim.needs_recheck && (
-              <p className="flex flex-wrap items-center gap-2 text-xs text-text-2 sm:col-span-2">
-                Under draft v2 this becomes <FlowBadge rec={claim.recommendation_v2} size="sm" />
-              </p>
-            )}
-          </div>
-        </header>
-
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          {locked && (
-            <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text-2">
-              <Lock className="size-4 shrink-0" aria-hidden /> {LOCKED_BANNER}
-            </div>
-          )}
-
-          {mode === "override" ? (
-            <section className="py-2">
-              <h3 className="section-title mb-4">{OVERRIDE_REC}</h3>
-              <OverrideFlow
-                key={`${claim.case_id}-${target}`}
-                claim={claim}
-                initialTarget={target}
-                onCancel={() => setMode("view")}
-                onDone={() => onOpenChange(false)}
-              />
-            </section>
-          ) : (
-            <>
-              {infoOpen && yellow && (
-                <section className="mb-4 rounded-lg border border-border p-4" aria-live="polite">
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <h3 className="section-title">Information request</h3>
-                    <CopyButton text={infoRequestText(claim)} />
-                  </div>
-                  <pre className="whitespace-pre-wrap rounded-md bg-surface p-3 font-sans text-sm text-text-2">
-                    {infoRequestText(claim)}
-                  </pre>
-                  <p className="mt-2 text-xs text-muted-foreground">{INFO_FOOTNOTE}</p>
-                </section>
+        <div className="flex-1 overflow-y-auto">
+          {/* Overview: the four things a handler needs first, stacked in reading order */}
+          <section aria-label="Case overview" className="border-b border-border px-6 pb-2 pt-6">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pr-16">
+              <SheetTitle className="font-mono text-xl font-semibold">{claim.case_id}</SheetTitle>
+              <FlowBadge rec={claim.recommendation_v1} />
+              <StatusChip status={claim.case_status} />
+              {reviewed && (
+                <Chip tone="outline">
+                  <Check className="size-3" aria-hidden />
+                  {REVIEW_COPY.reviewed}
+                </Chip>
               )}
+            </div>
 
-              <Accordion type="multiple" className="w-full">
-                <AccordionItem value="why" className={SECTION}>
-                  <AccordionTrigger className={TRIGGER}>{REVIEW_COPY.why}</AccordionTrigger>
-                  <AccordionContent className="space-y-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <PolicyStamp version={claim.policy_version} hash={claim.policy_hash} />
-                      <RuleChips rule={claim.rule_v1} />
-                    </div>
-                    <p className="text-text-2">{claim.explanation}</p>
-                    {sug && (
-                      <div className="rounded-lg border border-border bg-surface p-4">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <h4 className="text-sm font-semibold">
-                            One question that would change the outcome
-                          </h4>
-                          <Chip tone="outline">{RULE_BASED}</Chip>
-                        </div>
-                        <p className="mt-2 text-sm font-medium">{sug.title}</p>
-                        <p className="mt-1 text-sm text-text-2">{sug.outcomes}</p>
-                      </div>
+            <dl className="mt-6 divide-y divide-border border-t border-border">
+              <div className="grid gap-1 py-4 sm:grid-cols-[112px_1fr] sm:gap-4">
+                <dt className="text-xs font-medium text-muted-foreground">Description</dt>
+                <dd className="text-sm">
+                  <SheetDescription className="text-sm text-foreground">
+                    {claim.claim_summary || NOT_PROVIDED}
+                  </SheetDescription>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Repair quote{" "}
+                    {quote === null ? (
+                      <NotProvided />
+                    ) : (
+                      <span className="tnum font-medium text-foreground">{eur(quote)}</span>
                     )}
-                    <ul className="space-y-2">
-                      {checks.map((c) => (
-                        <li
-                          key={c.id}
-                          className={cn(
-                            "rounded-lg border p-3",
-                            c.result === "unknown"
-                              ? "border-unknown/30 bg-unknown-tint"
-                              : "border-border bg-background",
-                          )}
-                        >
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                            <span className="w-20 shrink-0">
-                              <TriGlyph result={c.result} outcome={c.outcome} />
-                            </span>
-                            <span className="text-sm">{c.description}</span>
-                            <span className="ml-auto">
-                              <FlowBadge rec={c.outcome} size="sm" />
-                            </span>
-                          </div>
-                          <div className="mt-2 rounded-md bg-surface px-2 py-1 font-mono text-xs leading-5 text-text-2">
-                            {c.evidence}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
+                  </p>
+                </dd>
+              </div>
 
-                <AccordionItem value="facts" className={SECTION}>
-                  <AccordionTrigger className={TRIGGER}>All case information</AccordionTrigger>
-                  <AccordionContent>
-                    <dl className="grid gap-x-6 sm:grid-cols-2">
-                      {Object.entries(claim.facts).map(([k, v]) => (
-                        <div
-                          key={k}
-                          className="flex items-baseline justify-between gap-3 border-b border-border py-2 text-sm"
-                        >
-                          <dt className="text-xs text-muted-foreground">{fieldLabel(k)}</dt>
-                          <dd className="tnum min-w-0 break-words text-right">
-                            <FactValue k={k} v={v} blank={claim.blank_fields.includes(k)} />
-                          </dd>
-                        </div>
-                      ))}
-                    </dl>
-                  </AccordionContent>
-                </AccordionItem>
+              <div className="grid gap-1 py-4 sm:grid-cols-[112px_1fr] sm:gap-4">
+                <dt className="text-xs font-medium text-muted-foreground">Reason</dt>
+                <dd className="text-sm">
+                  <p className="font-medium">{shortReason(claim, state.log)}</p>
+                  {!locked && claim.needs_recheck && (
+                    <p className="mt-1 text-xs text-text-2">
+                      Under draft v2 this becomes{" "}
+                      <FlowBadge rec={claim.recommendation_v2} size="sm" />
+                    </p>
+                  )}
+                </dd>
+              </div>
 
-                <AccordionItem value="memory" className={SECTION}>
-                  <AccordionTrigger className={TRIGGER}>Decision memory</AccordionTrigger>
-                  <AccordionContent>
-                    <DecisionMemory caseId={claim.case_id} />
-                  </AccordionContent>
-                </AccordionItem>
+              <div className="grid gap-1 py-4 sm:grid-cols-[112px_1fr] sm:gap-4">
+                <dt className="text-xs font-medium text-muted-foreground">Next step</dt>
+                <dd className="text-sm">
+                  <p className="font-medium">
+                    {step.kind === "done" && (
+                      <Check
+                        className="mr-1 inline size-3.5 -translate-y-px text-muted-foreground"
+                        aria-hidden
+                      />
+                    )}
+                    {step.kind === "suggested"
+                      ? `Suggested next step: ${REC_LABEL[claim.recommendation_v1]}`
+                      : step.label}
+                  </p>
+                  {step.timestamp && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Recorded {shortDate(step.timestamp)}
+                    </p>
+                  )}
+                  {step.kind === "done" && !locked && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Suggested next step: {REC_LABEL[claim.recommendation_v1]}
+                    </p>
+                  )}
+                </dd>
+              </div>
+            </dl>
+          </section>
 
-                <AccordionItem value="email" className={SECTION}>
-                  <AccordionTrigger className={TRIGGER}>Draft email</AccordionTrigger>
-                  <AccordionContent>
-                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-xs text-muted-foreground">{EMAIL_LABEL}</p>
-                      <CopyButton text={emailText(claim)} />
+          <div className="px-6 py-4">
+            {locked && (
+              <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text-2">
+                <Lock className="size-4 shrink-0" aria-hidden /> {LOCKED_BANNER}
+              </div>
+            )}
+
+            {mode === "override" ? (
+              <section className="py-2">
+                <h3 className="section-title mb-4">{OVERRIDE_REC}</h3>
+                <OverrideFlow
+                  key={`${claim.case_id}-${target}`}
+                  claim={claim}
+                  initialTarget={target}
+                  onCancel={() => setMode("view")}
+                  onDone={() => onOpenChange(false)}
+                />
+              </section>
+            ) : (
+              <>
+                {infoOpen && yellow && (
+                  <section className="mb-4 rounded-lg border border-border p-4" aria-live="polite">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <h3 className="section-title">Information request</h3>
+                      <CopyButton text={infoRequestText(claim)} />
                     </div>
                     <pre className="whitespace-pre-wrap rounded-md bg-surface p-3 font-sans text-sm text-text-2">
-                      {emailText(claim)}
+                      {infoRequestText(claim)}
                     </pre>
                     <p className="mt-2 text-xs text-muted-foreground">{INFO_FOOTNOTE}</p>
-                  </AccordionContent>
-                </AccordionItem>
+                  </section>
+                )}
 
-                <AccordionItem value="connections" className={SECTION}>
-                  <AccordionTrigger className={TRIGGER}>Connections</AccordionTrigger>
-                  <AccordionContent className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <h4 className="text-sm font-medium">HubSpot</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Planned: sync this case to your CRM
-                      </p>
-                    </div>
-                    <WhyDisabled disabled reason="Not available in this demo">
-                      <Button variant="outline" size="sm" disabled>
-                        <Plug aria-hidden /> Connect
-                      </Button>
-                    </WhyDisabled>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </>
-          )}
+                <Accordion type="multiple" className="w-full">
+                  <AccordionItem value="why" className={SECTION}>
+                    <AccordionTrigger className={TRIGGER}>{REVIEW_COPY.why}</AccordionTrigger>
+                    <AccordionContent className="space-y-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <PolicyStamp version={claim.policy_version} hash={claim.policy_hash} />
+                        <RuleChips rule={claim.rule_v1} />
+                      </div>
+                      <p className="text-text-2">{claim.explanation}</p>
+                      {sug && (
+                        <div className="rounded-lg border border-border bg-surface p-4">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h4 className="text-sm font-semibold">
+                              One question that would change the outcome
+                            </h4>
+                            <Chip tone="outline">{RULE_BASED}</Chip>
+                          </div>
+                          <p className="mt-2 text-sm font-medium">{sug.title}</p>
+                          <p className="mt-1 text-sm text-text-2">{sug.outcomes}</p>
+                        </div>
+                      )}
+                      <ul className="space-y-2">
+                        {checks.map((c) => (
+                          <li
+                            key={c.id}
+                            className={cn(
+                              "rounded-lg border p-3",
+                              c.result === "unknown"
+                                ? "border-unknown/30 bg-unknown-tint"
+                                : "border-border bg-background",
+                            )}
+                          >
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                              <span className="w-20 shrink-0">
+                                <TriGlyph result={c.result} outcome={c.outcome} />
+                              </span>
+                              <span className="text-sm">{c.description}</span>
+                              <span className="ml-auto">
+                                <FlowBadge rec={c.outcome} size="sm" />
+                              </span>
+                            </div>
+                            <div className="mt-2 rounded-md bg-surface px-2 py-1 font-mono text-xs leading-5 text-text-2">
+                              {c.evidence}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="facts" className={SECTION}>
+                    <AccordionTrigger className={TRIGGER}>All case information</AccordionTrigger>
+                    <AccordionContent>
+                      <dl className="grid gap-x-6 sm:grid-cols-2">
+                        {Object.entries(claim.facts).map(([k, v]) => (
+                          <div
+                            key={k}
+                            className="flex items-baseline justify-between gap-3 border-b border-border py-2 text-sm"
+                          >
+                            <dt className="text-xs text-muted-foreground">{fieldLabel(k)}</dt>
+                            <dd className="tnum min-w-0 break-words text-right">
+                              <FactValue k={k} v={v} blank={claim.blank_fields.includes(k)} />
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="memory" className={SECTION}>
+                    <AccordionTrigger className={TRIGGER}>Decision memory</AccordionTrigger>
+                    <AccordionContent>
+                      <DecisionMemory caseId={claim.case_id} />
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="email" className={SECTION}>
+                    <AccordionTrigger className={TRIGGER}>Draft email</AccordionTrigger>
+                    <AccordionContent>
+                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-xs text-muted-foreground">{EMAIL_LABEL}</p>
+                        <CopyButton text={emailText(claim)} />
+                      </div>
+                      <pre className="whitespace-pre-wrap rounded-md bg-surface p-3 font-sans text-sm text-text-2">
+                        {emailText(claim)}
+                      </pre>
+                      <p className="mt-2 text-xs text-muted-foreground">{INFO_FOOTNOTE}</p>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="connections" className={SECTION}>
+                    <AccordionTrigger className={TRIGGER}>Connections</AccordionTrigger>
+                    <AccordionContent className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h4 className="text-sm font-medium">HubSpot</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Planned: sync this case to your CRM
+                        </p>
+                      </div>
+                      <WhyDisabled disabled reason="Not available in this demo">
+                        <Button variant="outline" size="sm" disabled>
+                          <Plug aria-hidden /> Connect
+                        </Button>
+                      </WhyDisabled>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </>
+            )}
+          </div>
         </div>
 
         {mode === "view" && (
