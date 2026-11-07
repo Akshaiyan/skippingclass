@@ -104,6 +104,13 @@ export function CaseSheet({
   const [target, setTarget] = useState<Rec | undefined>();
   const [infoOpen, setInfoOpen] = useState(false);
   const [showPassed, setShowPassed] = useState(false);
+  const [confirmation, setConfirmation] = useState<{ timestamp: string; caseId: string; previousStatus?: "reviewed" } | null>(null);
+
+  useEffect(() => {
+    if (!confirmation) return;
+    const timer = setTimeout(() => setConfirmation(null), 6000);
+    return () => clearTimeout(timer);
+  }, [confirmation]);
 
   useEffect(() => {
     if (open) {
@@ -111,6 +118,7 @@ export function CaseSheet({
       setTarget(initialOverride && initialOverride !== "open" ? initialOverride : undefined);
       setInfoOpen(false);
       setShowPassed(false);
+      setConfirmation(null);
     }
   }, [open, claim?.case_id, initialOverride]);
 
@@ -127,6 +135,7 @@ export function CaseSheet({
     if (locked || reviewed || mode !== "view" || !state.reviewer.trim()) return;
     const timestamp = new Date().toISOString();
     dispatch({ type: "confirm", case_id: claim.case_id, timestamp });
+    setConfirmation({ timestamp, caseId: claim.case_id, previousStatus: claim.ui_status });
     toast.success(CONFIRM_TOAST, {
       duration: 6000,
       action: {
@@ -134,6 +143,7 @@ export function CaseSheet({
         onClick: () => {
           dispatch({ type: "undoConfirm", case_id: claim.case_id, confirmationTimestamp: timestamp, timestamp: new Date().toISOString(), previousStatus: claim.ui_status });
           toast.success(REVIEW_COPY.undone);
+          setConfirmation(null);
         },
       },
     });
@@ -315,6 +325,11 @@ export function CaseSheet({
               <span>{REVIEW_COPY.audit}</span>
             </div>
             <div className="flex flex-wrap gap-2">
+            {confirmation?.caseId === claim.case_id && <Button variant="ghost" onClick={() => {
+              dispatch({ type: "undoConfirm", case_id: confirmation.caseId, confirmationTimestamp: confirmation.timestamp, timestamp: new Date().toISOString(), previousStatus: confirmation.previousStatus });
+              setConfirmation(null);
+              toast.success(REVIEW_COPY.undone);
+            }}>{REVIEW_COPY.undo}</Button>}
             <WhyDisabled disabled={locked} reason={LOCKED_TOOLTIP}>
               <Button
                 disabled={locked || reviewed || !state.reviewer.trim()}

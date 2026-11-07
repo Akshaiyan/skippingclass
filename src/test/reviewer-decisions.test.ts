@@ -8,7 +8,9 @@ describe("reviewer decisions", () => {
     const state = initialStoreState();
     const result = storeReducer(state, { type: "confirm", case_id: "PRA-001", timestamp });
     expect(result.claims.find((claim) => claim.case_id === "PRA-001")?.ui_status).toBe("reviewed");
-    expect(result.log.at(-1)).toMatchObject({ type: "reviewer_accept", case_id: "PRA-001", to_rec: "human_review", actor: state.reviewer, timestamp, policy_version: state.claims[0].policy_version, policy_hash: state.claims[0].policy_hash });
+    const claim = state.claims.find((item) => item.case_id === "PRA-001");
+    if (!claim) throw new Error("Required test claim missing");
+    expect(result.log.at(-1)).toMatchObject({ type: "reviewer_accept", case_id: "PRA-001", to_rec: "human_review", actor: state.reviewer, timestamp, policy_version: claim.policy_version, policy_hash: claim.policy_hash });
     expect(result.log.length).toBe(state.log.length + 1);
   });
   it("Undo restores review status without removing the original audit record", () => {
@@ -17,7 +19,8 @@ describe("reviewer decisions", () => {
     const undone = storeReducer(confirmed, { type: "undoConfirm", case_id: "PRA-001", confirmationTimestamp: timestamp, timestamp: "2026-11-07T19:19:01.000Z" });
     expect(undone.claims.find((claim) => claim.case_id === "PRA-001")?.ui_status).toBeUndefined();
     expect(undone.log.slice(0, -1)).toEqual(confirmed.log);
-    expect(undone.log.at(-1)?.note).toContain(timestamp);
+    const last = undone.log.at(-1);
+    expect(last && "note" in last ? last.note : undefined).toContain(timestamp);
   });
   it("locked claims cannot be confirmed", () => {
     const state = initialStoreState();
