@@ -42,7 +42,7 @@ function QuickActions({ c, onPick }: { c: DerivedClaim; onPick: (r: Rec) => void
       <div className="hidden flex-wrap gap-1.5 2xl:flex">
         {others.map((r) => (
           <WhyDisabled key={r} disabled={locked} reason={LOCKED_TOOLTIP}>
-            <Button variant="outline" size="sm" className="h-7 px-2 text-[11px]" disabled={locked} onClick={() => onPick(r)}>
+            <Button variant="outline" size="sm" className="h-7 px-1.5 text-[11px]" disabled={locked} onClick={() => onPick(r)}>
               <Dot flow={FLOW_OF[r]} className="size-1.5" /> {changeTo(r)}
             </Button>
           </WhyDisabled>
@@ -133,6 +133,16 @@ function ClaimsPage() {
       />
 
       <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
+        <label className="relative flex w-fit items-center">
+          <Search className="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" aria-hidden />
+          <span className="sr-only">Search by case id</span>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search case id"
+            className="h-8 w-48 rounded-md border border-border bg-background pl-8 pr-2 font-mono text-xs hover:border-border-strong"
+          />
+        </label>
         <div role="radiogroup" aria-label="Flow" className="inline-flex flex-wrap rounded-lg border border-border bg-surface p-0.5">
           {(["all", "red", "yellow", "green"] as FlowFilter[]).map((f) => (
             <button
@@ -167,16 +177,6 @@ function ClaimsPage() {
             </button>
           ))}
         </div>
-        <label className="relative flex items-center">
-          <Search className="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" aria-hidden />
-          <span className="sr-only">Search by case id</span>
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search case id"
-            className="h-8 w-48 rounded-md border border-border bg-background pl-8 pr-2 font-mono text-xs hover:border-border-strong"
-          />
-        </label>
         <label className="inline-flex items-center gap-2 text-xs font-medium text-text-2">
           <Switch checked={recheckOnly} onCheckedChange={setRecheckOnly} /> Needs recheck only
         </label>
@@ -205,7 +205,16 @@ function ClaimsPage() {
       ) : (
         <>
           <div className="card-panel hidden overflow-x-auto md:block">
-            <table className="w-full min-w-[960px] border-separate border-spacing-0 text-sm">
+            <table className="w-full min-w-[1320px] table-fixed border-separate border-spacing-0 text-sm">
+              <colgroup>
+                <col className="w-[11%]" />
+                <col className="w-[8%]" />
+                <col className="w-[13%]" />
+                <col className="w-[15%]" />
+                <col className="w-[11%]" />
+                <col className="w-[9%]" />
+                <col className="w-[33%]" />
+              </colgroup>
               <thead>
                 <tr className="text-left">
                   {["Case", "Status", "Recommendation", "Rule", "Explanation", "Recheck", "Quick actions"].map((h) => (
@@ -233,9 +242,9 @@ function ClaimsPage() {
                       tabIndex={0}
                       onClick={() => open(c.case_id)}
                       onKeyDown={(e) => onRowKey(e, c.case_id)}
-                      className="group cursor-pointer transition-colors duration-150 hover:bg-surface focus-visible:bg-surface"
+                      className="group h-[70px] cursor-pointer transition-colors duration-150 hover:bg-surface focus-visible:bg-surface"
                     >
-                      <td className={cn("border-b border-l-2 border-border px-4 py-3", FLOW_BORDER[c.flow])}>
+                      <td className={cn("border-b border-l-2 border-border px-4 py-2.5", FLOW_BORDER[c.flow])}>
                         <div className="flex items-center gap-2">
                           <span className="whitespace-nowrap font-mono text-[13px] font-medium">{c.case_id}</span>
                           {c.ui_status === "reviewed" && (
@@ -243,10 +252,10 @@ function ClaimsPage() {
                           )}
                         </div>
                       </td>
-                      <td className="border-b border-border px-4 py-3"><StatusChip status={c.case_status} /></td>
-                      <td className="border-b border-border px-4 py-3"><FlowBadge rec={c.recommendation_v1} /></td>
-                      <td className="max-w-[210px] border-b border-border px-4 py-3"><RuleChips rule={c.rule_v1} /></td>
-                      <td className="max-w-[200px] border-b border-border px-4 py-3">
+                      <td className="border-b border-border px-4 py-2.5"><StatusChip status={c.case_status} /></td>
+                      <td className="border-b border-border px-4 py-2.5"><FlowBadge rec={c.recommendation_v1} /></td>
+                      <td className="border-b border-border px-2 py-2.5"><RuleChips rule={c.rule_v1} /></td>
+                      <td className="border-b border-border px-4 py-2.5">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <span className="block truncate text-text-2">{c.explanation}</span>
@@ -254,10 +263,10 @@ function ClaimsPage() {
                           <TooltipContent className="max-w-80">{c.explanation}</TooltipContent>
                         </Tooltip>
                       </td>
-                      <td className="border-b border-border px-4 py-3">
+                      <td className="border-b border-border px-4 py-2.5">
                         {c.case_status === "open" && c.needs_recheck && <RecheckChip from={c.recommendation_v1} to={c.recommendation_v2} />}
                       </td>
-                      <td className="border-b border-border px-4 py-3">
+                      <td className="border-b border-border px-2 py-2.5">
                         <QuickActions c={c} onPick={(r) => open(c.case_id, r)} />
                       </td>
                     </tr>

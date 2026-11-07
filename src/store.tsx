@@ -1,11 +1,10 @@
-import { createContext, useContext, useMemo, useReducer, type ReactNode } from "react";
+import { createContext, useContext } from "react";
 import type { Claim, LogEntry, PolicyDecision, PolicyRule, Rec, ReviewerOverride } from "@/types";
 import { appendLog, getClaims, getDraftPolicy, getLog, getPolicy } from "@/data/api";
 import { FLOW_OF } from "@/copy";
-import { hashRules } from "@/lib/evaluate";
-import { deriveClaims, type DerivedClaim } from "@/lib/report";
+import type { DerivedClaim } from "@/lib/report";
 
-export type QuoteLimit = 1000 | 1200 | 1500;
+export type QuoteLimit = number;
 
 interface State {
   claims: Claim[];
@@ -37,7 +36,7 @@ function withLimit(rules: PolicyRule[], limit: number): PolicyRule[] {
   );
 }
 
-function reducer(s: State, a: Action): State {
+export function storeReducer(s: State, a: Action): State {
   switch (a.type) {
     case "confirm":
       return { ...s, claims: s.claims.map((c) => (c.case_id === a.case_id ? { ...c, ui_status: "reviewed" } : c)) };
@@ -73,25 +72,17 @@ interface Ctx {
   v1Hash: string;
   draftHash: string;
 }
-const StoreCtx = createContext<Ctx | null>(null);
+export const StoreCtx = createContext<Ctx | null>(null);
 
-export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, undefined, () => ({
+export function initialStoreState(): State {
+  return {
     claims: getClaims(),
     draftRules: getDraftPolicy().rules,
     log: getLog(),
     reviewer: "Jonas Weber",
-    quoteLimit: 1200 as QuoteLimit,
+    quoteLimit: 1200,
     gateOpen: false,
-  }));
-  const v1 = useMemo(() => getPolicy(), []);
-  const derived = useMemo(() => deriveClaims(state.claims, state.draftRules), [state.claims, state.draftRules]);
-  const draftHash = useMemo(() => hashRules(state.draftRules), [state.draftRules]);
-  return (
-    <StoreCtx.Provider value={{ state, dispatch, derived, v1Rules: v1.rules, v1Hash: v1.hash, draftHash }}>
-      {children}
-    </StoreCtx.Provider>
-  );
+  };
 }
 
 export function useStore() {
