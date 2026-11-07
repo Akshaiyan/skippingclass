@@ -279,7 +279,7 @@ function PolicyPage() {
               <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-sm bg-chart-2" aria-hidden />Current</span>
               <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-sm bg-chart-1" aria-hidden />Draft</span>
             </div>
-            <div className="mt-1 min-h-64 w-full flex-1" role="img" aria-label={chartData.map((d) => `${d.name}: current ${d.current}, draft ${d.draft}`).join(". ")}>
+            <div className="my-auto h-[420px] w-full" role="img" aria-label={chartData.map((d) => `${d.name}: current ${d.current}, draft ${d.draft}`).join(". ")}>
               <ResponsiveContainer>
                 <BarChart data={chartData} barGap={5} margin={{ top: 12, right: 4, left: -6, bottom: 0 }}>
                   <CartesianGrid vertical={false} stroke="var(--border)" />
