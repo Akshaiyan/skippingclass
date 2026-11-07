@@ -27,6 +27,7 @@ STEPS = [
     ("app-facing API, policy change summary and the sign-off gate", ["test_ui_view.py"]),
     ("input robustness: refusals, amounts, spellings (red-team findings)", ["test_robustness.py"]),
     ("concurrent log writes: chain intact, every record once", ["test_concurrency.py"]),
+    ("API abuse: oversized, malformed, wrong types, path tricks, approvals", ["test_api_abuse.py"]),
     ("tampering and restart: edits, torn writes, repair", ["test_tamper_restart.py"]),
     ("monitoring report runs without a decision log", ["monitor_report.py"]),
     ("demo readiness: files, Python, Bun and ports", ["demo_check.py"]),

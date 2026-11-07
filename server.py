@@ -215,6 +215,8 @@ class Handler(BaseHTTPRequestHandler):
             body = self._body() if method == "POST" else {}
         except (ValueError, json.JSONDecodeError):
             return self._send(400, {"error": "body must be JSON"})
+        if not isinstance(body, dict):
+            return self._send(400, {"error": "body must be a JSON object"})
         status, payload = handle(method, u.path, parse_qs(u.query), body)
         self._send(status, payload)
 
