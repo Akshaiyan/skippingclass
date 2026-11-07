@@ -215,7 +215,16 @@ function ClaimsPage() {
       ) : (
         <>
           <div className="card-panel hidden overflow-x-auto md:block">
-            <table className="w-full min-w-[960px] border-separate border-spacing-0 text-sm">
+            <table className="w-full min-w-[1320px] table-fixed border-separate border-spacing-0 text-sm">
+              <colgroup>
+                <col className="w-[11%]" />
+                <col className="w-[8%]" />
+                <col className="w-[13%]" />
+                <col className="w-[17%]" />
+                <col className="w-[12%]" />
+                <col className="w-[10%]" />
+                <col className="w-[29%]" />
+              </colgroup>
               <thead>
                 <tr className="text-left">
                   {["Case", "Status", "Recommendation", "Rule", "Explanation", "Recheck", "Quick actions"].map((h) => (
