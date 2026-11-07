@@ -191,6 +191,10 @@
       font-size: 16px !important;
     }
   }
+  /* Sonner toasts ship their own system font stack; they use the body font like everything else. */
+  [data-sonner-toaster] {
+    font-family: var(--font-sans);
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
