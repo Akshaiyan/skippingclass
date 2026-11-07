@@ -2,14 +2,12 @@ import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer,
 import { getPolicyImpact } from "@/data/api";
 import { IMPACT_COPY, NOT_PROVIDED } from "@/copy";
 import { useStore } from "@/store";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 const euro = (value: number) => new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" }).format(value);
 const flowSwatches = { green: "bg-flow-green", yellow: "bg-flow-yellow", red: "bg-flow-red" };
 
 export function PolicyImpact() {
-  const { state, derived, dispatch } = useStore();
+  const { state, derived } = useStore();
   const impact = getPolicyImpact(derived, state.handlingRates);
   const versions = [
     { key: "live" as const, label: IMPACT_COPY.live, cost: impact.liveCost },
@@ -77,18 +75,6 @@ export function PolicyImpact() {
             </BarChart>
           </ResponsiveContainer> : <div className="grid h-full place-items-center border-b border-border text-xs text-muted-foreground">{NOT_PROVIDED}</div>}
         </div>
-        <fieldset className="mt-5">
-          <legend className="mb-2 text-xs text-muted-foreground">{IMPACT_COPY.rates}</legend>
-          <div className="grid grid-cols-3 gap-2">
-            {impact.counts.map((row) => <div key={row.flow}>
-              <Label htmlFor={`cost-${row.flow}`} className="text-xs">{IMPACT_COPY.flows[row.flow]}</Label>
-              <Input id={`cost-${row.flow}`} className="tnum mt-1.5 font-mono" type="number" min={0} step="0.01" placeholder="EUR" value={state.handlingRates?.[row.flow] ?? ""} onChange={(event) => {
-                const value = event.target.value;
-                dispatch({ type: "setHandlingRate", flow: row.flow, rate: value === "" ? null : Number(value) });
-              }} />
-            </div>)}
-          </div>
-        </fieldset>
       </section>
     </div>
   );
