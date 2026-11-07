@@ -132,6 +132,8 @@ function PolicyPage() {
     current: derived.filter((c) => c.case_status === "open" && c.recommendation_v1 === rec).length,
     draft: derived.filter((c) => c.case_status === "open" && c.recommendation_v2 === rec).length,
   })), [derived]);
+  const chartMax = Math.max(1, ...chartData.flatMap((d) => [d.current, d.draft])) + 1;
+  const chartTicks = Array.from({ length: chartMax + 1 }, (_, i) => i);
 
   const save = (r: PolicyRule, prevId?: string) => {
     const next = prevId ? rules.map((x) => (x.id === prevId ? r : x)) : [...rules.filter((x) => x.id !== "R3.routine"), r, ...rules.filter((x) => x.id === "R3.routine")];
@@ -292,7 +294,7 @@ function PolicyPage() {
                 <BarChart data={chartData} barGap={5} margin={{ top: 12, right: 4, left: -18, bottom: 0 }}>
                   <CartesianGrid vertical={false} stroke="var(--border)" />
                   <XAxis dataKey="name" interval={0} tickLine={false} axisLine={{ stroke: "var(--border)" }} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={30} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                  <YAxis domain={[0, chartMax]} ticks={chartTicks} allowDecimals={false} tickLine={false} axisLine={false} width={30} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                   <ChartTooltip cursor={{ fill: "var(--surface)" }} content={<VolumeTip />} />
                   <Bar isAnimationActive={false} dataKey="current" name="Current" fill="var(--chart-2)" radius={[3, 3, 0, 0]} maxBarSize={42} />
                   <Bar isAnimationActive={false} dataKey="draft" name="Draft" fill="var(--chart-1)" radius={[3, 3, 0, 0]} maxBarSize={42} />
