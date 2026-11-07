@@ -238,7 +238,7 @@ function ClaimsPage() {
                     >
                       <td className={cn("border-b border-l-2 border-border px-4 py-3", FLOW_BORDER[c.flow])}>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-[13px] font-medium">{c.case_id}</span>
+                          <span className="whitespace-nowrap font-mono text-[13px] font-medium">{c.case_id}</span>
                           {c.ui_status === "reviewed" && (
                             <Chip><Check className="size-3" aria-hidden /> Reviewed</Chip>
                           )}
