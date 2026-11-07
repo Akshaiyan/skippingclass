@@ -40,6 +40,15 @@ def main(argv=None):
     except (ValueError, OSError) as exc:
         print(f"ERROR: cannot read claims file: {exc}")
         return 1
+    quarantine = info.get("quarantine", [])
+    if quarantine:
+        rows_hit = len({x["line"] for x in quarantine})
+        print(f"QUARANTINED {len(quarantine)} unreadable value(s) in {rows_hit} row(s). Each is decided as "
+              "request_information, never guessed:")
+        for x in quarantine[:20]:
+            print(f"  line {x['line']}: {x['field']} = {x['value']!r}")
+        if len(quarantine) > 20:
+            print(f"  ... and {len(quarantine) - 20} more (see the trace)")
     if info.get("repaired_lines"):
         print(f"Repaired {len(info['repaired_lines'])} row(s): unquoted commas merged back into claim_summary "
               f"at line(s) {', '.join(map(str, info['repaired_lines'][:10]))}")

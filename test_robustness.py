@@ -84,6 +84,18 @@ check("a blank repair type asks for information under v1 (policy and engine)",
 row["quote_eur"] = "1600"
 check("a review trigger still beats a blank repair type", policy.decide(row, V1)[0] == "human_review")
 
+# Quarantine: an unreadable value is listed with its line and field, and the row is still decided, not guessed
+rows, info = io_csv.read_claims_text("\n".join([HEADER, GOOD.replace("False,False,False,False", "maybe,False,False,False")]))
+q = info["quarantine"]
+check("an unreadable boolean is quarantined with its line and field",
+      len(q) == 1 and q[0]["line"] == 2 and q[0]["field"] == "injury_reported" and q[0]["value"] == "maybe", q)
+check("a quarantined row is still decided as request information",
+      policy.decide(rows[0], V1)[0] == "request_information", policy.decide(rows[0], V1))
+rows, info = io_csv.read_claims_text("\n".join([HEADER, GOOD.replace("800", "lots")]))
+check("an unreadable amount is quarantined", any(x["field"] == "quote_eur" for x in info["quarantine"]), info["quarantine"])
+rows, info = io_csv.read_claims_text("\n".join([HEADER, GOOD]))
+check("a clean file has nothing quarantined", info["quarantine"] == [], info["quarantine"])
+
 # A short row (trailing blanks dropped by an export tool) is still read, with the missing cells blank
 rows, _ = io_csv.read_claims_text("\n".join([HEADER, "C9,open,Short,True,motor_own_damage,standard,800,True,True"]))
 check("a short row is read, with missing cells as absent facts",

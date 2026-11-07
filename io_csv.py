@@ -15,6 +15,8 @@ import csv
 import io
 import re
 
+import triage
+
 CANONICAL = [
     "case_id", "case_status", "claim_summary", "policy_active_on_incident", "claim_type",
     "repair_type", "quote_eur", "incident_report_present", "itemized_quote_present",
@@ -134,6 +136,7 @@ def read_claims_text(text):
     out = []
     seen_ids = set()
     repaired = []
+    quarantine = []
     for line_no, raw in enumerate(rows[1:], start=2):
         if not any(c.strip() for c in raw):
             continue
@@ -162,8 +165,17 @@ def read_claims_text(text):
         rec["claim_type"] = clean_token(rec["claim_type"])
         rec["repair_type"] = canonical_repair(clean_token(rec["repair_type"]))
         rec["quote_eur"] = clean_amount(rec["quote_eur"])
+        # Quarantine: values that cannot be read. The row is still decided (request information), but it is listed
+        # with its line and field so a reviewer sees it. Decision record: a silent request looked like a clean row.
+        for f in BOOL_FIELDS:
+            if rec[f] not in ("", "True", "False"):
+                quarantine.append({"line": line_no, "field": f, "value": rec[f]})
+        if rec["quote_eur"] and triage.amount_or_none(rec["quote_eur"]) is None:
+            quarantine.append({"line": line_no, "field": "quote_eur", "value": rec["quote_eur"]})
+        if rec["case_status"] not in ("open", "closed"):
+            quarantine.append({"line": line_no, "field": "case_status", "value": rec["case_status"]})
         out.append(rec)
-    return out, {"repaired_lines": repaired, "delimiter": delim, "columns_found": [c for c in header if c in CANONICAL],
+    return out, {"quarantine": quarantine, "repaired_lines": repaired, "delimiter": delim, "columns_found": [c for c in header if c in CANONICAL],
                  "columns_missing": [c for c in CANONICAL if c not in header and c != "expected_v1"]}
 
 
