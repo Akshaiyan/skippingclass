@@ -128,6 +128,15 @@ function PolicyPage() {
   };
 
   const quoteRule = rules.find((r) => r.id === "R1.quote_over_limit");
+  const [limitText, setLimitText] = useState(String(state.quoteLimit));
+  useEffect(() => {
+    setLimitText((t) => (Number(t) === state.quoteLimit ? t : String(state.quoteLimit)));
+  }, [state.quoteLimit]);
+  const commitLimit = (v: string) => {
+    setLimitText(v);
+    const n = Number(v);
+    if (v.trim() !== "" && Number.isFinite(n) && n >= 0) dispatch({ type: "setQuoteLimit", limit: Math.round(n) });
+  };
   const releaseReason = !allPass ? "All exhaustive checks must pass" : gate.approverErr ?? gate.reasonErr ?? undefined;
 
   return (
@@ -154,21 +163,23 @@ function PolicyPage() {
           <div className="card-panel p-4">
             <div className="eyebrow mb-2">What-if sweep</div>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="text-sm font-medium">Quote limit</span>
-              <div role="radiogroup" aria-label="Quote limit" className="inline-flex rounded-lg border border-border bg-surface p-0.5">
-                {([1000, 1200, 1500] as QuoteLimit[]).map((l) => (
-                  <button
-                    key={l}
-                    role="radio"
-                    aria-checked={state.quoteLimit === l}
-                    disabled={!quoteRule}
-                    onClick={() => dispatch({ type: "setQuoteLimit", limit: l })}
-                    className={cn("tnum rounded-md px-3 py-1.5 text-xs font-medium transition-colors", state.quoteLimit === l ? "bg-background shadow-card" : "text-text-2 hover:text-foreground")}
-                  >
-                    {l.toLocaleString("en-US")}
-                  </button>
-                ))}
-              </div>
+              <label htmlFor="quote-limit" className="text-sm font-medium">
+                Quote limit
+              </label>
+              <span className="relative inline-flex items-center">
+                <span className="pointer-events-none absolute left-2.5 font-mono text-xs text-muted-foreground">EUR</span>
+                <input
+                  id="quote-limit"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  step={50}
+                  disabled={!quoteRule}
+                  value={limitText}
+                  onChange={(e) => commitLimit(e.target.value)}
+                  className="tnum h-8 w-36 rounded-md border border-border bg-background pl-11 pr-2 font-mono text-xs hover:border-border-strong focus:border-border-strong focus:outline-none"
+                />
+              </span>
             </div>
           </div>
 
