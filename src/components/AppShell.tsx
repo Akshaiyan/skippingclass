@@ -155,11 +155,11 @@ function UserPanel({ collapsed }: { collapsed: boolean }) {
 
 function Brand({ collapsed }: { collapsed: boolean }) {
   return collapsed ? (
-    <AegisMark className="h-6 w-auto text-foreground" />
+    <AegisMark className="h-8 w-auto text-foreground" />
   ) : (
     <div className="leading-tight">
-      <AegisLogo className="h-7 w-auto text-foreground" />
-      <div className="mt-2 text-xs text-muted-foreground">Motor claims triage</div>
+      <AegisLogo className="h-10 w-auto text-foreground" />
+      <div className="mt-2 text-sm text-muted-foreground">Truth in triage</div>
     </div>
   );
 }
