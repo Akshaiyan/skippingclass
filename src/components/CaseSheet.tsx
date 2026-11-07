@@ -3,6 +3,8 @@ import { toast } from "sonner";
 import { Check, ChevronDown, Copy, FileText, GitBranch, Lock, Plug } from "lucide-react";
 import type { Rec } from "@/types";
 import {
+  CASE_OVERVIEW,
+  CASE_DETAILS,
   CONFIRM_REC,
   CONFIRM_TOAST,
   COPY_TEXT,
@@ -128,7 +130,7 @@ export function CaseSheet({
             <SheetTitle className="font-mono text-2xl font-semibold tracking-tight">{claim.case_id}</SheetTitle>
             <FlowBadge rec={claim.recommendation_v1} />
             <StatusChip status={claim.case_status} />
-            <PolicyStamp version={claim.policy_version} hash={claim.policy_hash} />
+
           </div>
           <SheetDescription className="mt-2 text-sm text-text-2">{claim.claim_summary}</SheetDescription>
         </div>
@@ -153,8 +155,24 @@ export function CaseSheet({
             </section>
           ) : (
             <>
-              <section>
-                <h3 className="section-title mb-3">Why this recommendation</h3>
+              <section aria-labelledby="case-overview-title">
+                <h3 id="case-overview-title" className="section-title mb-3">{CASE_OVERVIEW}</h3>
+                <dl className="grid grid-cols-2 gap-x-5 gap-y-4 border-y border-border py-4">
+                  {["incident_date", "claim_type", "quote_eur", "claimed_amount_eur"].map((field) => {
+                    const value = claim.facts[field];
+                    return <div key={field} className="min-w-0"><dt className="text-xs text-muted-foreground">{fieldLabel(field)}</dt><dd className="tnum mt-1 text-sm font-medium">{value === null || value === undefined ? <NotProvided /> : typeof value === "number" ? `EUR ${value.toLocaleString("en-US")}` : String(value).replaceAll("_", " ")}</dd></div>;
+                  })}
+                </dl>
+                <ul className="mt-4 space-y-2 text-sm text-text-2">
+                  {notPassed.length ? notPassed.map((check) => <li key={check.id} className="flex items-start gap-2"><span className="mt-0.5 shrink-0"><TriGlyph result={check.result} outcome={check.outcome} /></span><span>{check.description}{check.result === "unknown" ? " · not provided, not assumed" : ""}</span></li>) : <li>{claim.explanation}</li>}
+                </ul>
+                {!locked && claim.needs_recheck && <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-3 text-xs text-text-2">Needs recheck · Expected <FlowBadge rec={claim.recommendation_v2} size="sm" /></div>}
+              </section>
+              <details className="border-t border-border pt-4">
+                <summary className="cursor-pointer text-sm font-semibold">{CASE_DETAILS}</summary>
+                <section className="mt-4">
+                <PolicyStamp version={claim.policy_version} hash={claim.policy_hash} />
+                <div className="mt-3" />
                 <RuleChips rule={claim.rule_v1} />
                 <p className="mt-3 text-sm text-text-2">{claim.explanation}</p>
                 {!locked && claim.needs_recheck && (
@@ -188,13 +206,15 @@ export function CaseSheet({
                   </Button>
                 )}
               </section>
+              </details>
 
-              <section>
-                <h3 className="section-title mb-3">Facts</h3>
+              <details className="border-t border-border pt-4">
+                <summary className="cursor-pointer text-sm font-semibold">All case information</summary>
+              <section className="mt-4">
                 <dl className="grid gap-x-6 sm:grid-cols-2">
                   {Object.entries(claim.facts).map(([k, v]) => (
                     <div key={k} className="flex items-baseline justify-between gap-3 border-b border-border py-2 text-sm">
-                      <dt className="font-mono text-[12px] text-muted-foreground">{k}</dt>
+                      <dt className="text-xs text-muted-foreground">{fieldLabel(k)}</dt>
                       <dd className="tnum text-right">
                         {claim.blank_fields.includes(k) || v === null ? (
                           <NotProvided />
@@ -212,6 +232,7 @@ export function CaseSheet({
                   ))}
                 </dl>
               </section>
+              </details>
 
               {sug && (
                 <section className="rounded-lg border border-border bg-surface p-4">
@@ -237,7 +258,9 @@ export function CaseSheet({
                 </section>
               )}
 
-              <section className="rounded-lg border border-border bg-surface p-4">
+              <details className="border-t border-border pt-4">
+                <summary className="cursor-pointer text-sm font-semibold">Draft email</summary>
+              <section className="mt-4">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <h3 className="section-title">Draft email (placeholder)</h3>
@@ -248,7 +271,10 @@ export function CaseSheet({
                 <pre className="whitespace-pre-wrap font-sans text-sm text-text-2">{emailText(claim)}</pre>
               </section>
 
-              <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-border-strong p-4">
+              </details>
+              <details className="border-t border-border pt-4">
+                <summary className="cursor-pointer text-sm font-semibold">Connections</summary>
+              <section className="mt-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h3 className="section-title">HubSpot integration</h3>
                   <p className="text-sm text-muted-foreground">Planned: sync this case to your CRM</p>
@@ -259,6 +285,7 @@ export function CaseSheet({
                   </Button>
                 </WhyDisabled>
               </section>
+              </details>
             </>
           )}
         </div>
