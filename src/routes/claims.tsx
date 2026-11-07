@@ -133,6 +133,16 @@ function ClaimsPage() {
       />
 
       <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
+        <label className="relative flex w-fit items-center">
+          <Search className="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" aria-hidden />
+          <span className="sr-only">Search by case id</span>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search case id"
+            className="h-8 w-48 rounded-md border border-border bg-background pl-8 pr-2 font-mono text-xs hover:border-border-strong"
+          />
+        </label>
         <div role="radiogroup" aria-label="Flow" className="inline-flex flex-wrap rounded-lg border border-border bg-surface p-0.5">
           {(["all", "red", "yellow", "green"] as FlowFilter[]).map((f) => (
             <button
