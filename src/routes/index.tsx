@@ -18,6 +18,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Where reviewer time goes, which claims need attention, and an honest business case." },
       { property: "og:title", content: "Dashboard · Motor claims triage" },
       { property: "og:description", content: "Explainable next-step recommendations for motor claims, with an evidence-labelled business case." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Dashboard,
