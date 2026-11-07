@@ -42,7 +42,7 @@ function QuickActions({ c, onPick }: { c: DerivedClaim; onPick: (r: Rec) => void
       <div className="hidden flex-wrap gap-1.5 2xl:flex">
         {others.map((r) => (
           <WhyDisabled key={r} disabled={locked} reason={LOCKED_TOOLTIP}>
-            <Button variant="outline" size="sm" className="h-7 px-2 text-[11px]" disabled={locked} onClick={() => onPick(r)}>
+            <Button variant="outline" size="sm" className="h-7 px-1.5 text-[11px]" disabled={locked} onClick={() => onPick(r)}>
               <Dot flow={FLOW_OF[r]} className="size-1.5" /> {changeTo(r)}
             </Button>
           </WhyDisabled>
@@ -262,10 +262,10 @@ function ClaimsPage() {
                           )}
                         </div>
                       </td>
-                      <td className="border-b border-border px-4 py-3"><StatusChip status={c.case_status} /></td>
-                      <td className="border-b border-border px-4 py-3"><FlowBadge rec={c.recommendation_v1} /></td>
-                      <td className="max-w-[210px] border-b border-border px-4 py-3"><RuleChips rule={c.rule_v1} /></td>
-                      <td className="max-w-[200px] border-b border-border px-4 py-3">
+                      <td className="border-b border-border px-4 py-2.5"><StatusChip status={c.case_status} /></td>
+                      <td className="border-b border-border px-4 py-2.5"><FlowBadge rec={c.recommendation_v1} /></td>
+                      <td className="border-b border-border px-4 py-2.5"><RuleChips rule={c.rule_v1} /></td>
+                      <td className="border-b border-border px-4 py-2.5">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <span className="block truncate text-text-2">{c.explanation}</span>
@@ -273,10 +273,10 @@ function ClaimsPage() {
                           <TooltipContent className="max-w-80">{c.explanation}</TooltipContent>
                         </Tooltip>
                       </td>
-                      <td className="border-b border-border px-4 py-3">
+                      <td className="border-b border-border px-4 py-2.5">
                         {c.case_status === "open" && c.needs_recheck && <RecheckChip from={c.recommendation_v1} to={c.recommendation_v2} />}
                       </td>
-                      <td className="border-b border-border px-4 py-3">
+                      <td className="border-b border-border px-4 py-2.5">
                         <QuickActions c={c} onPick={(r) => open(c.case_id, r)} />
                       </td>
                     </tr>
