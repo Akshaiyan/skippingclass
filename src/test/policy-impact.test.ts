@@ -23,6 +23,12 @@ describe("Policy comparisons", () => {
   it("does not invent a missing handling cost", () => {
     expect(policyImpact(claims, { green: 10, yellow: null, red: 40 }).expectedCost).toBeNull();
   });
+  it("handles an older session with no handling-rate fields", () => {
+    const impact = policyImpact(claims, undefined);
+    expect(impact.total).toBe(9);
+    expect(impact.liveCost).toBeNull();
+    expect(impact.expectedCost).toBeNull();
+  });
   it("keeps live counts unchanged when a draft rule changes", () => {
     const draft = getDraftPolicy().rules.map((rule) => ({ ...rule, active: rule.condition === null }));
     const impact = policyImpact(deriveClaims(getClaims(), draft), { green: 10, yellow: 20, red: 40 });
