@@ -262,8 +262,8 @@ function PolicyPage() {
           </ol>
         </section>
 
-        <section className="space-y-4 lg:col-span-7" aria-labelledby="impact-title">
-          <div className="card-panel flex h-full flex-col p-5">
+        <section className="space-y-4 lg:sticky lg:top-6 lg:col-span-7 lg:self-start" aria-labelledby="impact-title">
+          <div className="card-panel p-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h2 id="impact-title" className="section-title">Expected claim volume</h2>
@@ -279,7 +279,7 @@ function PolicyPage() {
               <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-sm bg-chart-2" aria-hidden />Current</span>
               <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-sm bg-chart-1" aria-hidden />Draft</span>
             </div>
-            <div className="my-auto h-[420px] w-full" role="img" aria-label={chartData.map((d) => `${d.name}: current ${d.current}, draft ${d.draft}`).join(". ")}>
+            <div className="mt-1 h-[420px] w-full" role="img" aria-label={chartData.map((d) => `${d.name}: current ${d.current}, draft ${d.draft}`).join(". ")}>
               <ResponsiveContainer>
                 <BarChart data={chartData} barGap={5} margin={{ top: 12, right: 4, left: -6, bottom: 0 }}>
                   <CartesianGrid vertical={false} stroke="var(--border)" />
