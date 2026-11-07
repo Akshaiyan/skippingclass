@@ -256,7 +256,6 @@ function Dashboard() {
       </section>
 
       <section>
-        <SectionTitle title="Business case" subtitle="Honest ranges. Every number carries its evidence label." />
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="card-panel p-6">
             <div className="flex items-center justify-between gap-2">
