@@ -1,4 +1,4 @@
-import { Check, Lock, RefreshCw } from "lucide-react";
+import { AlertCircle, Check, Lock, RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
 import type { Flow, Rec, Tri } from "@/types";
 import { FLOW_OF, LOCKED, NOT_PROVIDED, REC_LABEL } from "@/copy";
@@ -195,10 +195,7 @@ export function SectionTitle({ title, subtitle, right }: { title: string; subtit
 export function Refusal({ children }: { children: ReactNode }) {
   return (
     <p role="alert" aria-live="polite" className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-destructive">
-      <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-        <circle cx="12" cy="12" r="10" />
-        <path d="M12 8v4M12 16h.01" />
-      </svg>
+      <AlertCircle className="size-3.5 shrink-0" aria-hidden />
       {children}
     </p>
   );
