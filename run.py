@@ -65,16 +65,19 @@ def main(argv=None):
         rows = []
         for r in claims:
             rec1, rule1, why = policy_mod.decide(r, v1pol)
-            rec2, rule2, _ = policy_mod.decide(r, pol)
+            rec2, rule2, why2 = policy_mod.decide(r, pol)
             closed = triage.status_of(r) == "closed"
             if closed:
                 rec2, rule2, changed = rec1, "closed: retained v1 decision", False
+                explanation = why
             else:
                 changed = rec2 != rec1
                 rule2 = f"{pol['name']}: {rule2}"
+                # The explanation must describe the recommendations it sits beside. When v2 differs, say both.
+                explanation = why if not changed else f"v1: {why}; {pol['name']}: {why2}"
             rows.append({"case_id": r["case_id"], "recommendation_v1": rec1, "recommendation_v2": rec2,
                          "needs_recheck": changed, "rule_v1": f"v1:{rule1}", "rule_v2": rule2,
-                         "explanation": why})
+                         "explanation": explanation})
         flips = [x for x in rows if x["needs_recheck"]]
         blocked = [x for x in flips if x["recommendation_v2"] == "routine_processing"]
     elif args.v2_limit is None:
