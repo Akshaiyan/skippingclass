@@ -78,7 +78,7 @@ export function PolicyImpact() {
           <div className="grid grid-cols-3 gap-2">
             {impact.counts.map((row) => <div key={row.flow}>
               <Label htmlFor={`cost-${row.flow}`} className="text-xs">{IMPACT_COPY.flows[row.flow]}</Label>
-              <Input id={`cost-${row.flow}`} className="tnum mt-1.5 font-mono" type="number" min={0} step="0.01" placeholder="EUR" value={state.handlingRates[row.flow] ?? ""} onChange={(event) => {
+              <Input id={`cost-${row.flow}`} className="tnum mt-1.5 font-mono" type="number" min={0} step="0.01" placeholder="EUR" value={state.handlingRates?.[row.flow] ?? ""} onChange={(event) => {
                 const value = event.target.value;
                 dispatch({ type: "setHandlingRate", flow: row.flow, rate: value === "" ? null : Number(value) });
               }} />

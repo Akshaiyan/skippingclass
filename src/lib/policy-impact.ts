@@ -5,7 +5,7 @@ import { FLOW_OF } from "@/copy";
 export type HandlingRates = Record<Flow, number | null>;
 export const IMPACT_FLOWS: Flow[] = ["green", "yellow", "red"];
 
-export function policyImpact(claims: DerivedClaim[], rates: HandlingRates) {
+export function policyImpact(claims: DerivedClaim[], rates?: Partial<HandlingRates> | null) {
   const open = claims.filter((claim) => claim.case_status === "open");
   const counts = IMPACT_FLOWS.map((flow) => ({
     flow,
@@ -17,8 +17,8 @@ export function policyImpact(claims: DerivedClaim[], rates: HandlingRates) {
     let total = 0;
     for (const row of counts) {
       if (!row[version]) continue;
-      const rate = rates[row.flow];
-      if (rate === null || !Number.isFinite(rate) || rate < 0) return null;
+      const rate = rates?.[row.flow];
+      if (typeof rate !== "number" || !Number.isFinite(rate) || rate < 0) return null;
       total += row[version] * rate;
     }
     return total / open.length;

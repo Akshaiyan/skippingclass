@@ -43,7 +43,7 @@ export function storeReducer(s: State, a: Action): State {
   switch (a.type) {
     case "setHandlingRate":
       if (a.rate !== null && (!Number.isFinite(a.rate) || a.rate < 0)) return s;
-      return { ...s, handlingRates: { ...s.handlingRates, [a.flow]: a.rate } };
+      return { ...s, handlingRates: { ...getHandlingRates(), ...s.handlingRates, [a.flow]: a.rate } };
     case "confirm":
       return { ...s, claims: s.claims.map((c) => (c.case_id === a.case_id ? { ...c, ui_status: "reviewed" } : c)) };
     case "override": {
