@@ -247,7 +247,7 @@ function ClaimsPage() {
                       <td className="border-b border-border px-4 py-3"><StatusChip status={c.case_status} /></td>
                       <td className="border-b border-border px-4 py-3"><FlowBadge rec={c.recommendation_v1} /></td>
                       <td className="border-b border-border px-4 py-3"><RuleChips rule={c.rule_v1} /></td>
-                      <td className="max-w-[260px] border-b border-border px-4 py-3">
+                      <td className="max-w-[200px] border-b border-border px-4 py-3">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <span className="block truncate text-text-2">{c.explanation}</span>
