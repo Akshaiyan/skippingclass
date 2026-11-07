@@ -101,8 +101,8 @@ function Dashboard() {
   const pieData = flows.map((f) => ({ name: REC_LABEL[flowRec[f]], value: derived.filter((c) => c.flow === f).length, flow: f }));
   const pieColor = { red: "var(--chart-3)", yellow: "var(--chart-4)", green: "var(--chart-5)" };
 
-  const before = [BC.openClaimsPortfolio * (BC.minutesPerRecheck[0] / 60), BC.openClaimsPortfolio * (BC.minutesPerRecheck[1] / 60)];
-  const after = [before[0] * BC.flippedShare[0], before[1] * BC.flippedShare[1]];
+  const before: [number, number] = [BC.openClaimsPortfolio * (BC.minutesPerRecheck[0] / 60), BC.openClaimsPortfolio * (BC.minutesPerRecheck[1] / 60)];
+  const after: [number, number] = [before[0] * BC.flippedShare[0], before[1] * BC.flippedShare[1]];
 
   return (
     <div className="space-y-12">

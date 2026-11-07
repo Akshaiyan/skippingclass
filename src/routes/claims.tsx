@@ -147,7 +147,7 @@ function ClaimsPage() {
               )}
             >
               {f !== "all" && <Dot flow={f} />}
-              {f === "all" ? "All" : f[0].toUpperCase() + f.slice(1)}
+              {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
               <span className="tnum text-muted-foreground">{counts[f]}</span>
             </button>
           ))}

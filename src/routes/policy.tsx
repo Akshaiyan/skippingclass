@@ -107,9 +107,9 @@ function PolicyPage() {
   const openFlips = flips.filter((f) => f.status === "recheck");
   const intoReview = openFlips.filter((f) => f.to === "human_review").length;
   const openCount = derived.filter((c) => c.case_status === "open").length;
-  const recheckMin = [openFlips.length * BC.minutesPerRecheck[0], openFlips.length * BC.minutesPerRecheck[1]];
-  const allMin = [openCount * BC.minutesPerRecheck[0], openCount * BC.minutesPerRecheck[1]];
-  const addedMin = [intoReview * BC.addedMinutesPerHumanReview[0], intoReview * BC.addedMinutesPerHumanReview[1]];
+  const recheckMin: [number, number] = [openFlips.length * BC.minutesPerRecheck[0], openFlips.length * BC.minutesPerRecheck[1]];
+  const allMin: [number, number] = [openCount * BC.minutesPerRecheck[0], openCount * BC.minutesPerRecheck[1]];
+  const addedMin: [number, number] = [intoReview * BC.addedMinutesPerHumanReview[0], intoReview * BC.addedMinutesPerHumanReview[1]];
 
   const fixedLast = [...rules.filter((r) => r.id !== "R3.routine"), ...rules.filter((r) => r.id === "R3.routine")];
 
