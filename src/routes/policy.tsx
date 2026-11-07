@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowRight, Check, Pause, Pencil, Plus, RotateCcw, Rocket, Trash2, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Condition, PolicyDecision, PolicyRule, Rec } from "@/types";
 import { ADD_RULE, CONSISTENCY_CAPTION, HOLD_V2, REC_LABEL, REC_ORDER, RELEASE_V2 } from "@/copy";
-import { useStore, type QuoteLimit } from "@/store";
+import { useStore } from "@/store";
 import { conditionChips, diffLines, exhaustiveChecks, flipList, removedRules, ruleStatus } from "@/lib/report";
 import { validateGate } from "@/lib/guards";
 import { BUSINESS_CASE as BC } from "@/data/businessCase";

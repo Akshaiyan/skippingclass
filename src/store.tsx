@@ -5,7 +5,7 @@ import { FLOW_OF } from "@/copy";
 import { hashRules } from "@/lib/evaluate";
 import { deriveClaims, type DerivedClaim } from "@/lib/report";
 
-export type QuoteLimit = 1000 | 1200 | 1500;
+export type QuoteLimit = number;
 
 interface State {
   claims: Claim[];
@@ -81,7 +81,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     draftRules: getDraftPolicy().rules,
     log: getLog(),
     reviewer: "Jonas Weber",
-    quoteLimit: 1200 as QuoteLimit,
+    quoteLimit: 1200,
     gateOpen: false,
   }));
   const v1 = useMemo(() => getPolicy(), []);
