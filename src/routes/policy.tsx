@@ -1,7 +1,19 @@
 import { fetchChange, postPolicyDecision, type EngineChange as ChangeSummary } from "@/data/live";
 import { EngineChange } from "@/components/EngineChange";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { ArrowRight, Check, Pause, Pencil, Plus, RotateCcw, Rocket, Trash2, X } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  ChevronDown,
+  Pause,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Rocket,
+  Trash2,
+  X,
+} from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useEffect, useMemo, useState } from "react";
 import type { Condition, PolicyDecision, PolicyRule, Rec } from "@/types";
 import { ADD_RULE, HOLD_V2, IMPACT_COPY, REC_LABEL, REC_ORDER, RELEASE_V2 } from "@/copy";
@@ -195,6 +207,115 @@ function PolicyPage() {
   const openFlips = flips.filter((flip) => flip.claim.case_status === "open");
   const visibleRules = rules.filter((r) => r.id !== "R3.routine");
   const activeCount = visibleRules.filter((r) => r.active !== false).length;
+  const [showInfoRules, setShowInfoRules] = useState(false);
+  const numbered = visibleRules.map((rule, i) => ({ rule, n: i + 1 }));
+  const reviewRules = numbered.filter((x) => x.rule.outcome === "human_review");
+  const infoRules = numbered.filter((x) => x.rule.outcome !== "human_review");
+  const infoChanged = infoRules.filter((x) => ruleStatus(v1Rules, x.rule) !== "same").length;
+
+  const ruleGroup = ({
+    title,
+    subtitle,
+    rules: group,
+    className,
+  }: {
+    title?: string;
+    subtitle?: string;
+    rules: { rule: PolicyRule; n: number }[];
+    className?: string;
+  }) => (
+    <div className={className}>
+      {title && (
+        <div className="mb-2">
+          <h3 className="section-title">{title}</h3>
+          {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+        </div>
+      )}
+      <ol className="divide-y divide-border rounded-lg border border-border">
+        {group.map(({ rule: r, n }) => {
+          const st = ruleStatus(v1Rules, r);
+          const active = r.active !== false;
+          return (
+            <li
+              key={r.id}
+              className={cn(
+                "flex items-start gap-3 px-3 py-3",
+                !active && "bg-surface",
+                st !== "same" && "shadow-[inset_2px_0_0_var(--foreground)]",
+              )}
+            >
+              <span
+                className="tnum mt-0.5 w-6 shrink-0 text-right text-xs text-muted-foreground"
+                title="Rules are checked in this order"
+              >
+                {n}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className={cn("text-sm leading-5", !active && "text-muted-foreground")}>
+                  {r.description || "Untitled rule"}
+                </p>
+                {(st === "changed" || st === "added" || !active) && (
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {st === "changed" && <Chip tone="solid">Changed</Chip>}
+                    {st === "added" && <Chip tone="solid">Added</Chip>}
+                    {!active && <Chip>Inactive</Chip>}
+                  </div>
+                )}
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <Switch
+                  id={`active-${r.id}`}
+                  checked={active}
+                  aria-label={`${active ? "Deactivate" : "Activate"} ${r.description}`}
+                  onCheckedChange={() => toggleRule(r.id)}
+                />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="ml-1 size-8"
+                      onClick={() => setEditing({ rule: r, key: Date.now() })}
+                    >
+                      <Pencil aria-hidden />
+                      <span className="sr-only">Edit {r.description}</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Edit</TooltipContent>
+                </Tooltip>
+                <Popover>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon" className="size-8">
+                          <Trash2 aria-hidden />
+                          <span className="sr-only">Delete {r.description}</span>
+                        </Button>
+                      </PopoverTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>Delete</TooltipContent>
+                  </Tooltip>
+                  <PopoverContent className="w-64 space-y-3 text-sm">
+                    <p>Remove this rule from the draft?</p>
+                    <p className="text-xs text-muted-foreground">Reset restores live rules.</p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        dispatch({ type: "setRules", rules: rules.filter((x) => x.id !== r.id) })
+                      }
+                    >
+                      <Trash2 aria-hidden /> Delete rule
+                    </Button>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
 
   const save = (r: PolicyRule, prevId?: string) => {
     const next = prevId
@@ -272,9 +393,8 @@ function PolicyPage() {
 
   return (
     <div className="space-y-6">
-      <EngineChange />
       <PageHeader
-        title="Policy overview"
+        title="Policy change"
         description={
           <span className="flex flex-wrap items-center gap-2">
             <PolicyStamp version="v1" hash={v1Hash} />{" "}
@@ -286,15 +406,14 @@ function PolicyPage() {
         }
       />
 
+      <EngineChange />
+
       <div className="grid gap-6 lg:grid-cols-12">
-        <section
-          className="space-y-4 rounded-lg border border-border p-4 lg:col-span-5"
-          aria-labelledby="rules-title"
-        >
+        <section className="space-y-5 lg:col-span-5" aria-labelledby="rules-title">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h2 id="rules-title" className="section-title">
-                Rules, in order
+              <h2 id="rules-title" className="text-lg font-semibold">
+                Rules
               </h2>
               <p className="tnum text-xs text-muted-foreground">
                 {activeCount} of {visibleRules.length} active
@@ -347,87 +466,36 @@ function PolicyPage() {
             </span>
           </div>
 
-          <ol className="divide-y divide-border">
-            {visibleRules.map((r, index) => {
-              const st = ruleStatus(v1Rules, r);
-              const active = r.active !== false;
-              return (
-                <li
-                  key={r.id}
-                  className={cn(
-                    "px-2 py-4 transition-colors",
-                    (!active || st === "changed") && "bg-surface",
-                    st === "changed" && "border-l-2 border-l-foreground",
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="tnum mt-1 w-5 shrink-0 font-mono text-xs text-muted-foreground">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <h3
-                        className={cn(
-                          "text-sm font-medium leading-5",
-                          !active && "text-muted-foreground",
-                        )}
-                      >
-                        {r.description || "Untitled rule"}
-                      </h3>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <FlowBadge rec={r.outcome} size="sm" />
-                        {st === "changed" && <Chip tone="solid">Changed</Chip>}
-                        {st === "added" && <Chip tone="solid">Added</Chip>}
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <Label htmlFor={`active-${r.id}`} className="text-xs text-muted-foreground">
-                        {active ? "Active" : "Inactive"}
-                      </Label>
-                      <Switch
-                        id={`active-${r.id}`}
-                        checked={active}
-                        aria-label={`${active ? "Deactivate" : "Activate"} ${r.description}`}
-                        onCheckedChange={() => toggleRule(r.id)}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-3 flex justify-end gap-2 border-t border-border pt-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs"
-                      onClick={() => setEditing({ rule: r, key: Date.now() })}
-                    >
-                      <Pencil aria-hidden /> Edit
-                    </Button>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-7 text-xs">
-                          <Trash2 aria-hidden /> Delete
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-64 space-y-3 text-sm">
-                        <p>Remove this rule from the draft?</p>
-                        <p className="text-xs text-muted-foreground">Reset restores live rules.</p>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            dispatch({
-                              type: "setRules",
-                              rules: rules.filter((x) => x.id !== r.id),
-                            })
-                          }
-                        >
-                          <Trash2 aria-hidden /> Delete rule
-                        </Button>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
+          {ruleGroup({
+            title: "Review triggers",
+            subtitle: "Any one of these sends the claim to human review.",
+            rules: reviewRules,
+          })}
+          <div className="border-t border-border pt-4">
+            <button
+              type="button"
+              onClick={() => setShowInfoRules((v) => !v)}
+              aria-expanded={showInfoRules}
+              className="flex w-full items-center justify-between gap-3 text-left"
+            >
+              <span>
+                <span className="section-title block">Missing-information rules</span>
+                <span className="block text-xs text-muted-foreground">
+                  {infoRules.length} rules ask for information when a fact is blank or a document is
+                  missing.
+                  {infoChanged > 0 && ` ${infoChanged} changed in this draft.`}
+                </span>
+              </span>
+              <ChevronDown
+                className={cn(
+                  "size-4 shrink-0 text-muted-foreground transition-transform",
+                  showInfoRules && "rotate-180",
+                )}
+                aria-hidden
+              />
+            </button>
+            {showInfoRules && ruleGroup({ rules: infoRules, className: "mt-3" })}
+          </div>
         </section>
 
         <section

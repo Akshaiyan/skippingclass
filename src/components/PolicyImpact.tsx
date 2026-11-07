@@ -31,6 +31,7 @@ export function PolicyImpact() {
     { key: "live" as const, label: IMPACT_COPY.live, cost: impact.liveCost },
     { key: "expected" as const, label: IMPACT_COPY.expected, cost: impact.expectedCost },
   ];
+  const hasRates = Object.values(state.handlingRates).some((r) => typeof r === "number");
   const costsAvailable = versions.every((version) => version.cost !== null);
   return (
     <div className="space-y-6">
@@ -133,86 +134,91 @@ export function PolicyImpact() {
           ))}
         </div>
       </section>
-      <section aria-labelledby="handling-cost-title">
-        <h3 id="handling-cost-title" className="section-title">
-          {IMPACT_COPY.cost}
-        </h3>
-        <div className="mt-4 grid grid-cols-2 gap-4">
-          {versions.map((version) => (
-            <div key={version.key} className="min-w-0">
-              <div className="text-xs text-muted-foreground">{version.label}</div>
-              <div
-                key={`${version.key}-${version.cost}`}
-                className="impact-change tnum mt-1 text-base font-semibold"
-                aria-live="polite"
-              >
-                {version.cost === null ? (
-                  <span className="text-xs font-normal text-muted-foreground">{NOT_PROVIDED}</span>
-                ) : (
-                  <>
-                    {euro(version.cost)}
-                    <span className="ml-2 font-mono text-xs font-normal text-muted-foreground">
-                      {IMPACT_COPY.assumed}
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div
-          className="mt-3 h-[180px]"
-          role="img"
-          aria-label={versions
-            .map(
-              (version) =>
-                `${version.label} handling cost per claim: ${version.cost === null ? NOT_PROVIDED : euro(version.cost)}`,
-            )
-            .join(". ")}
-        >
-          {costsAvailable ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={versions.map((version) => ({ name: version.label, cost: version.cost }))}
-                margin={{ top: 20, right: 10, bottom: 0, left: 0 }}
-              >
-                <CartesianGrid vertical={false} stroke="var(--border)" />
-                <XAxis
-                  dataKey="name"
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
-                />
-                <YAxis
-                  tickFormatter={(value: number) => `€${value}`}
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
-                  width={48}
-                />
-                <Tooltip
-                  formatter={(value: number) => [euro(value), IMPACT_COPY.cost]}
-                  cursor={{ fill: "var(--surface)" }}
-                />
-                <Bar
-                  dataKey="cost"
-                  fill="var(--chart-1)"
-                  maxBarSize={60}
-                  isAnimationActive={false}
-                  radius={[3, 3, 0, 0]}
+      {/* Handling cost needs a rate per flow; without rates there is nothing honest to chart. */}
+      {hasRates && (
+        <section aria-labelledby="handling-cost-title">
+          <h3 id="handling-cost-title" className="section-title">
+            {IMPACT_COPY.cost}
+          </h3>
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            {versions.map((version) => (
+              <div key={version.key} className="min-w-0">
+                <div className="text-xs text-muted-foreground">{version.label}</div>
+                <div
+                  key={`${version.key}-${version.cost}`}
+                  className="impact-change tnum mt-1 text-base font-semibold"
+                  aria-live="polite"
                 >
-                  <Cell fill="var(--chart-1)" />
-                  <Cell fill="var(--chart-2)" />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="grid h-full place-items-center border-b border-border text-xs text-muted-foreground">
-              {NOT_PROVIDED}
-            </div>
-          )}
-        </div>
-      </section>
+                  {version.cost === null ? (
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {NOT_PROVIDED}
+                    </span>
+                  ) : (
+                    <>
+                      {euro(version.cost)}
+                      <span className="ml-2 font-mono text-xs font-normal text-muted-foreground">
+                        {IMPACT_COPY.assumed}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div
+            className="mt-3 h-[180px]"
+            role="img"
+            aria-label={versions
+              .map(
+                (version) =>
+                  `${version.label} handling cost per claim: ${version.cost === null ? NOT_PROVIDED : euro(version.cost)}`,
+              )
+              .join(". ")}
+          >
+            {costsAvailable ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={versions.map((version) => ({ name: version.label, cost: version.cost }))}
+                  margin={{ top: 20, right: 10, bottom: 0, left: 0 }}
+                >
+                  <CartesianGrid vertical={false} stroke="var(--border)" />
+                  <XAxis
+                    dataKey="name"
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                  />
+                  <YAxis
+                    tickFormatter={(value: number) => `€${value}`}
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                    width={48}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => [euro(value), IMPACT_COPY.cost]}
+                    cursor={{ fill: "var(--surface)" }}
+                  />
+                  <Bar
+                    dataKey="cost"
+                    fill="var(--chart-1)"
+                    maxBarSize={60}
+                    isAnimationActive={false}
+                    radius={[3, 3, 0, 0]}
+                  >
+                    <Cell fill="var(--chart-1)" />
+                    <Cell fill="var(--chart-2)" />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="grid h-full place-items-center border-b border-border text-xs text-muted-foreground">
+                {NOT_PROVIDED}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
