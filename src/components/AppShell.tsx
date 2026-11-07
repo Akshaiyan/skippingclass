@@ -103,8 +103,8 @@ function Brand({ collapsed }: { collapsed: boolean }) {
         <img src={aegisMark.url} alt="Aegis" className="h-6 w-auto dark:invert" />
       ) : (
         <div className="leading-tight">
-          <img src={aegisLogo.url} alt="Aegis" className="h-5 w-auto dark:invert" />
-          <div className="mt-1.5 text-[11px] text-muted-foreground">Truth in triage</div>
+          <img src={aegisLogo.url} alt="Aegis" className="h-7 w-auto dark:invert" />
+          <div className="mt-2 text-xs text-muted-foreground">Truth in triage</div>
         </div>
       )}
     </div>
