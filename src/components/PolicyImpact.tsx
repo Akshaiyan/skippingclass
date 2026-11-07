@@ -1,6 +1,6 @@
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { getPolicyImpact } from "@/data/api";
-import { IMPACT_COPY, NOT_PROVIDED, RULE_BASED } from "@/copy";
+import { IMPACT_COPY, NOT_PROVIDED } from "@/copy";
 import { useStore } from "@/store";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,12 +18,15 @@ export function PolicyImpact() {
   const costsAvailable = versions.every((version) => version.cost !== null);
   return (
     <div className="space-y-6">
-      <section className="border-b border-border pb-6" aria-labelledby="impact-title">
+      <header>
+        <h2 id="impact-title" className="text-lg font-semibold">{IMPACT_COPY.title}</h2>
+        <p className="mt-1 text-xs text-muted-foreground">{IMPACT_COPY.subtitle}</p>
+      </header>
+      <section className="border-b border-border pb-6" aria-labelledby="volume-title">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="impact-title" className="section-title">{IMPACT_COPY.volume}</h2>
+          <h3 id="volume-title" className="section-title">{IMPACT_COPY.volume}</h3>
           <span className="tnum text-xs text-muted-foreground">{impact.total} open claims</span>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">{RULE_BASED}</p>
         <div className="mt-4 grid grid-cols-2 gap-3">
           {versions.map((version) => {
             const data = impact.counts.map((row) => ({ name: IMPACT_COPY.flows[row.flow], value: row[version.key], flow: row.flow }));
@@ -44,20 +47,21 @@ export function PolicyImpact() {
             );
           })}
         </div>
-        <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-5 gap-y-2 text-xs">
-          <span />{versions.map((version) => <span key={version.key} className="text-muted-foreground">{version.label}</span>)}
+        <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 gap-y-2 text-xs" aria-live="polite">
+          <span />{versions.map((version) => <span key={version.key} className="text-muted-foreground">{version.label}</span>)}<span className="text-muted-foreground">{IMPACT_COPY.delta}</span>
           {impact.counts.map((row) => <div key={row.flow} className="contents">
             <span className="flex items-center gap-2"><span className={`size-2.5 shrink-0 rounded-sm ${flowSwatches[row.flow]}`} aria-hidden />{IMPACT_COPY.flows[row.flow]}</span>
-            <span className="tnum text-right font-mono">{row.live}</span><span className="tnum text-right font-mono">{row.expected}</span>
+            <span className="tnum text-right font-mono">{row.live}</span><span key={`${row.flow}-${row.expected}`} className="impact-change tnum text-right font-mono">{row.expected}</span>
+            <span key={`${row.flow}-delta-${row.expected}`} className="impact-change tnum text-right font-mono">{row.expected - row.live > 0 ? "+" : ""}{row.expected - row.live}</span>
           </div>)}
         </div>
       </section>
       <section aria-labelledby="handling-cost-title">
-        <h2 id="handling-cost-title" className="section-title">{IMPACT_COPY.cost}</h2>
+        <h3 id="handling-cost-title" className="section-title">{IMPACT_COPY.cost}</h3>
         <div className="mt-4 grid grid-cols-2 gap-4">
           {versions.map((version) => <div key={version.key} className="min-w-0">
             <div className="text-xs text-muted-foreground">{version.label}</div>
-            <div className="tnum mt-1 text-lg font-semibold" aria-live="polite">{version.cost === null ? <span className="text-xs font-normal text-muted-foreground">{NOT_PROVIDED}</span> : euro(version.cost)}</div>
+            <div key={`${version.key}-${version.cost}`} className="impact-change tnum mt-1 text-lg font-semibold" aria-live="polite">{version.cost === null ? <span className="text-xs font-normal text-muted-foreground">{NOT_PROVIDED}</span> : <>{euro(version.cost)}<span className="ml-2 font-mono text-[10px] font-normal text-muted-foreground">{IMPACT_COPY.assumed}</span></>}</div>
           </div>)}
         </div>
         <div className="mt-3 h-[180px]" role="img" aria-label={versions.map((version) => `${version.label} handling cost per claim: ${version.cost === null ? NOT_PROVIDED : euro(version.cost)}`).join(". ")}>

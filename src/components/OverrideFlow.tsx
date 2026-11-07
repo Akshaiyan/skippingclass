@@ -41,7 +41,7 @@ export function OverrideFlow({ claim, initialTarget, onCancel, onDone }: { claim
 
   const submit = () => {
     setTouched(true);
-    if (!valid || !to || !reason) return;
+    if (!valid || !to || !reason || claim.case_status === "closed") return;
     const timestamp = new Date().toISOString();
     const record: ReviewerOverride = {
       type: "reviewer_override",
@@ -91,7 +91,7 @@ export function OverrideFlow({ claim, initialTarget, onCancel, onDone }: { claim
     );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" onBlur={() => setTouched(true)}>
       <fieldset>
         <legend className="eyebrow mb-2">1 · Next step</legend>
         <div className="grid gap-2 sm:grid-cols-3" role="radiogroup">
@@ -99,22 +99,22 @@ export function OverrideFlow({ claim, initialTarget, onCancel, onDone }: { claim
             const current = r === claim.recommendation_v1;
             const sel = to === r;
             return (
-              <button
+              <Button variant="outline"
                 key={r}
                 type="button"
                 role="radio"
                 aria-checked={sel}
-                disabled={current}
+                disabled={current || claim.case_status === "closed"}
                 onClick={() => setTo(r)}
                 className={cn(
-                  "flex flex-col items-start gap-2 rounded-lg border p-3 text-left text-sm transition-colors duration-150",
+                  "h-auto whitespace-normal flex flex-col items-start gap-2 rounded-lg border p-3 text-left text-sm transition-colors duration-150",
                   sel ? "border-foreground bg-surface ring-1 ring-foreground" : "border-border hover:border-border-strong hover:bg-surface",
                   current && "cursor-not-allowed opacity-60 hover:bg-transparent",
                 )}
               >
                 <span className="inline-flex items-center gap-2 font-medium"><Dot flow={FLOW_OF[r]} />{REC_LABEL[r]}</span>
                 <span className="text-xs text-muted-foreground">{current ? "Current" : sel ? "Selected" : "Choose"}</span>
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -125,20 +125,20 @@ export function OverrideFlow({ claim, initialTarget, onCancel, onDone }: { claim
         <legend className="eyebrow mb-2">2 · Reason code</legend>
         <div className="grid gap-2 sm:grid-cols-3" role="radiogroup">
           {(Object.keys(REASON_LABEL) as ReasonCode[]).map((rc) => (
-            <button
+            <Button variant="outline"
               key={rc}
               type="button"
               role="radio"
               aria-checked={reason === rc}
               onClick={() => setReason(rc)}
               className={cn(
-                "rounded-lg border px-3 py-2 text-left transition-colors duration-150",
+                "h-auto whitespace-normal flex-col items-start rounded-lg border px-3 py-2 text-left transition-colors duration-150",
                 reason === rc ? "border-foreground bg-surface ring-1 ring-foreground" : "border-border hover:border-border-strong hover:bg-surface",
               )}
             >
               <div className="font-mono text-xs font-medium">{rc}</div>
               <div className="text-xs text-muted-foreground">{REASON_LABEL[rc].help}</div>
-            </button>
+            </Button>
           ))}
         </div>
         {touched && errors.reason && <Refusal>{errors.reason}</Refusal>}
@@ -165,7 +165,7 @@ export function OverrideFlow({ claim, initialTarget, onCancel, onDone }: { claim
 
       <div className="flex flex-wrap gap-2">
         <WhyDisabled disabled={!valid} reason={Object.values(errors)[0]}>
-          <Button onClick={submit} disabled={!valid}>Record override</Button>
+          <Button onClick={submit} disabled={!valid || claim.case_status === "closed"}>Record override</Button>
         </WhyDisabled>
         <Button variant="ghost" onClick={onCancel}>Cancel</Button>
       </div>

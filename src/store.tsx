@@ -19,7 +19,8 @@ interface State {
 
 type Action =
   | { type: "setHandlingRate"; flow: Flow; rate: number | null }
-  | { type: "confirm"; case_id: string }
+  | { type: "confirm"; case_id: string; timestamp: string }
+  | { type: "undoConfirm"; case_id: string; timestamp: string; confirmationTimestamp: string; previousStatus?: "reviewed" }
   | { type: "override"; record: Omit<ReviewerOverride, "timestamp">; timestamp: string }
   | { type: "setReviewer"; name: string }
   | { type: "setRules"; rules: PolicyRule[] }
@@ -44,11 +45,28 @@ export function storeReducer(s: State, a: Action): State {
     case "setHandlingRate":
       if (a.rate !== null && (!Number.isFinite(a.rate) || a.rate < 0)) return s;
       return { ...s, handlingRates: { ...getHandlingRates(), ...s.handlingRates, [a.flow]: a.rate } };
-    case "confirm":
-      return { ...s, claims: s.claims.map((c) => (c.case_id === a.case_id ? { ...c, ui_status: "reviewed" } : c)) };
+    case "confirm": {
+      const claim = s.claims.find((c) => c.case_id === a.case_id);
+      if (!claim || claim.case_status === "closed" || claim.ui_status === "reviewed" || !s.reviewer.trim()) return s;
+      return {
+        ...s,
+        claims: s.claims.map((c) => c.case_id === a.case_id ? { ...c, ui_status: "reviewed" } : c),
+        log: appendLog(s.log, { type: "reviewer_accept", case_id: claim.case_id, actor: s.reviewer.trim(), from_rec: claim.recommendation_v1, to_rec: claim.recommendation_v1, note: "Recommendation confirmed", policy_version: claim.policy_version, policy_hash: claim.policy_hash, timestamp: a.timestamp }),
+      };
+    }
+    case "undoConfirm": {
+      const claim = s.claims.find((c) => c.case_id === a.case_id);
+      const latest = [...s.log].reverse().find((entry) => "case_id" in entry && entry.case_id === a.case_id);
+      if (!claim || claim.case_status === "closed" || latest?.type !== "reviewer_accept" || latest.timestamp !== a.confirmationTimestamp) return s;
+      return {
+        ...s,
+        claims: s.claims.map((c) => c.case_id === a.case_id ? { ...c, ui_status: a.previousStatus } : c),
+        log: appendLog(s.log, { type: "final_decision", case_id: claim.case_id, actor: s.reviewer.trim(), from_rec: claim.recommendation_v1, to_rec: claim.recommendation_v1, note: `Confirmation undone; original record retained (${a.confirmationTimestamp})`, policy_version: latest.policy_version, policy_hash: latest.policy_hash, timestamp: a.timestamp }),
+      };
+    }
     case "override": {
       const c = s.claims.find((x) => x.case_id === a.record.case_id);
-      if (!c || c.case_status === "closed" || a.record.from_rec === a.record.to_rec || !a.record.note.trim() || !a.record.actor.trim()) return s;
+      if (!c || c.case_status === "closed" || a.record.from_rec !== c.recommendation_v1 || !["routine_processing", "request_information", "human_review"].includes(a.record.to_rec) || !["policy_wrong", "data_wrong", "judgement"].includes(a.record.reason_code) || a.record.from_rec === a.record.to_rec || !a.record.note.trim() || !a.record.actor.trim()) return s;
       return {
         ...s,
         claims: s.claims.map((x) =>

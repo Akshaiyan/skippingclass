@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ArrowRight, Check, Pause, Pencil, Plus, RotateCcw, Rocket, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { Condition, PolicyDecision, PolicyRule, Rec } from "@/types";
-import { ADD_RULE, HOLD_V2, REC_LABEL, REC_ORDER, RELEASE_V2 } from "@/copy";
+import { ADD_RULE, HOLD_V2, IMPACT_COPY, REC_LABEL, REC_ORDER, RELEASE_V2 } from "@/copy";
 import { PolicyImpact } from "@/components/PolicyImpact";
 import { useStore } from "@/store";
 import { exhaustiveChecks, flipList, ruleStatus } from "@/lib/report";
@@ -31,8 +31,6 @@ export const Route = createFileRoute("/policy")({
   }),
   component: PolicyPage,
 });
-
-const AUTHOR = "Lena Vogt";
 
 function RuleDialog({ rule, open, onClose, onSave, existingIds }: { rule: PolicyRule | null; open: boolean; onClose: () => void; onSave: (r: PolicyRule, prevId?: string) => void; existingIds: string[] }) {
   const [draft, setDraft] = useState<PolicyRule | null>(rule);
@@ -98,12 +96,14 @@ function PolicyPage() {
   const [reason, setReason] = useState("");
   const [touched, setTouched] = useState(false);
   const [decision, setDecision] = useState<PolicyDecision | null>(null);
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
   const flips = useMemo(() => flipList(derived), [derived]);
   const checks = useMemo(() => exhaustiveChecks(state.claims, v1Rules, rules), [state.claims, v1Rules, rules]);
   const allPass = checks.every((c) => c.pass);
   const towardRoutine = flips.some((f) => f.towardRoutine);
-  const gate = validateGate({ author: AUTHOR, approver, reason, checksPass: allPass });
+  const gate = validateGate({ author: state.reviewer, approver, reason, checksPass: allPass });
+  const openFlips = flips.filter((flip) => flip.claim.case_status === "open");
   const visibleRules = rules.filter((r) => r.id !== "R3.routine");
   const activeCount = visibleRules.filter((r) => r.active !== false).length;
 
@@ -123,6 +123,7 @@ function PolicyPage() {
     const record: PolicyDecision = { type, actor: approver.trim(), reason: reason.trim(), policy_version: "v2", policy_hash: draftHash, timestamp: new Date().toISOString() };
     dispatch({ type: "policyDecision", record });
     setDecision(record);
+    setSummaryOpen(false);
   };
 
   const quoteRule = rules.find((r) => r.id === "R1.quote_over_limit");
@@ -145,12 +146,13 @@ function PolicyPage() {
           <span className="flex flex-wrap items-center gap-2">
             <PolicyStamp version="v1" hash={v1Hash} /> <ArrowRight className="size-3.5" aria-hidden /> <PolicyStamp version="v2" hash={draftHash} />
             <span className="text-xs">Session only</span>
+            <span className="w-full text-xs text-muted-foreground">{IMPACT_COPY.session}</span>
           </span>
         }
       />
 
       <div className="grid gap-6 lg:grid-cols-12">
-        <section className="space-y-4 lg:col-span-5" aria-labelledby="rules-title">
+        <section className="space-y-4 rounded-lg border border-border p-4 lg:col-span-5" aria-labelledby="rules-title">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 id="rules-title" className="section-title">Rules, in order</h2>
@@ -166,7 +168,7 @@ function PolicyPage() {
             </div>
           </div>
 
-          <div className="card-panel flex flex-wrap items-center justify-between gap-3 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border py-4">
             <label htmlFor="quote-limit" className="text-sm font-medium">Quote limit</label>
             <span className="relative inline-flex items-center">
               <span className="pointer-events-none absolute left-2.5 font-mono text-xs text-muted-foreground">EUR</span>
@@ -184,12 +186,12 @@ function PolicyPage() {
             </span>
           </div>
 
-          <ol className="space-y-2">
+          <ol className="divide-y divide-border">
             {visibleRules.map((r, index) => {
               const st = ruleStatus(v1Rules, r);
               const active = r.active !== false;
               return (
-                <li key={r.id} className={cn("card-panel p-4 transition-colors hover:border-border-strong", !active && "bg-surface")}>
+                <li key={r.id} className={cn("px-2 py-4 transition-colors", (!active || st === "changed") && "bg-surface", st === "changed" && "border-l-2 border-l-foreground")}>
                   <div className="flex items-start gap-3">
                     <span className="tnum mt-0.5 w-5 shrink-0 font-mono text-xs text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>
                     <div className="min-w-0 flex-1">
@@ -222,7 +224,8 @@ function PolicyPage() {
                       </PopoverTrigger>
                       <PopoverContent className="w-64 space-y-3 text-sm">
                         <p>Remove this rule from the draft?</p>
-                        <Button size="sm" variant="destructive" onClick={() => dispatch({ type: "setRules", rules: rules.filter((x) => x.id !== r.id) })}>
+                        <p className="text-xs text-muted-foreground">Reset restores live rules.</p>
+                        <Button size="sm" variant="outline" onClick={() => dispatch({ type: "setRules", rules: rules.filter((x) => x.id !== r.id) })}>
                           <Trash2 aria-hidden /> Delete rule
                         </Button>
                       </PopoverContent>
@@ -234,12 +237,12 @@ function PolicyPage() {
           </ol>
         </section>
 
-        <section className="space-y-4 lg:sticky lg:top-6 lg:col-span-7 lg:self-start" aria-labelledby="impact-title">
+        <section className="space-y-4 border-t border-border pt-6 lg:sticky lg:top-6 lg:col-span-7 lg:self-start lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0" aria-labelledby="impact-title">
           <PolicyImpact />
         </section>
       </div>
 
-      <section className="card-panel p-5" aria-labelledby="release-title">
+      <section className="border-t border-border bg-background py-5" aria-labelledby="release-title">
         {decision ? (
           <div className="flex flex-wrap items-center justify-between gap-4" role="status" aria-live="polite">
             <div className="flex items-center gap-2 text-sm font-semibold">
@@ -257,7 +260,7 @@ function PolicyPage() {
                 <ul className="mt-3 space-y-2 rounded-lg bg-surface p-3">
                   {checks.map((c) => (
                     <li key={c.id} className="flex items-start gap-2">
-                      {c.pass ? <Check className="mt-0.5 size-3.5 shrink-0 text-flow-green" aria-hidden /> : <X className="mt-0.5 size-3.5 shrink-0 text-destructive" aria-hidden />}
+                      {c.pass ? <Check className="mt-0.5 size-3.5 shrink-0 text-foreground" aria-hidden /> : <X className="mt-0.5 size-3.5 shrink-0 text-destructive" aria-hidden />}
                       <span>{c.label} <span className={cn("ml-1", c.pass ? "text-muted-foreground" : "text-destructive")}>{c.pass ? "Passing" : c.message ?? "Failing"}</span></span>
                     </li>
                   ))}
@@ -267,7 +270,7 @@ function PolicyPage() {
             <div className="grid gap-3 md:grid-cols-2">
               <div>
                 <Label htmlFor="g-author">Author</Label>
-                <Input id="g-author" className="mt-1.5" value={AUTHOR} readOnly disabled />
+                <Input id="g-author" className="mt-1.5" value={state.reviewer} readOnly disabled />
               </div>
               <div>
                 <Label htmlFor="g-appr">Approver</Label>
@@ -282,7 +285,7 @@ function PolicyPage() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <WhyDisabled disabled={!gate.canRelease} reason={releaseReason}>
-                <Button disabled={!gate.canRelease} onClick={() => decide("policy_approved")}>
+                <Button disabled={!gate.canRelease} onClick={() => setSummaryOpen(true)}>
                   <Rocket aria-hidden /> {RELEASE_V2}
                 </Button>
               </WhyDisabled>
@@ -295,6 +298,23 @@ function PolicyPage() {
           </div>
         )}
       </section>
+
+      <Dialog open={summaryOpen} onOpenChange={setSummaryOpen}>
+        <DialogContent>
+          <DialogTitle>{IMPACT_COPY.releaseSummary}</DialogTitle>
+          <DialogDescription>{openFlips.length} open claims change. {IMPACT_COPY.locked}</DialogDescription>
+          <ul className="space-y-2 text-sm">
+            {REC_ORDER.map((rec) => <li key={rec} className="flex items-center justify-between gap-3"><FlowBadge rec={rec} /><span className="tnum">{openFlips.filter((flip) => flip.to === rec).length} moving into this flow</span></li>)}
+          </ul>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+            <dt className="text-muted-foreground">Author</dt><dd>{state.reviewer}</dd>
+            <dt className="text-muted-foreground">Named sign-off</dt><dd>{approver.trim()}</dd>
+            <dt className="text-muted-foreground">Reason</dt><dd className="break-words">{reason.trim()}</dd>
+          </dl>
+          <PolicyStamp version="v2" hash={draftHash} />
+          <DialogFooter><Button variant="ghost" onClick={() => setSummaryOpen(false)}>Back</Button><Button disabled={!gate.canRelease} onClick={() => decide("policy_approved")}><Rocket aria-hidden />{RELEASE_V2}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {editing && (
         <RuleDialog key={editing.key} rule={editing.rule} open onClose={() => setEditing(null)} onSave={save} existingIds={rules.map((r) => r.id)} />

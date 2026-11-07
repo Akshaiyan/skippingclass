@@ -15,6 +15,8 @@ export const Route = createFileRoute("/log")({
       { name: "description", content: "Append-only record of every system decision, reviewer override and policy sign-off." },
       { property: "og:title", content: "Decision log · Motor claims triage" },
       { property: "og:description", content: "An append-only, replayable audit trail for claim recommendations." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: LogPage,

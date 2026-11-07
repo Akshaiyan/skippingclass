@@ -30,7 +30,23 @@ export const LOCKED_BANNER = "Locked: this claim is closed and is not affected b
 export const RULE_BASED = "Rule-based, not a prediction";
 export const CASE_OVERVIEW = "Case overview";
 export const CASE_DETAILS = "Rules and evidence";
+export const REVIEW_COPY = {
+  why: "Why this recommendation",
+  evidence: "Why / Rules and evidence",
+  audit: "Your decision will be recorded in the audit log.",
+  reviewed: "Reviewed",
+  undo: "Undo",
+  undone: "Confirmation undone — recorded",
+};
+export const confirmAction = (rec: Rec) => `Confirm: ${REC_LABEL[rec]}`;
 export const IMPACT_COPY = {
+  title: "Expected impact",
+  subtitle: "If you release v2 · rule-based, not a prediction",
+  delta: "Δ",
+  assumed: "ASSUMED",
+  session: "Draft edits are session only. Release records your decision for this session; Reset restores live rules.",
+  locked: "Closed claims stay locked.",
+  releaseSummary: "Review v2 before release",
   volume: "Claim volume",
   live: "Live",
   expected: "Expected",
@@ -44,7 +60,7 @@ export const OVERRIDE_REC = "Override recommendation";
 export const CHANGE_REC = "Change recommendation";
 export const PREPARE_INFO = "Prepare information request";
 export const COPY_TEXT = "Copy text";
-export const CONFIRM_TOAST = "Marked as reviewed. Not recorded in the decision log.";
+export const CONFIRM_TOAST = "Recommendation confirmed — recorded";
 export const changeTo = (r: Rec) => `Change to ${REC_LABEL[r]}`;
 
 export const REASON_LABEL: Record<ReasonCode, { label: string; help: string }> = {
