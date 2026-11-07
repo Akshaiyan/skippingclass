@@ -309,16 +309,18 @@ export function CaseSheet({
         </div>
 
         {mode === "view" && (
-          <div className="flex flex-wrap gap-2 border-t border-border bg-background px-6 py-4">
+          <div className="sticky bottom-0 shrink-0 border-t border-border bg-background px-6 py-4">
+            <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <PolicyStamp version={claim.policy_version} hash={claim.policy_hash.slice(0, 18)} />
+              <span>{REVIEW_COPY.audit}</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
             <WhyDisabled disabled={locked} reason={LOCKED_TOOLTIP}>
               <Button
-                disabled={locked}
-                onClick={() => {
-                  dispatch({ type: "confirm", case_id: claim.case_id });
-                  toast(CONFIRM_TOAST);
-                }}
+                disabled={locked || reviewed || !state.reviewer.trim()}
+                onClick={confirm}
               >
-                <Check aria-hidden /> {CONFIRM_REC}
+                <Check aria-hidden /> {confirmAction(claim.recommendation_v1)}
               </Button>
             </WhyDisabled>
             <WhyDisabled disabled={locked} reason={LOCKED_TOOLTIP}>
@@ -328,7 +330,7 @@ export function CaseSheet({
             </WhyDisabled>
             {yellow && (
               <WhyDisabled disabled={locked} reason={LOCKED_TOOLTIP}>
-                <Button variant="outline" disabled={locked} onClick={() => setInfoOpen(true)}>
+                <Button variant="ghost" disabled={locked} onClick={() => setInfoOpen(true)}>
                   <FileText aria-hidden /> {PREPARE_INFO}
                 </Button>
               </WhyDisabled>
@@ -338,6 +340,7 @@ export function CaseSheet({
                 <Check className="size-3.5" aria-hidden /> Reviewed
               </span>
             )}
+            </div>
           </div>
         )}
       </SheetContent>
