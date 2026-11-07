@@ -1,9 +1,10 @@
 # Roadmap
 
 ## Open
-- [ ] Claims: clean three-column table and fast-handling case summary in the side window.
+- (none)
 
 ## Done
+- [x] Claims: clean three-column table and fast-handling case summary in the side window; details and reviewer actions remain available.
 - [x] Policy: full-color live and expected flow pie charts by count.
 - [x] Policy: live and expected weighted handling cost per claim; rates start blank and are editable for the session.
 - [x] Policy: two-column rule overview with edit/delete and activate/deactivate controls.
