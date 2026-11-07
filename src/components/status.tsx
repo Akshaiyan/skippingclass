@@ -168,12 +168,12 @@ export function WhyDisabled({ reason, children, disabled }: { reason?: string; c
   );
 }
 
-export function PageHeader({ title, description, action }: { title: string; description: ReactNode; action?: ReactNode }) {
+export function PageHeader({ title, description, action }: { title: string; description?: ReactNode; action?: ReactNode }) {
   return (
     <header className="flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-end md:justify-between">
       <div className="min-w-0">
         <h1 className="page-title">{title}</h1>
-        <div className="mt-1 text-sm text-muted-foreground">{description}</div>
+        {description && <div className="mt-1 text-sm text-muted-foreground">{description}</div>}
       </div>
       {action && <div className="flex shrink-0 flex-wrap items-center gap-2">{action}</div>}
     </header>
