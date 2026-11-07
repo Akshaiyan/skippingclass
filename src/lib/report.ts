@@ -108,7 +108,7 @@ export function exhaustiveChecks(claims: Claim[], v1: PolicyRule[], draft: Polic
   const evals = claims.map((c) => ({ c, ev: evaluate(draft, c.facts) }));
   const blankOk = evals.every(({ ev }) => !ev.checklist.some((k) => k.result === "unknown") || ev.recommendation !== "routine_processing");
   const redOk = evals.every(({ ev }) => !ev.checklist.some((k) => k.outcome === "human_review" && k.result === "true") || ev.recommendation === "human_review");
-  const incomplete = draft.find((r) => r.id !== "R3.routine" && !isConditionComplete(r.condition));
+  const incomplete = draft.find((r) => r.active !== false && r.id !== "R3.routine" && !isConditionComplete(r.condition));
   const replayOk = evals.every(({ c, ev }) => REC_ORDER.includes(ev.recommendation) && JSON.stringify(evaluate(draft, c.facts)) === JSON.stringify(ev));
   const closedOk = deriveClaims(claims, draft).every((c) => c.case_status === "open" || !c.needs_recheck);
   const changedIds = new Set([

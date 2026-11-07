@@ -27,6 +27,12 @@ describe("evaluator v1 seed", () => {
     const ev = evaluate(V1_RULES, { ...byId("PRA-005").facts, duplicate_flag: true });
     expect(ev.recommendation).toBe("human_review");
   });
+  it("an inactive rule neither fires nor creates an unknown", () => {
+    const rules = V1_RULES.map((r) => r.id === "R1.duplicate" || r.id === "R1.liability_disputed" ? { ...r, active: false } : r);
+    expect(evaluate(rules, byId("PRA-004").facts).recommendation).toBe("routine_processing");
+    expect(evaluate(rules, byId("PRA-006").facts).recommendation).toBe("routine_processing");
+    expect(evaluate(rules, byId("PRA-004").facts).checklist.some((c) => c.id === "R1.duplicate")).toBe(false);
+  });
 });
 
 describe("draft v2", () => {
@@ -55,6 +61,10 @@ describe("draft v2", () => {
     const c3 = exhaustiveChecks(SEED_CLAIMS, V1_RULES, rules)[2]!;
     expect(c3.pass).toBe(false);
     expect(c3.message).toBe("Rule R1.x has an incomplete condition");
+  });
+  it("an inactive incomplete rule does not block the draft", () => {
+    const rules = [...buildV2Rules(1200), { id: "R1.x", outcome: "human_review" as const, description: "x", condition: { all: [] }, active: false }];
+    expect(exhaustiveChecks(SEED_CLAIMS, V1_RULES, rules)[2]!.pass).toBe(true);
   });
 });
 

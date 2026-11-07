@@ -93,6 +93,8 @@ export interface PolicyRule {
   outcome: Rec;
   description: string;
   condition: Condition | null;
+  /** Missing means active, keeping existing API and seed payloads compatible. */
+  active?: boolean;
 }
 export interface Policy {
   version: string;
