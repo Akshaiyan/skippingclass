@@ -1,0 +1,79 @@
+{
+  "name": "v2",
+  "review_triggers": [
+    {
+      "id": "R1.policy_inactive",
+      "field": "policy_active_on_incident",
+      "op": "is_false",
+      "outcome": "human_review",
+      "description": "policy not active on incident date"
+    },
+    {
+      "id": "R1.claim_type_not_own",
+      "field": "claim_type",
+      "op": "ne",
+      "value": "motor_own_damage",
+      "outcome": "human_review",
+      "description": "claim type is not motor_own_damage"
+    },
+    {
+      "id": "R1.injury",
+      "field": "injury_reported",
+      "op": "is_true",
+      "outcome": "human_review",
+      "description": "injury reported"
+    },
+    {
+      "id": "R1.liability",
+      "field": "liability_disputed",
+      "op": "is_true",
+      "outcome": "human_review",
+      "description": "liability disputed"
+    },
+    {
+      "id": "R1.duplicate",
+      "field": "duplicate_flag",
+      "op": "is_true",
+      "outcome": "human_review",
+      "description": "duplicate flag"
+    },
+    {
+      "id": "R1.evidence_conflict",
+      "field": "evidence_conflict",
+      "op": "is_true",
+      "outcome": "human_review",
+      "description": "evidence conflict"
+    },
+    {
+      "id": "R1.quote_over_limit",
+      "field": "quote_eur",
+      "op": "gt",
+      "value": 1200,
+      "outcome": "human_review",
+      "description": "quote above EUR 1,200 (exactly 1,200 stays within the limit)"
+    },
+    {
+      "id": "R1.ev_battery",
+      "field": "repair_type",
+      "op": "eq",
+      "value": "ev_high_voltage_battery",
+      "outcome": "human_review",
+      "description": "EV high-voltage battery repair always needs human review; takes priority over missing documents"
+    }
+  ],
+  "evidence": [
+    "policy_active_on_incident",
+    "claim_type",
+    "quote_eur",
+    "incident_report_present",
+    "itemized_quote_present",
+    "injury_reported",
+    "liability_disputed",
+    "duplicate_flag",
+    "evidence_conflict"
+  ],
+  "must_be_true": [
+    "incident_report_present",
+    "itemized_quote_present"
+  ]
+}
