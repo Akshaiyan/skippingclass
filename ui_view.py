@@ -144,7 +144,8 @@ def ui_log_entry(e, seq):
                 "policy_hash": e.get("policy_hash", "")}
     if e.get("type") == "policy_decision":
         return {**base, "type": "policy_approved" if e.get("decision") == "approved" else "policy_rejected",
-                "reason": e.get("reason", ""), "policy_hash": e.get("policy_hash", "")}
+                "reason": e.get("reason", ""), "policy_hash": e.get("policy_hash", ""),
+                "affected": e.get("affected", []), "proposed_by": e.get("proposed_by", "")}
     return {**base, "type": e.get("type", "unknown")}
 
 
