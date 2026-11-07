@@ -10,10 +10,10 @@ import { Dot, FlowBadge, PolicyStamp, Refusal, WhyDisabled } from "./status";
 import { FLOW_OF } from "@/copy";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ReviewerOverride } from "@/types";
 import { postOverride } from "@/data/live";
+import { useRovingRadio } from "@/hooks/use-roving-radio";
 
 export function OverrideFlow({
   claim,
@@ -32,13 +32,22 @@ export function OverrideFlow({
   );
   const [reason, setReason] = useState<ReasonCode | null>(null);
   const [note, setNote] = useState("");
-  const [actor, setActor] = useState(state.reviewer);
+  // Overrides are recorded under the signed-in profile; the name is not editable here.
+  const actor = state.user?.name ?? state.reviewer;
   const [touched, setTouched] = useState(false);
   const [done, setDone] = useState<ReviewerOverride | null>(null);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
 
   const errors = validateOverride({ from: claim.recommendation_v1, to, reason, note, actor });
+  const nextGroup = useRovingRadio(
+    REC_ORDER,
+    to,
+    setTo,
+    (r) => r === claim.recommendation_v1 || claim.case_status === "closed",
+  );
+  const reasonCodes = Object.keys(REASON_LABEL) as ReasonCode[];
+  const reasonGroup = useRovingRadio(reasonCodes, reason, setReason);
   const valid = Object.keys(errors).length === 0;
 
   const preview = {
@@ -130,7 +139,7 @@ export function OverrideFlow({
     <div className="space-y-6" onBlur={() => setTouched(true)}>
       <fieldset>
         <legend className="eyebrow mb-2">1 · Next step</legend>
-        <div className="grid gap-2 sm:grid-cols-3" role="radiogroup">
+        <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Next step">
           {REC_ORDER.map((r) => {
             const current = r === claim.recommendation_v1;
             const sel = to === r;
@@ -139,10 +148,8 @@ export function OverrideFlow({
                 variant="outline"
                 key={r}
                 type="button"
-                role="radio"
-                aria-checked={sel}
+                {...nextGroup.itemProps(r)}
                 disabled={current || claim.case_status === "closed"}
-                onClick={() => setTo(r)}
                 className={cn(
                   "h-auto whitespace-normal flex flex-col items-start gap-2 rounded-lg border p-3 text-left text-sm transition-colors duration-150",
                   sel
@@ -167,15 +174,13 @@ export function OverrideFlow({
 
       <fieldset>
         <legend className="eyebrow mb-2">2 · Reason code</legend>
-        <div className="grid gap-2 sm:grid-cols-3" role="radiogroup">
-          {(Object.keys(REASON_LABEL) as ReasonCode[]).map((rc) => (
+        <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Reason code">
+          {reasonCodes.map((rc) => (
             <Button
               variant="outline"
               key={rc}
               type="button"
-              role="radio"
-              aria-checked={reason === rc}
-              onClick={() => setReason(rc)}
+              {...reasonGroup.itemProps(rc)}
               className={cn(
                 "h-auto whitespace-normal flex-col items-start rounded-lg border px-3 py-2 text-left transition-colors duration-150",
                 reason === rc
@@ -183,7 +188,7 @@ export function OverrideFlow({
                   : "border-border hover:border-border-strong hover:bg-surface",
               )}
             >
-              <div className="font-mono text-xs font-medium">{rc}</div>
+              <div className="text-sm font-medium">{REASON_LABEL[rc].label}</div>
               <div className="text-xs text-muted-foreground">{REASON_LABEL[rc].help}</div>
             </Button>
           ))}
@@ -192,7 +197,7 @@ export function OverrideFlow({
       </fieldset>
 
       <fieldset className="space-y-3">
-        <legend className="eyebrow mb-2">3 · Note and reviewer</legend>
+        <legend className="eyebrow mb-2">3 · Note</legend>
         <div>
           <Label htmlFor="ov-note">Note</Label>
           <Textarea
@@ -205,16 +210,9 @@ export function OverrideFlow({
           />
           {(touched || note.length > 0) && errors.note && <Refusal>{errors.note}</Refusal>}
         </div>
-        <div>
-          <Label htmlFor="ov-actor">Reviewer</Label>
-          <Input
-            id="ov-actor"
-            className="mt-2"
-            value={actor}
-            onChange={(e) => setActor(e.target.value)}
-          />
-          {errors.actor && (touched || actor.length === 0) && <Refusal>{errors.actor}</Refusal>}
-        </div>
+        <p className="text-sm text-text-2">
+          Recorded as <span className="font-medium text-foreground">{actor}</span>
+        </p>
       </fieldset>
 
       <div className="rounded-lg border border-border bg-surface p-4">
@@ -224,9 +222,9 @@ export function OverrideFlow({
         </pre>
       </div>
 
+      {sendError && <Refusal>{sendError}</Refusal>}
       <div className="flex flex-wrap gap-2">
         <WhyDisabled disabled={!valid} reason={Object.values(errors)[0]}>
-          {sendError && <Refusal>{sendError}</Refusal>}
           <Button
             onClick={submit}
             loading={sending}

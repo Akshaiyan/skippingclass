@@ -32,6 +32,28 @@ function listOf(items: string[], max = 2): string {
   return `${items.slice(0, max).join(", ")} and ${items.length - max} more`;
 }
 
+const DOC_FIELD: Record<string, string> = {
+  itemized: "itemized_quote_present",
+  incident_report: "incident_report_present",
+};
+
+/**
+ * Facts the claimant still has to provide: blank fields, documents a rule found missing, and fields
+ * the engine's explanation names as false or blank. Returned as field names, never guessed.
+ */
+export function missingFacts(c: Claim): string[] {
+  const out = new Set<string>(c.blank_fields);
+  for (const k of c.checklist) {
+    if (k.result !== "true" || k.outcome !== "request_information") continue;
+    const hit = Object.entries(DOC_FIELD).find(([key]) => k.id.includes(key));
+    if (hit) out.add(hit[1]);
+  }
+  if (c.recommendation_v1 === "request_information")
+    for (const m of c.explanation.matchAll(/\b([a-z]+(?:_[a-z]+)+) is (?:false|blank)/g))
+      out.add(m[1]!);
+  return [...out];
+}
+
 /** One short line: why the claim has its current recommendation. */
 export function shortReason(c: Claim, log: LogEntry[] = []): string {
   const override = lastOverride(log, c.case_id);
@@ -46,9 +68,8 @@ export function shortReason(c: Claim, log: LogEntry[] = []): string {
       ),
     );
   if (c.recommendation_v1 === "request_information") {
-    const unknown = c.checklist.some((k) => k.result === "unknown");
-    if (unknown && c.blank_fields.length)
-      return `Missing: ${listOf(c.blank_fields.map((f) => lower(fieldLabel(f))))}`;
+    const missing = missingFacts(c);
+    if (missing.length) return `Missing: ${listOf(missing.map((f) => lower(fieldLabel(f))))}`;
     if (fired.length)
       return capital(
         listOf(
@@ -58,12 +79,6 @@ export function shortReason(c: Claim, log: LogEntry[] = []): string {
       );
   }
   if (c.recommendation_v1 === "routine_processing") return "No rule raised a concern";
-  // Engine explanations name columns ("itemized_quote_present is false"); say which facts are missing.
-  const named = [...c.explanation.matchAll(/\b([a-z]+(?:_[a-z]+)+) is (?:false|blank)/g)].map(
-    (m) => m[1]!,
-  );
-  if (c.recommendation_v1 === "request_information" && named.length)
-    return `Missing: ${listOf([...new Set(named)].map((f) => lower(fieldLabel(f))))}`;
   return c.explanation;
 }
 

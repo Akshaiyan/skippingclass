@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Check, ChevronDown, Copy, FileText, GitBranch, Lock, Plug } from "lucide-react";
+import { Check, Copy, FileText, GitBranch, Lock, Plug } from "lucide-react";
 import type { Rec } from "@/types";
 import {
   REVIEW_COPY,
@@ -11,6 +11,7 @@ import {
   INFO_FOOTNOTE,
   LOCKED_BANNER,
   LOCKED_TOOLTIP,
+  NOT_PROVIDED,
   OVERRIDE_REC,
   PREPARE_INFO,
   RULE_BASED,
@@ -18,6 +19,7 @@ import {
 } from "@/copy";
 import { useStore } from "@/store";
 import { fieldLabel, FIELD_MAP } from "@/lib/fields";
+import { eur, missingFacts, nextStep, quoteOf, shortDate, shortReason } from "@/lib/claim-view";
 import { quoteLimitOf, type DerivedClaim } from "@/lib/report";
 import { cn } from "@/lib/utils";
 import {
@@ -30,9 +32,15 @@ import {
   TriGlyph,
   WhyDisabled,
 } from "./status";
-import { OverrideFlow } from "./OverrideFlow";
 import { DecisionMemory } from "./DecisionMemory";
+import { OverrideFlow } from "./OverrideFlow";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 
 function CopyButton({ text }: { text: string }) {
@@ -89,18 +97,7 @@ function suggestion(claim: DerivedClaim, limit: number) {
 }
 
 function infoRequestText(claim: DerivedClaim) {
-  const items: string[] = [];
-  claim.blank_fields.forEach((f) => items.push(`- ${fieldLabel(f)} (${f})`));
-  claim.checklist
-    .filter((c) => c.result === "true" && c.outcome === "request_information")
-    .forEach((c) => {
-      const f = c.id.includes("itemized")
-        ? "itemized_quote_present"
-        : c.id.includes("incident_report")
-          ? "incident_report_present"
-          : c.id;
-      if (!claim.blank_fields.includes(f)) items.push(`- ${fieldLabel(f)} (${f})`);
-    });
+  const items = missingFacts(claim).map((f) => `- ${fieldLabel(f)}`);
   return `Claim ${claim.case_id}\n\nTo continue with your claim we need the following:\n${items.join("\n")}\n\nPlease reply with these at your convenience. Thank you.`;
 }
 
@@ -111,6 +108,17 @@ function emailText(claim: DerivedClaim) {
       : "We will update you on the next step shortly."
   }\n\nKind regards,\nClaims team`;
 }
+
+function FactValue({ k, v, blank }: { k: string; v: unknown; blank: boolean }) {
+  if (blank || v === null || v === undefined || v === "") return <NotProvided />;
+  if (k === "case_status") return <>{v === "closed" ? "Closed" : "Open"}</>;
+  if (typeof v === "boolean") return <>{v ? "Yes" : "No"}</>;
+  if (typeof v === "number") return <>{v.toLocaleString("en-US")}</>;
+  return <>{String(v)}</>;
+}
+
+const SECTION = "border-b border-border";
+const TRIGGER = "py-4 text-sm font-semibold hover:no-underline";
 
 export function CaseSheet({
   claim,
@@ -129,7 +137,6 @@ export function CaseSheet({
   const [mode, setMode] = useState<"view" | "override">("view");
   const [target, setTarget] = useState<Rec | undefined>();
   const [infoOpen, setInfoOpen] = useState(false);
-  const [showPassed, setShowPassed] = useState(false);
   const [confirmation, setConfirmation] = useState<{
     timestamp: string;
     caseId: string;
@@ -147,7 +154,6 @@ export function CaseSheet({
       setMode(initialOverride ? "override" : "view");
       setTarget(initialOverride && initialOverride !== "open" ? initialOverride : undefined);
       setInfoOpen(false);
-      setShowPassed(false);
       setConfirmation(null);
     }
   }, [open, claim?.case_id, initialOverride]);
@@ -156,18 +162,20 @@ export function CaseSheet({
   const locked = claim.case_status === "closed";
   const yellow = claim.flow === "yellow";
   const order = { true: 0, unknown: 1, false: 2 } as const;
-  const sorted = [...claim.checklist].sort((a, b) => order[a.result] - order[b.result]);
-  const passed = sorted.filter((c) => c.result === "false");
-  const notPassed = sorted.filter((c) => c.result !== "false");
+  const checks = [...claim.checklist].sort((a, b) => order[a.result] - order[b.result]);
   // The limit in force: the session's v2 limit once v2 is released, otherwise the live v1 rule.
   const liveLimit = state.gateOpen ? state.quoteLimit : (quoteLimitOf(v1Rules) ?? state.quoteLimit);
   const sug = yellow ? suggestion(claim, liveLimit) : null;
   const reviewed = claim.ui_status === "reviewed";
+  const quote = quoteOf(claim);
+  const step = nextStep(claim, state.log);
+
   const confirm = () => {
     if (locked || reviewed || mode !== "view" || !state.reviewer.trim()) return;
     const timestamp = new Date().toISOString();
+    const previousStatus = claim.ui_status;
     dispatch({ type: "confirm", case_id: claim.case_id, timestamp });
-    setConfirmation({ timestamp, caseId: claim.case_id, previousStatus: claim.ui_status });
+    setConfirmation({ timestamp, caseId: claim.case_id, previousStatus });
     toast.success(CONFIRM_TOAST, {
       duration: 6000,
       action: {
@@ -178,13 +186,19 @@ export function CaseSheet({
             case_id: claim.case_id,
             confirmationTimestamp: timestamp,
             timestamp: new Date().toISOString(),
-            previousStatus: claim.ui_status,
+            previousStatus,
           });
           toast.success(REVIEW_COPY.undone);
           setConfirmation(null);
         },
       },
     });
+  };
+
+  const prepareInfo = () => {
+    if (locked) return;
+    dispatch({ type: "prepareInfo", case_id: claim.case_id, timestamp: new Date().toISOString() });
+    setInfoOpen(true);
   };
 
   return (
@@ -214,11 +228,10 @@ export function CaseSheet({
           }
         }}
       >
-        <div className="border-b border-border px-6 pb-5 pt-6">
-          <div className="flex flex-wrap items-center gap-2 pr-20">
-            <SheetTitle className="font-mono text-2xl font-semibold tracking-tight">
-              {claim.case_id}
-            </SheetTitle>
+        {/* Header, always visible: who, what it is about, and what the rules decided */}
+        <header className="shrink-0 border-b border-border">
+          <div className="flex flex-wrap items-center gap-2 px-6 pb-4 pr-16 pt-6">
+            <SheetTitle className="font-mono text-xl font-semibold">{claim.case_id}</SheetTitle>
             <FlowBadge rec={claim.recommendation_v1} />
             <StatusChip status={claim.case_status} />
             {reviewed && (
@@ -228,20 +241,72 @@ export function CaseSheet({
               </Chip>
             )}
           </div>
-          <SheetDescription className="mt-2 text-sm text-text-2">
-            {claim.claim_summary}
-          </SheetDescription>
-        </div>
 
-        <div className="flex-1 space-y-8 overflow-y-auto px-6 py-6">
+          <div className="grid gap-4 px-6 pb-5 sm:grid-cols-[auto_1fr] sm:gap-8">
+            <div>
+              <div className="text-xs text-muted-foreground">Repair quote</div>
+              <div className="display-num mt-1 text-2xl font-medium">
+                {quote === null ? (
+                  <span className="text-sm font-normal">
+                    <NotProvided />
+                  </span>
+                ) : (
+                  eur(quote)
+                )}
+              </div>
+            </div>
+            <SheetDescription className="self-end text-sm text-foreground">
+              {claim.claim_summary || NOT_PROVIDED}
+            </SheetDescription>
+          </div>
+
+          <div className="grid gap-4 border-t border-border bg-surface px-6 py-4 sm:grid-cols-2 sm:gap-8">
+            <div className="min-w-0">
+              <div className="text-xs text-muted-foreground">
+                Why {REC_LABEL[claim.recommendation_v1].toLowerCase()}
+              </div>
+              <p className="mt-1 line-clamp-2 text-sm font-medium">
+                {shortReason(claim, state.log)}
+              </p>
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs text-muted-foreground">
+                {step.kind === "done" ? "Latest step" : "Next step"}
+              </div>
+              <p className="mt-1 text-sm font-medium">
+                {step.kind === "done" && (
+                  <Check
+                    className="mr-1 inline size-3.5 -translate-y-px text-muted-foreground"
+                    aria-hidden
+                  />
+                )}
+                {step.kind === "suggested"
+                  ? `Suggested next step: ${REC_LABEL[claim.recommendation_v1]}`
+                  : step.label}
+                {step.timestamp && (
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    {shortDate(step.timestamp)}
+                  </span>
+                )}
+              </p>
+            </div>
+            {!locked && claim.needs_recheck && (
+              <p className="flex flex-wrap items-center gap-2 text-xs text-text-2 sm:col-span-2">
+                Under draft v2 this becomes <FlowBadge rec={claim.recommendation_v2} size="sm" />
+              </p>
+            )}
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           {locked && (
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-3 text-sm text-text-2">
+            <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text-2">
               <Lock className="size-4 shrink-0" aria-hidden /> {LOCKED_BANNER}
             </div>
           )}
 
           {mode === "override" ? (
-            <section>
+            <section className="py-2">
               <h3 className="section-title mb-4">{OVERRIDE_REC}</h3>
               <OverrideFlow
                 key={`${claim.case_id}-${target}`}
@@ -253,162 +318,8 @@ export function CaseSheet({
             </section>
           ) : (
             <>
-              <section aria-labelledby="case-overview-title">
-                <h3 id="case-overview-title" className="text-base font-semibold">
-                  {REVIEW_COPY.why}
-                </h3>
-                <ul className="mt-4 space-y-3 text-sm text-text-2">
-                  {notPassed.length ? (
-                    notPassed.map((check) => (
-                      <li key={check.id} className="flex items-start gap-2">
-                        <span className="mt-1 shrink-0">
-                          <TriGlyph result={check.result} outcome={check.outcome} />
-                        </span>
-                        <span>
-                          {check.description}
-                          {check.result === "unknown" ? " · not provided, not assumed" : ""}
-                        </span>
-                      </li>
-                    ))
-                  ) : (
-                    <li>{claim.explanation}</li>
-                  )}
-                </ul>
-                {!locked && claim.needs_recheck && (
-                  <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-3 text-xs text-text-2">
-                    Needs recheck · Expected <FlowBadge rec={claim.recommendation_v2} size="sm" />
-                  </div>
-                )}
-              </section>
-              <details open className="border-t border-border pt-4">
-                <summary className="cursor-pointer text-sm font-semibold">
-                  {REVIEW_COPY.evidence}
-                </summary>
-                <section className="mt-4">
-                  <PolicyStamp version={claim.policy_version} hash={claim.policy_hash} />
-                  <div className="mt-3" />
-                  <RuleChips rule={claim.rule_v1} />
-                  <p className="mt-3 text-sm text-text-2">{claim.explanation}</p>
-                  {!locked && claim.needs_recheck && (
-                    <p className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-dashed border-border-strong px-3 py-2 text-xs text-text-2">
-                      Under draft v2 this becomes:{" "}
-                      <FlowBadge rec={claim.recommendation_v2} size="sm" /> via{" "}
-                      <RuleChips rule={claim.rule_v2} />
-                    </p>
-                  )}
-                  <ul className="mt-4 space-y-2">
-                    {[...notPassed, ...(showPassed ? passed : [])].map((c) => (
-                      <li
-                        key={c.id}
-                        className={cn(
-                          "rounded-lg border p-3",
-                          c.result === "unknown"
-                            ? "border-unknown/30 bg-unknown-tint"
-                            : c.result === "true"
-                              ? "border-border-strong bg-background"
-                              : "border-border bg-background",
-                        )}
-                      >
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                          <span className="w-20 shrink-0">
-                            <TriGlyph result={c.result} outcome={c.outcome} />
-                          </span>
-                          <span className="font-mono text-xs text-foreground">{c.id}</span>
-                          <span className="text-sm text-text-2">{c.description}</span>
-                          <span className="ml-auto">
-                            <FlowBadge rec={c.outcome} size="sm" />
-                          </span>
-                        </div>
-                        <div
-                          className={cn(
-                            "mt-2 rounded-md px-2 py-2 font-mono text-xs leading-5 text-text-2",
-                            c.result === "unknown" ? "bg-background/70" : "bg-surface",
-                          )}
-                        >
-                          {c.evidence}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                  {passed.length > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => setShowPassed((s) => !s)}
-                      aria-expanded={showPassed}
-                    >
-                      <ChevronDown
-                        className={cn("transition-transform", showPassed && "rotate-180")}
-                        aria-hidden
-                      />
-                      {showPassed ? "Hide passed rules" : `Show ${passed.length} passed rules`}
-                    </Button>
-                  )}
-                </section>
-              </details>
-
-              <details className="border-t border-border pt-4">
-                <summary className="cursor-pointer text-sm font-semibold">
-                  All case information
-                </summary>
-                <section className="mt-4">
-                  <dl className="grid gap-x-6 sm:grid-cols-2">
-                    {Object.entries(claim.facts).map(([k, v]) => (
-                      <div
-                        key={k}
-                        className="flex items-baseline justify-between gap-3 border-b border-border py-2 text-sm"
-                      >
-                        <dt className="text-xs text-muted-foreground">{fieldLabel(k)}</dt>
-                        <dd className="tnum min-w-0 break-words text-right">
-                          {claim.blank_fields.includes(k) || v === null ? (
-                            <NotProvided />
-                          ) : k === "case_status" ? (
-                            v === "closed" ? (
-                              "Locked"
-                            ) : (
-                              "Open"
-                            )
-                          ) : typeof v === "boolean" ? (
-                            v ? (
-                              "Yes"
-                            ) : (
-                              "No"
-                            )
-                          ) : typeof v === "number" ? (
-                            v.toLocaleString("en-US")
-                          ) : (
-                            String(v)
-                          )}
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
-                </section>
-              </details>
-
-              <DecisionMemory caseId={claim.case_id} />
-
-              {sug && (
-                <section className="rounded-lg border border-border bg-surface p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="section-title">One question that would change the outcome</h3>
-                    <Chip tone="outline">{RULE_BASED}</Chip>
-                  </div>
-                  <p className="mt-2 text-sm font-medium">
-                    {sug.title}{" "}
-                    {sug.field && (
-                      <span className="font-mono text-xs font-normal text-muted-foreground">
-                        ({sug.field})
-                      </span>
-                    )}
-                  </p>
-                  <p className="mt-1 text-sm text-text-2">{sug.outcomes}</p>
-                </section>
-              )}
-
               {infoOpen && yellow && (
-                <section className="rounded-lg border border-border p-4">
+                <section className="mb-4 rounded-lg border border-border p-4" aria-live="polite">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <h3 className="section-title">Information request</h3>
                     <CopyButton text={infoRequestText(claim)} />
@@ -420,51 +331,145 @@ export function CaseSheet({
                 </section>
               )}
 
-              <details className="border-t border-border pt-4">
-                <summary className="cursor-pointer text-sm font-semibold">Draft email</summary>
-                <section className="mt-4">
-                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <h3 className="section-title">Draft email (placeholder)</h3>
-                      <p className="text-xs text-muted-foreground">{EMAIL_LABEL}</p>
+              <Accordion type="multiple" className="w-full">
+                <AccordionItem value="why" className={SECTION}>
+                  <AccordionTrigger className={TRIGGER}>{REVIEW_COPY.why}</AccordionTrigger>
+                  <AccordionContent className="space-y-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <PolicyStamp version={claim.policy_version} hash={claim.policy_hash} />
+                      <RuleChips rule={claim.rule_v1} />
                     </div>
-                    <CopyButton text={emailText(claim)} />
-                  </div>
-                  <pre className="whitespace-pre-wrap font-sans text-sm text-text-2">
-                    {emailText(claim)}
-                  </pre>
-                </section>
-              </details>
-              <details className="border-t border-border pt-4">
-                <summary className="cursor-pointer text-sm font-semibold">Connections</summary>
-                <section className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h3 className="section-title">HubSpot integration</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Planned: sync this case to your CRM
-                    </p>
-                  </div>
-                  <WhyDisabled disabled reason="Not available in this demo">
-                    <Button variant="outline" size="sm" disabled>
-                      <Plug aria-hidden /> Connect
-                    </Button>
-                  </WhyDisabled>
-                </section>
-              </details>
+                    <p className="text-text-2">{claim.explanation}</p>
+                    {sug && (
+                      <div className="rounded-lg border border-border bg-surface p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <h4 className="text-sm font-semibold">
+                            One question that would change the outcome
+                          </h4>
+                          <Chip tone="outline">{RULE_BASED}</Chip>
+                        </div>
+                        <p className="mt-2 text-sm font-medium">{sug.title}</p>
+                        <p className="mt-1 text-sm text-text-2">{sug.outcomes}</p>
+                      </div>
+                    )}
+                    <ul className="space-y-2">
+                      {checks.map((c) => (
+                        <li
+                          key={c.id}
+                          className={cn(
+                            "rounded-lg border p-3",
+                            c.result === "unknown"
+                              ? "border-unknown/30 bg-unknown-tint"
+                              : "border-border bg-background",
+                          )}
+                        >
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                            <span className="w-20 shrink-0">
+                              <TriGlyph result={c.result} outcome={c.outcome} />
+                            </span>
+                            <span className="text-sm">{c.description}</span>
+                            <span className="ml-auto">
+                              <FlowBadge rec={c.outcome} size="sm" />
+                            </span>
+                          </div>
+                          <div className="mt-2 rounded-md bg-surface px-2 py-1 font-mono text-xs leading-5 text-text-2">
+                            {c.evidence}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="facts" className={SECTION}>
+                  <AccordionTrigger className={TRIGGER}>All case information</AccordionTrigger>
+                  <AccordionContent>
+                    <dl className="grid gap-x-6 sm:grid-cols-2">
+                      {Object.entries(claim.facts).map(([k, v]) => (
+                        <div
+                          key={k}
+                          className="flex items-baseline justify-between gap-3 border-b border-border py-2 text-sm"
+                        >
+                          <dt className="text-xs text-muted-foreground">{fieldLabel(k)}</dt>
+                          <dd className="tnum min-w-0 break-words text-right">
+                            <FactValue k={k} v={v} blank={claim.blank_fields.includes(k)} />
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="memory" className={SECTION}>
+                  <AccordionTrigger className={TRIGGER}>Decision memory</AccordionTrigger>
+                  <AccordionContent>
+                    <DecisionMemory caseId={claim.case_id} />
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="email" className={SECTION}>
+                  <AccordionTrigger className={TRIGGER}>Draft email</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs text-muted-foreground">{EMAIL_LABEL}</p>
+                      <CopyButton text={emailText(claim)} />
+                    </div>
+                    <pre className="whitespace-pre-wrap rounded-md bg-surface p-3 font-sans text-sm text-text-2">
+                      {emailText(claim)}
+                    </pre>
+                    <p className="mt-2 text-xs text-muted-foreground">{INFO_FOOTNOTE}</p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="connections" className={SECTION}>
+                  <AccordionTrigger className={TRIGGER}>Connections</AccordionTrigger>
+                  <AccordionContent className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h4 className="text-sm font-medium">HubSpot</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Planned: sync this case to your CRM
+                      </p>
+                    </div>
+                    <WhyDisabled disabled reason="Not available in this demo">
+                      <Button variant="outline" size="sm" disabled>
+                        <Plug aria-hidden /> Connect
+                      </Button>
+                    </WhyDisabled>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </>
           )}
         </div>
 
         {mode === "view" && (
           <div className="sticky bottom-0 shrink-0 border-t border-border bg-background px-6 py-4">
-            <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <PolicyStamp version={claim.policy_version} hash={claim.policy_hash.slice(0, 18)} />
-              <span>{REVIEW_COPY.audit}</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
+            <p className="mb-3 text-xs text-muted-foreground">{REVIEW_COPY.audit}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <WhyDisabled
+                disabled={locked || reviewed}
+                reason={locked ? LOCKED_TOOLTIP : "Already confirmed"}
+              >
+                <Button disabled={locked || reviewed || !state.reviewer.trim()} onClick={confirm}>
+                  <Check aria-hidden /> {confirmAction(claim.recommendation_v1)}
+                </Button>
+              </WhyDisabled>
+              <WhyDisabled disabled={locked} reason={LOCKED_TOOLTIP}>
+                <Button variant="outline" disabled={locked} onClick={() => setMode("override")}>
+                  <GitBranch aria-hidden /> {OVERRIDE_REC}
+                </Button>
+              </WhyDisabled>
+              {yellow && (
+                <WhyDisabled disabled={locked} reason={LOCKED_TOOLTIP}>
+                  <Button variant="ghost" disabled={locked} onClick={prepareInfo}>
+                    <FileText aria-hidden /> {PREPARE_INFO}
+                  </Button>
+                </WhyDisabled>
+              )}
               {confirmation?.caseId === claim.case_id && (
                 <Button
                   variant="ghost"
+                  className="ml-auto"
                   onClick={() => {
                     dispatch({
                       type: "undoConfirm",
@@ -479,28 +484,6 @@ export function CaseSheet({
                 >
                   {REVIEW_COPY.undo}
                 </Button>
-              )}
-              <WhyDisabled disabled={locked} reason={LOCKED_TOOLTIP}>
-                <Button disabled={locked || reviewed || !state.reviewer.trim()} onClick={confirm}>
-                  <Check aria-hidden /> {confirmAction(claim.recommendation_v1)}
-                </Button>
-              </WhyDisabled>
-              <WhyDisabled disabled={locked} reason={LOCKED_TOOLTIP}>
-                <Button variant="outline" disabled={locked} onClick={() => setMode("override")}>
-                  <GitBranch aria-hidden /> {OVERRIDE_REC}
-                </Button>
-              </WhyDisabled>
-              {yellow && (
-                <WhyDisabled disabled={locked} reason={LOCKED_TOOLTIP}>
-                  <Button variant="ghost" disabled={locked} onClick={() => setInfoOpen(true)}>
-                    <FileText aria-hidden /> {PREPARE_INFO}
-                  </Button>
-                </WhyDisabled>
-              )}
-              {claim.ui_status === "reviewed" && (
-                <span className="ml-auto inline-flex items-center gap-1 self-center text-xs text-muted-foreground">
-                  <Check className="size-3.5" aria-hidden /> Reviewed
-                </span>
               )}
             </div>
           </div>
