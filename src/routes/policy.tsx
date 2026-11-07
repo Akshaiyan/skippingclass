@@ -124,8 +124,8 @@ function PolicyPage() {
   const towardRoutine = flips.some((f) => f.towardRoutine);
   const gate = validateGate({ author: AUTHOR, approver, reason, checksPass: allPass });
   const openFlips = flips.filter((f) => f.status === "recheck");
-  const activeCount = rules.filter((r) => r.active !== false).length;
-  const fixedLast = [...rules.filter((r) => r.id !== "R3.routine"), ...rules.filter((r) => r.id === "R3.routine")];
+  const visibleRules = rules.filter((r) => r.id !== "R3.routine");
+  const activeCount = visibleRules.filter((r) => r.active !== false).length;
 
   const chartData = useMemo(() => REC_ORDER.map((rec) => ({
     name: CHART_LABEL[rec],
@@ -177,12 +177,12 @@ function PolicyPage() {
         }
       />
 
-      <div className="grid items-start gap-6 lg:grid-cols-12">
+      <div className="grid gap-6 lg:grid-cols-12">
         <section className="space-y-4 lg:col-span-5" aria-labelledby="rules-title">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 id="rules-title" className="section-title">Rules, in order</h2>
-              <p className="tnum text-xs text-muted-foreground">{activeCount} of {rules.length} active</p>
+              <p className="tnum text-xs text-muted-foreground">{activeCount} of {visibleRules.length} active</p>
             </div>
             <div className="flex gap-1.5">
               <Button variant="ghost" size="sm" onClick={() => dispatch({ type: "resetDraft" })}>
@@ -213,10 +213,9 @@ function PolicyPage() {
           </div>
 
           <ol className="space-y-2">
-            {fixedLast.map((r, index) => {
+            {visibleRules.map((r, index) => {
               const st = ruleStatus(v1Rules, r);
               const active = r.active !== false;
-              const fixed = r.id === "R3.routine";
               return (
                 <li key={r.id} className={cn("card-panel p-4 transition-colors hover:border-border-strong", !active && "bg-surface")}>
                   <div className="flex items-start gap-3">
@@ -230,11 +229,10 @@ function PolicyPage() {
                       </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                      <Label htmlFor={`active-${r.id}`} className="text-xs text-muted-foreground">{fixed ? "Always active" : active ? "Active" : "Inactive"}</Label>
+                      <Label htmlFor={`active-${r.id}`} className="text-xs text-muted-foreground">{active ? "Active" : "Inactive"}</Label>
                       <Switch
                         id={`active-${r.id}`}
                         checked={active}
-                        disabled={fixed}
                         aria-label={`${active ? "Deactivate" : "Activate"} ${r.description}`}
                         onCheckedChange={() => toggleRule(r.id)}
                       />
@@ -244,27 +242,19 @@ function PolicyPage() {
                     <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setEditing({ rule: r, key: Date.now() })}>
                       <Pencil aria-hidden /> Edit
                     </Button>
-                    {fixed ? (
-                      <WhyDisabled disabled reason="The fallback rule cannot be deleted">
-                        <Button variant="ghost" size="sm" className="h-7 text-xs" disabled>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs">
                           <Trash2 aria-hidden /> Delete
                         </Button>
-                      </WhyDisabled>
-                    ) : (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-7 text-xs">
-                            <Trash2 aria-hidden /> Delete
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-64 space-y-3 text-sm">
-                          <p>Remove this rule from the draft?</p>
-                          <Button size="sm" variant="destructive" onClick={() => dispatch({ type: "setRules", rules: rules.filter((x) => x.id !== r.id) })}>
-                            <Trash2 aria-hidden /> Delete rule
-                          </Button>
-                        </PopoverContent>
-                      </Popover>
-                    )}
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 space-y-3 text-sm">
+                        <p>Remove this rule from the draft?</p>
+                        <Button size="sm" variant="destructive" onClick={() => dispatch({ type: "setRules", rules: rules.filter((x) => x.id !== r.id) })}>
+                          <Trash2 aria-hidden /> Delete rule
+                        </Button>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </li>
               );
@@ -272,7 +262,7 @@ function PolicyPage() {
           </ol>
         </section>
 
-        <section className="space-y-4 lg:col-span-7" aria-labelledby="impact-title">
+        <section className="space-y-4 lg:sticky lg:top-6 lg:col-span-7 lg:self-start" aria-labelledby="impact-title">
           <div className="card-panel p-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
@@ -289,9 +279,9 @@ function PolicyPage() {
               <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-sm bg-chart-2" aria-hidden />Current</span>
               <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-sm bg-chart-1" aria-hidden />Draft</span>
             </div>
-            <div className="mt-1 h-64 w-full" role="img" aria-label={chartData.map((d) => `${d.name}: current ${d.current}, draft ${d.draft}`).join(". ")}>
+            <div className="mt-1 h-[420px] w-full" role="img" aria-label={chartData.map((d) => `${d.name}: current ${d.current}, draft ${d.draft}`).join(". ")}>
               <ResponsiveContainer>
-                <BarChart data={chartData} barGap={5} margin={{ top: 12, right: 4, left: -18, bottom: 0 }}>
+                <BarChart data={chartData} barGap={5} margin={{ top: 12, right: 4, left: -6, bottom: 0 }}>
                   <CartesianGrid vertical={false} stroke="var(--border)" />
                   <XAxis dataKey="name" interval={0} tickLine={false} axisLine={{ stroke: "var(--border)" }} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                   <YAxis domain={[0, chartMax]} ticks={chartTicks} allowDecimals={false} tickLine={false} axisLine={false} width={30} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
@@ -303,26 +293,6 @@ function PolicyPage() {
             </div>
           </div>
 
-          <div className="card-panel p-5">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 className="section-title">Changed claims</h2>
-              <span className="tnum text-xs text-muted-foreground">{openFlips.length} open</span>
-            </div>
-            {openFlips.length === 0 ? (
-              <p className="py-3 text-sm text-muted-foreground">No open claims change.</p>
-            ) : (
-              <ul className="max-h-64 divide-y divide-border overflow-y-auto">
-                {openFlips.map((f) => (
-                  <li key={f.claim.case_id} className="flex flex-wrap items-center gap-2 py-3 first:pt-0 last:pb-0">
-                    <span className="w-20 font-mono text-xs font-medium">{f.claim.case_id}</span>
-                    <FlowBadge rec={f.from} size="sm" />
-                    <ArrowRight className="size-3 text-muted-foreground" aria-label="to" />
-                    <FlowBadge rec={f.to} size="sm" />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
         </section>
       </div>
 
