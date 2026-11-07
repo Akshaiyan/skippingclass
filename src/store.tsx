@@ -19,6 +19,7 @@ import {
 } from "@/data/api";
 import type { LiveSnapshot } from "@/data/live";
 import type { HandlingRates } from "@/lib/policy-impact";
+import { DEFAULT_ASSUMPTIONS, sanitizeAssumption, type SavingsAssumptions } from "@/lib/savings";
 import { FLOW_OF } from "@/copy";
 import type { DerivedClaim } from "@/lib/report";
 
@@ -36,6 +37,8 @@ interface State {
   quoteLimit: QuoteLimit;
   gateOpen: boolean;
   handlingRates: HandlingRates;
+  /** Inputs of the savings view, editable for the session. */
+  assumptions: SavingsAssumptions;
   /** "live": everything comes from the triage API. "demo": the team's seed data, because the API was unreachable. */
   source: DataSource;
   sourceError: string | null;
@@ -51,6 +54,8 @@ type Action =
   | { type: "live"; snapshot: LiveSnapshot }
   | { type: "sourceError"; message: string }
   | { type: "setHandlingRate"; flow: Flow; rate: number | null }
+  | { type: "setAssumption"; key: keyof SavingsAssumptions; value: number }
+  | { type: "resetAssumptions" }
   | { type: "confirm"; case_id: string; timestamp: string }
   | {
       type: "undoConfirm";
@@ -68,7 +73,7 @@ type Action =
   | { type: "setQuoteLimit"; limit: QuoteLimit }
   | { type: "policyDecision"; record: PolicyDecision };
 
-function withLimit(rules: PolicyRule[], limit: number): PolicyRule[] {
+export function withLimit(rules: PolicyRule[], limit: number): PolicyRule[] {
   return rules.map((r) =>
     r.id === "R1.quote_over_limit" && r.condition && "field" in r.condition
       ? {
@@ -104,6 +109,13 @@ export function storeReducer(s: State, a: Action): State {
         ...s,
         handlingRates: { ...getHandlingRates(), ...s.handlingRates, [a.flow]: a.rate },
       };
+    case "setAssumption": {
+      const value = sanitizeAssumption(a.key, a.value);
+      if (value === null) return s;
+      return { ...s, assumptions: { ...DEFAULT_ASSUMPTIONS, ...s.assumptions, [a.key]: value } };
+    }
+    case "resetAssumptions":
+      return { ...s, assumptions: { ...DEFAULT_ASSUMPTIONS } };
     case "confirm": {
       const claim = s.claims.find((c) => c.case_id === a.case_id);
       if (
@@ -252,6 +264,7 @@ export function initialStoreState(): State {
     quoteLimit: 1200,
     gateOpen: false,
     handlingRates: getHandlingRates(),
+    assumptions: { ...DEFAULT_ASSUMPTIONS },
     source: "connecting",
     sourceError: null,
     v1Rules: getPolicy().rules,

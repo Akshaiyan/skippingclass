@@ -9,6 +9,7 @@ import {
   PanelLeftOpen,
   Scale,
   ScrollText,
+  TrendingUp,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useStore } from "@/store";
@@ -23,6 +24,7 @@ const NAV = [
   { to: "/", label: "Dashboard", short: "Home", icon: LayoutDashboard },
   { to: "/claims", label: "Claims", short: "Claims", icon: Inbox },
   { to: "/policy", label: "Policy change", short: "Policy", icon: Scale },
+  { to: "/business", label: "Cost impact", short: "Business", icon: TrendingUp },
   { to: "/log", label: "Decision log", short: "Log", icon: ScrollText },
 ] as const;
 

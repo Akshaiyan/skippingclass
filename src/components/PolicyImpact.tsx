@@ -10,9 +10,14 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { Link } from "@tanstack/react-router";
 import { getPolicyImpact } from "@/data/api";
-import { IMPACT_COPY, NOT_PROVIDED } from "@/copy";
+import { IMPACT_COPY, NOT_PROVIDED, REC_LABEL } from "@/copy";
 import { useStore } from "@/store";
+import { useMemo, useState } from "react";
+import { claimCostEffect, policySavings, reviewCost } from "@/lib/savings";
+import { flipList } from "@/lib/report";
+import { CaseSheet } from "@/components/CaseSheet";
 
 const euro = (value: number) =>
   new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" }).format(value);
@@ -26,6 +31,11 @@ const flowGray = {
 export function PolicyImpact() {
   const { state, derived } = useStore();
   const impact = getPolicyImpact(derived, state.handlingRates);
+  const savings = policySavings(derived, state.assumptions);
+  const flips = useMemo(() => flipList(derived), [derived]);
+  const openFlips = flips.filter((f) => f.claim.case_status === "open");
+  const [selected, setSelected] = useState<string | null>(null);
+  const selectedClaim = derived.find((c) => c.case_id === selected) ?? null;
   const versions = [
     { key: "live" as const, label: IMPACT_COPY.live, cost: impact.liveCost },
     { key: "expected" as const, label: IMPACT_COPY.expected, cost: impact.expectedCost },
@@ -132,6 +142,74 @@ export function PolicyImpact() {
           ))}
         </div>
       </section>
+      <section className="border-t border-border pt-6" aria-labelledby="changed-title">
+        <h3 id="changed-title" className="section-title">
+          Changed claims
+        </h3>
+        <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4" aria-live="polite">
+          {[
+            ["Newly to Human review", savings.newlyEscalated],
+            ["Released from Human review", savings.released],
+            ["Moved to Routine processing", savings.movedToRoutine],
+            ["Moved to Missing information", savings.movedToInfo],
+          ].map(([label, value]) => (
+            <div key={label as string}>
+              <dt className="text-xs text-muted-foreground">{label}</dt>
+              <dd className="tnum font-mono text-base font-semibold">{value}</dd>
+            </div>
+          ))}
+        </dl>
+        {openFlips.length ? (
+          <ul className="mt-4 divide-y divide-border border-y border-border text-sm">
+            {openFlips.map((flip) => {
+              const effect = claimCostEffect(flip.from, flip.to, state.assumptions);
+              return (
+                <li key={flip.claim.case_id}>
+                  <button
+                    type="button"
+                    onClick={() => setSelected(flip.claim.case_id)}
+                    className="grid w-full grid-cols-[auto_1fr_auto] items-baseline gap-x-3 gap-y-1 py-2 text-left hover:bg-surface"
+                  >
+                    <span className="font-mono">{flip.claim.case_id}</span>
+                    <span className="min-w-0">
+                      {REC_LABEL[flip.from]} to {REC_LABEL[flip.to]}
+                      <span className="block truncate font-mono text-xs text-muted-foreground">
+                        {flip.cause}
+                      </span>
+                    </span>
+                    <span className="tnum font-mono">
+                      {effect > 0 ? "+" : effect < 0 ? "−" : ""}
+                      {euro(Math.abs(effect))}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="mt-3 text-xs text-muted-foreground">No open claim changes with this draft.</p>
+        )}
+        <div className="mt-4 flex items-baseline justify-between gap-3 text-sm" aria-live="polite">
+          <span>Extra cost of Human review per month</span>
+          <span className="tnum font-mono font-semibold">
+            {savings.extraReviewCostPerMonth > 0 ? "+" : savings.extraReviewCostPerMonth < 0 ? "−" : ""}
+            {euro(Math.abs(savings.extraReviewCostPerMonth))}
+            <span className="ml-2 text-xs font-normal text-muted-foreground">{IMPACT_COPY.assumed}</span>
+          </span>
+        </div>
+        <details className="mt-2 text-xs text-muted-foreground">
+          <summary className="cursor-pointer">Formula</summary>
+          <p className="mt-1 font-mono">
+            ({savings.newlyEscalated} newly to Human review − {savings.released} released) ÷{" "}
+            {savings.openClaims} open claims × {state.assumptions.claimsPerMonth.toLocaleString("en-IE")} claims per month ×{" "}
+            {euro(reviewCost(state.assumptions))} per review
+          </p>
+          <p className="mt-1">
+            Missing information is not priced. Closed claims stay locked and are not counted. Inputs are on{" "}
+            <Link className="underline" to="/business">Cost impact</Link>.
+          </p>
+        </details>
+      </section>
       {/* Handling cost needs a rate per flow; without rates there is nothing honest to chart. */}
       {hasRates && (
         <section aria-labelledby="handling-cost-title">
@@ -217,6 +295,11 @@ export function PolicyImpact() {
           </div>
         </section>
       )}
+      <CaseSheet
+        claim={selectedClaim}
+        open={!!selectedClaim}
+        onOpenChange={(o) => !o && setSelected(null)}
+      />
     </div>
   );
 }
