@@ -130,7 +130,6 @@ function ClaimsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Claims"
-        description="Each claim gets one recommended next step. Human review first, then requests for information, then routine."
       />
 
       <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
