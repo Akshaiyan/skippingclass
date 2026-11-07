@@ -18,7 +18,7 @@ type StatusFilter = "open" | "closed" | "all";
 
 export const Route = createFileRoute("/claims")({
   validateSearch: (s: Record<string, unknown>): { flow?: FlowFilter } => {
-    const f = s.flow;
+    const f = s["flow"];
     return f === "red" || f === "yellow" || f === "green" || f === "all" ? { flow: f } : {};
   },
   head: () => ({

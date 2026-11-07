@@ -117,7 +117,7 @@ const RAW: { case_id: string; case_status: "open" | "closed"; claim_summary: str
   { case_id: "PRA-012", case_status: "closed", claim_summary: "Front bumper scrape while parking, repaired at a partner garage.", facts: base({ case_status: "closed", quote_eur: 1300, claimed_amount_eur: 1300, incident_date: "2026-09-02" }) },
 ];
 
-for (const r of RAW) r.facts.case_status = r.case_status;
+for (const r of RAW) r.facts["case_status"] = r.case_status;
 
 export const SEED_CLAIMS: Claim[] = RAW.map((r) => {
   const ev = evaluate(V1_RULES, r.facts);
@@ -144,7 +144,7 @@ const BASE_TS = Date.UTC(2026, 10, 7, 9, 0, 0);
 const daysAgo = (d: number, h = 0) => new Date(BASE_TS - d * 864e5 + h * 36e5).toISOString();
 
 export const SEED_LOG: LogEntry[] = (() => {
-  const out: Omit<LogEntry, "seq">[] = [];
+  const out: Record<string, unknown>[] = [];
   SEED_CLAIMS.forEach((c, i) => {
     out.push({
       type: "system_decision",
@@ -190,6 +190,6 @@ export const SEED_LOG: LogEntry[] = (() => {
     timestamp: daysAgo(1, 2),
   });
   return out
-    .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+    .sort((a, b) => String(a.timestamp).localeCompare(String(b.timestamp)))
     .map((e, i) => ({ ...e, seq: i + 1 }) as LogEntry);
 })();
