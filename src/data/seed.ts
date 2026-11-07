@@ -190,6 +190,6 @@ export const SEED_LOG: LogEntry[] = (() => {
     timestamp: daysAgo(1, 2),
   });
   return out
-    .sort((a, b) => String(a.timestamp).localeCompare(String(b.timestamp)))
+    .sort((a, b) => String(a["timestamp"]).localeCompare(String(b["timestamp"])))
     .map((e, i) => ({ ...e, seq: i + 1 }) as LogEntry);
 })();
