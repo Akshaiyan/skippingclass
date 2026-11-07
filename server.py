@@ -27,6 +27,7 @@ import policy  # noqa: E402
 import suggest  # noqa: E402
 import ui_view  # noqa: E402
 import history  # noqa: E402
+import decision_log  # noqa: E402
 from decision_log import DecisionLog, verify_chain  # noqa: E402
 
 LOG_PATH = HERE / "decision_log.ndjson"
@@ -63,7 +64,7 @@ def _case_view(cid):
             "timeline": history.timeline(cid, LOG_PATH)}
 
 
-def handle(method, path, query, body):
+def _handle(method, path, query, body):
     """Return (status, payload). A pure function of its inputs, so tests can call it without a socket."""
     if method == "GET" and path == "/api/cases":
         v1, v2 = policy.load(ui_view.V1_PATH), policy.load(ui_view.V2_PATH)
@@ -88,6 +89,8 @@ def handle(method, path, query, body):
         log = DecisionLog(LOG_PATH)
         try:
             entry = log.append(record)
+        except decision_log.LogDamaged:
+            raise
         except ValueError as exc:
             return 400, {"error": str(exc)}
         return 200, {"correction": {"from": original, "to": entry["corrected_recommendation"]},
@@ -97,6 +100,8 @@ def handle(method, path, query, body):
     if method == "POST" and path == "/api/replay":
         try:
             new = _policy(str(body.get("policy", "")))
+        except decision_log.LogDamaged:
+            raise
         except ValueError as exc:
             return 400, {"error": str(exc)}
         claims = list(_cases().values())
@@ -132,12 +137,16 @@ def handle(method, path, query, body):
         log = DecisionLog(LOG_PATH)
         try:
             entry = log.append(record)
+        except decision_log.LogDamaged:
+            raise
         except ValueError as exc:
             return 400, {"error": str(exc)}
         return 200, {"recorded": entry}
     if method == "GET" and path == "/api/policy/diff":
         try:
             a, b = _policy(query.get("a", [""])[0]), _policy(query.get("b", [""])[0])
+        except decision_log.LogDamaged:
+            raise
         except ValueError as exc:
             return 400, {"error": str(exc)}
         return 200, history.diff(a, b)
@@ -167,6 +176,14 @@ def handle(method, path, query, body):
                      "reason": None if bad is None else bad[1],
                      "entries": [ui_view.ui_log_entry(e, i + 1) for i, e in enumerate(entries)]}
     return 404, {"error": "unknown route"}
+
+
+def handle(method, path, query, body):
+    """A damaged decision log answers 503 with the line, instead of crashing every endpoint that reads it."""
+    try:
+        return _handle(method, path, query, body)
+    except decision_log.LogDamaged as exc:
+        return 503, {"error": str(exc), "repair": "python decision_log.py repair <log>, then verify"}
 
 
 class Handler(BaseHTTPRequestHandler):
