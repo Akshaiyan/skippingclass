@@ -28,6 +28,8 @@ export const LOCKED = "Locked";
 export const LOCKED_TOOLTIP = "Locked: closed claims cannot change";
 export const LOCKED_BANNER = "Locked: this claim is closed and is not affected by policy changes.";
 export const RULE_BASED = "Rule-based, not a prediction";
+export const CASE_OVERVIEW = "Case overview";
+export const CASE_DETAILS = "Rules and evidence";
 export const IMPACT_COPY = {
   volume: "Claim volume",
   live: "Live",

@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Open
-- (none)
+- [ ] Claims: clean three-column table and fast-handling case summary in the side window.
 
 ## Done
 - [x] Policy: full-color live and expected flow pie charts by count.
