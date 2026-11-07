@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claims review</title>
+<style>
+  /* Assumptions (no PRODUCT.md in this repo): reviewer is a claims handler at a desk,
+     bright office light, under time pressure. Restrained palette: tinted neutrals + one accent. */
+  :root {
+    --bg: oklch(0.975 0.006 85);
+    --surface: oklch(0.99 0.004 85);
+    --ink: oklch(0.24 0.02 260);
+    --ink-2: oklch(0.45 0.015 260);
+    --line: oklch(0.88 0.01 260);
+    --accent: oklch(0.5 0.12 250);
+    --accent-ink: oklch(0.99 0.004 85);
+    --routine: oklch(0.52 0.1 155);
+    --request: oklch(0.6 0.13 75);
+    --review: oklch(0.52 0.16 25);
+    --focus: oklch(0.6 0.16 250);
+    --radius: 6px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg); }
+  h1 { font-size: 1.25rem; margin: 0; font-weight: 650; }
+  h2 { font-size: 1.05rem; margin: 0 0 .5rem; font-weight: 650; }
+  p { margin: 0; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  header { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: baseline; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid var(--line); background: var(--surface); }
+  header small { color: var(--ink-2); }
+  .layout { display: grid; grid-template-columns: minmax(14rem, 18rem) 1fr; min-height: calc(100vh - 4.5rem); }
+  nav.queue { border-right: 1px solid var(--line); padding: 1rem; background: var(--surface); }
+  nav.queue ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .25rem; }
+  .group-title { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); margin: 1rem 0 .4rem; }
+  .group-title:first-child { margin-top: 0; }
+  .case-btn { width: 100%; text-align: left; display: flex; justify-content: space-between; gap: .5rem; padding: .6rem .7rem; border: 1px solid transparent; border-radius: var(--radius); background: none; color: var(--ink); font: inherit; cursor: pointer; }
+  .case-btn:hover { background: var(--bg); border-color: var(--line); }
+  .case-btn[aria-current="true"] { border-color: var(--accent); background: var(--bg); }
+  .case-id { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .outcome-tag { font-size: .85rem; color: var(--ink-2); white-space: nowrap; }
+  main { padding: 1.25rem; max-width: 52rem; width: 100%; }
+  .outcome { display: flex; gap: .75rem; align-items: center; padding: .9rem 1rem; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); }
+  .dot { width: .75rem; height: .75rem; border-radius: 50%; flex: none; }
+  .o-routine .dot { background: var(--routine); }
+  .o-request .dot { background: var(--request); }
+  .o-review .dot { background: var(--review); }
+  .outcome strong { font-size: 1.05rem; }
+  .section { margin-top: 1.25rem; }
+  .why { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: .9rem 1rem; }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  th, td { text-align: left; padding: .45rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--ink-2); width: 45%; }
+  tr:last-child th, tr:last-child td { border-bottom: 0; }
+  .tag { display: inline-block; font-size: .8rem; font-weight: 600; line-height: 1.4; padding: .05rem .45rem; border-radius: 3px; }
+  .tag-missing { border: 1px dashed var(--ink-2); color: var(--ink); background: var(--bg); }
+  .suggest { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: .9rem 1rem; }
+  [hidden] { display: none !important; }
+  form { display: grid; gap: .9rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem; }
+  fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: .4rem; }
+  legend { font-weight: 600; margin-bottom: .3rem; }
+  label.opt { display: flex; gap: .5rem; align-items: center; padding: .55rem .7rem; border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer; }
+  label.opt:has(input:checked) { border-color: var(--accent); background: var(--bg); }
+  label.opt input { accent-color: var(--accent); width: 1.1rem; height: 1.1rem; }
+  input[type="text"], textarea { width: 100%; font: inherit; padding: .55rem .7rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); color: var(--ink); }
+  textarea { min-height: 5rem; resize: vertical; }
+  .hint { font-size: .85rem; color: var(--ink-2); }
+  .error { color: var(--review); font-weight: 600; }
+  button.primary { font: inherit; font-weight: 600; padding: .65rem 1rem; border-radius: var(--radius); border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; justify-self: start; }
+  button.primary[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
+  .record { border: 1px solid var(--accent); }
+  .record dl { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1rem; margin: 0; }
+  .record dt { color: var(--ink-2); }
+  .record dd { margin: 0; font-variant-numeric: tabular-nums; word-break: break-word; }
+  .banner { padding: .75rem 1rem; border-radius: var(--radius); border: 1px solid var(--review); color: var(--review); background: var(--surface); }
+  .empty { color: var(--ink-2); padding: 2rem 0; }
+  .summary { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1rem; font-size: .9rem; }
+  .summary span { padding: .25rem .6rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); }
+  .summary strong { font-variant-numeric: tabular-nums; }
+  .memory-top { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; }
+  .count { color: var(--ink-2); font-size: .9rem; font-variant-numeric: tabular-nums; }
+  .integrity { margin: .25rem 0 .9rem; font-size: .9rem; color: var(--ink-2); }
+  .verified { color: var(--routine); font-weight: 600; }
+  .broken { color: var(--review); font-weight: 600; }
+  ol.timeline { list-style: none; margin: 0; padding: 0; position: relative; }
+  ol.timeline::before { content: ""; position: absolute; left: .42rem; top: .7rem; bottom: .7rem; width: 1px; background: var(--line); }
+  ol.timeline li.event { position: relative; padding: 0 0 1.1rem 1.75rem; }
+  ol.timeline li.event::before { content: ""; position: absolute; left: 0; top: .3rem; width: .9rem; height: .9rem; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); }
+  .event-line { margin: 0; }
+  .event-line .to { font-weight: 650; }
+  .reason { margin: .25rem 0 0; color: var(--ink-2); }
+  .event-meta { display: flex; flex-wrap: wrap; gap: .2rem .9rem; margin: .35rem 0 0; font-size: .85rem; color: var(--ink-2); }
+  .event-meta time { font-variant-numeric: tabular-nums; }
+  .event-meta code { font-family: ui-monospace, Consolas, monospace; }
+  @media (max-width: 760px) {
+    .layout { grid-template-columns: 1fr; }
+    nav.queue { border-right: 0; border-bottom: 1px solid var(--line); }
+    th { width: 40%; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .case-btn, label.opt, button.primary { transition: background-color .15s ease-out, border-color .15s ease-out; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Claims review</h1>
+  <small>Recommendations only. Nothing here approves or pays a claim.</small>
+</header>
+
+<div class="layout">
+  <nav class="queue" aria-label="Claims">
+    <div id="summary" class="summary" aria-label="Queue summary"></div>
+    <div id="queue"><p class="empty">Loading claims…</p></div>
+  </nav>
+
+  <main id="detail" tabindex="-1">
+    <div id="alert" role="alert"></div>
+    <div id="case"><p class="empty">Choose a claim to review.</p></div>
+  </main>
+</div>
+
+<script>
+const PORT = (new URLSearchParams(location.search).get("port") || "8000").replace(/\D/g, "");
+const API = `http://127.0.0.1:${PORT}`;
+const LABEL = {
+  routine_processing: { text: "Routine processing", cls: "o-routine" },
+  request_information: { text: "Request information", cls: "o-request" },
+  human_review: { text: "Send to human review", cls: "o-review" },
+};
+const FACTS = [
+  ["policy_active_on_incident", "Policy active on incident date"],
+  ["claim_type", "Claim type"],
+  ["quote_eur", "Repair quote (EUR)"],
+  ["incident_report_present", "Incident report present"],
+  ["itemized_quote_present", "Itemised quote present"],
+  ["injury_reported", "Injury reported"],
+  ["liability_disputed", "Liability disputed"],
+  ["duplicate_flag", "Duplicate flag"],
+  ["evidence_conflict", "Evidence conflict"],
+];
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+let current = null;
+let pendingSubmit = false;
+
+function showError(msg) {
+  $("alert").innerHTML = `<p class="banner">${esc(msg)}</p>`;
+}
+function clearError() { $("alert").innerHTML = ""; }
+
+async function api(path, opts) {
+  let res;
+  try { res = await fetch(API + path, opts); }
+  catch { throw new Error("The review service is not running. Start server.py and reload."); }
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || `Request failed (${res.status}).`);
+  return body;
+}
+
+async function loadQueue() {
+  try {
+    const cases = await api("/api/cases");
+    const groups = { human_review: [], request_information: [], routine_processing: [] };
+    cases.forEach(c => groups[c.recommendation_v1]?.push(c));
+    const SHORT = { human_review: "to review", request_information: "need information", routine_processing: "routine" };
+    $("summary").innerHTML = Object.keys(SHORT)
+      .map(k => `<span><strong>${groups[k].length}</strong> ${esc(SHORT[k])}</span>`).join("");
+    const order = ["human_review", "request_information", "routine_processing"];
+    $("queue").innerHTML = order.map(k => `
+      <p class="group-title">${esc(LABEL[k].text)} · ${groups[k].length}</p>
+      <ul>${groups[k].map(c => `
+        <li><button class="case-btn" data-id="${esc(c.case_id)}" aria-current="false">
+          <span class="case-id">${esc(c.case_id)}</span>
+          <span class="outcome-tag">${esc(LABEL[c.recommendation_v1].text)}</span>
+        </button></li>`).join("")}</ul>`).join("");
+  } catch (e) {
+    $("queue").innerHTML = `<p class="error">${esc(e.message)}</p>`;
+  }
+}
+
+async function renderMemory(entries) {
+  const list = entries || [];
+  let integrity;
+  try {
+    const v = await api("/api/history/verify");
+    integrity = v.intact
+      ? `<span class="verified">Log intact, checked just now</span>`
+      : `<span class="broken">Log broken at entry ${esc(v.broken_at)}: ${esc(v.reason)}</span>`;
+  } catch (e) {
+    integrity = `<span class="broken">Log not checked: ${esc(e.message)}</span>`;
+  }
+  const events = list.slice().reverse().map(e => `
+    <li class="event">
+      <p class="event-line"><strong>${esc(e.actor)}</strong> changed ${esc(LABEL[e.original_recommendation]?.text || e.original_recommendation)} to <span class="to">${esc(LABEL[e.corrected_recommendation]?.text || e.corrected_recommendation)}</span></p>
+      <p class="reason"><q>${esc(e.reason)}</q></p>
+      <p class="event-meta"><time>${esc(e.timestamp)}</time><span>policy ${esc(e.policy_version)}</span><code title="Record fingerprint">${esc(String(e.hash || "").slice(0, 12))}</code></p>
+    </li>`).join("");
+  $("memory").innerHTML = `
+    <div class="memory-top"><h2 id="memory-title">Decision memory</h2><span class="count">${list.length} ${list.length === 1 ? "decision" : "decisions"}</span></div>
+    <p class="integrity">${integrity}</p>
+    ${list.length
+      ? `<ol class="timeline" aria-labelledby="memory-title">${events}</ol>`
+      : `<p class="hint">No earlier decisions on this claim. A correction you record here appears at the top.</p>`}`;
+}
+
+function factRow(key, label, facts, blanks) {
+  const raw = facts[key];
+  const isBlank = blanks.includes(key) || raw === "" || raw === undefined;
+  const value = isBlank ? `<span class="tag tag-missing">Not provided</span> <span class="hint">not assumed</span>` : esc(raw);
+  return `<tr><th scope="row">${esc(label)}</th><td>${value}</td></tr>`;
+}
+
+async function openCase(id) {
+  clearError();
+  current = id;
+  document.querySelectorAll(".case-btn").forEach(b => b.setAttribute("aria-current", String(b.dataset.id === id)));
+  try {
+    const c = await api(`/api/case/${encodeURIComponent(id)}`);
+    renderCase(c);
+    $("detail").focus();
+  } catch (e) { showError(e.message); }
+}
+
+function renderCase(c) {
+  const lab = LABEL[c.recommendation_v1];
+  const others = Object.keys(LABEL).filter(k => k !== c.recommendation_v1);
+  const sg = c.suggestion || {};
+  const singles = sg.decision_changing_single_answers || [];
+  const suggestion = `<div class="suggest section"><h2>Next step</h2>
+      ${singles.length ? `<ul>${singles.map(s => `<li>${esc(s.field)}: a filled answer could lead to ${s.possible_outcomes.map(o => esc(LABEL[o]?.text || o)).join(" or ")}</li>`).join("")}</ul>` : ""}
+      <p>${esc(sg.note || "")}</p>
+      <p class="hint">Rule-based, from the blank fields. Not a prediction.</p></div>`;
+  $("case").innerHTML = `
+    <h2>Case ${esc(c.case_id)}</h2>
+    <div class="outcome ${lab.cls}"><span class="dot" aria-hidden="true"></span>
+      <div><strong>${esc(lab.text)}</strong><div class="hint">Decided by rule ${esc(c.rule_v1)} under policy ${esc(c.policy_version)}</div></div>
+    </div>
+    <div class="section why"><p>${esc(c.explanation)}</p></div>
+    <div class="section">
+      <h2>Facts used</h2>
+      <table>${FACTS.map(([k, l]) => factRow(k, l, c.facts, c.blank_fields)).join("")}</table>
+    </div>
+    ${suggestion}
+    <section class="section" id="memory" aria-label="Decision memory"></section>
+    <div class="section" id="override-area">
+      <h2>Review this decision</h2>
+      <form id="override-form" novalidate>
+        <fieldset>
+          <legend>Correct the recommendation to</legend>
+          ${others.map(k => `<label class="opt"><input type="radio" name="to" value="${k}"> ${esc(LABEL[k].text)}</label>`).join("")}
+        </fieldset>
+        <div>
+          <label for="actor">Your name</label>
+          <input id="actor" type="text" autocomplete="name" required>
+        </div>
+        <div>
+          <label for="reason">Reason for the correction</label>
+          <textarea id="reason" required aria-describedby="reason-hint"></textarea>
+          <p id="reason-hint" class="hint">Required. This is written to the decision record.</p>
+        </div>
+        <p id="form-error" class="error" role="status"></p>
+        <div><button class="primary" type="submit" id="submit-btn" aria-disabled="true">Record correction</button></div>
+      </form>
+    </div>
+    <div id="result"></div>`;
+  const form = $("override-form");
+  const update = () => {
+    const ok = form.to.value && $("actor").value.trim() && $("reason").value.trim();
+    $("submit-btn").setAttribute("aria-disabled", String(!ok));
+  };
+  form.addEventListener("input", update);
+  form.addEventListener("change", update);
+  form.addEventListener("submit", (ev) => submitOverride(ev, c));
+  renderMemory(c.timeline);
+}
+
+async function submitOverride(ev, c) {
+  ev.preventDefault();
+  const form = ev.target;
+  const actor = $("actor").value.trim();
+  const reason = $("reason").value.trim();
+  const to = form.to.value;
+  if (pendingSubmit) return;
+  if (!to || !actor || !reason) {
+    const missing = [!to && "a correction", !actor && "your name", !reason && "a reason"].filter(Boolean);
+    $("form-error").textContent = `Still needed before recording: ${missing.join(", ")}.`;
+    (!to ? form.querySelector("input[name=to]") : !actor ? $("actor") : $("reason")).focus();
+    return;
+  }
+  pendingSubmit = true;
+  $("form-error").textContent = "";
+  try {
+    const r = await api("/api/override", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ case_id: c.case_id, actor, reason, policy_version: c.policy_version, corrected_recommendation: to }),
+    });
+    form.hidden = true;
+    api(`/api/case/${encodeURIComponent(c.case_id)}`)
+      .then(fresh => renderMemory(fresh.timeline))
+      .catch(e => showError(e.message));
+    $("result").innerHTML = `
+      <div class="section record" role="status" tabindex="-1" id="record">
+        <h2>Correction recorded</h2>
+        <dl>
+          <dt>Correction</dt><dd>${esc(LABEL[r.correction.from].text)} → ${esc(LABEL[r.correction.to].text)}</dd>
+          <dt>Reason</dt><dd>${esc(r.reason)}</dd>
+          <dt>Reviewer</dt><dd>${esc(r.reviewer)}</dd>
+          <dt>Policy version</dt><dd>${esc(r.policy_version)}</dd>
+          <dt>Time</dt><dd>${esc(r.timestamp)}</dd>
+          <dt>Record fingerprint</dt><dd>${esc(r.hash.slice(0, 16))}…</dd>
+        </dl>
+        <p class="hint">Overrides change this case only. They never change the rules.</p>
+      </div>`;
+    $("record").focus();
+  } catch (e) {
+    $("form-error").textContent = e.message;
+  } finally {
+    pendingSubmit = false;
+  }
+}
+
+document.addEventListener("click", (ev) => {
+  const b = ev.target.closest(".case-btn");
+  if (b) openCase(b.dataset.id);
+});
+loadQueue();
+</script>
+</body>
+</html>
