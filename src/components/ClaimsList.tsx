@@ -432,7 +432,7 @@ export function ClaimsList({
                       <header className="mb-3 flex items-baseline gap-3">
                         <h2
                           id={`group-${g.flow}`}
-                          className="inline-flex items-center gap-2 text-lg font-semibold leading-7"
+                          className="section-title inline-flex items-center gap-2 text-lg leading-7"
                         >
                           <span
                             className={cn("size-2.5 shrink-0 rounded-full", FLOW_DOT[g.flow])}
