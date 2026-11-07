@@ -4,7 +4,9 @@ import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, Res
 import { useStore } from "@/store";
 import { REC_LABEL } from "@/copy";
 import { ASSUMPTIONS, BUSINESS_CASE as BC, LABEL_HELP, type EvidenceLabel } from "@/data/businessCase";
-import { Dot, EvidenceChip, SectionTitle } from "@/components/status";
+import { Dot, EvidenceChip, FLOW_DOT, SectionTitle } from "@/components/status";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { exhaustiveChecks } from "@/lib/report";
 import type { Flow } from "@/types";
@@ -38,30 +40,95 @@ function ChartTip({ active, payload, label }: { active?: boolean; payload?: { na
   );
 }
 
-function Tile({ title, flow, filter }: { title: string; flow?: Flow; filter: "all" | "yellow" | "red" }) {
+type Horizon = "daily" | "weekly" | "monthly" | "yearly" | "all";
+const HORIZONS: { value: Horizon; label: string; days: number | null; caption: string }[] = [
+  { value: "daily", label: "Daily", days: 1, caption: "Last day" },
+  { value: "weekly", label: "Weekly", days: 7, caption: "Last 7 days" },
+  { value: "monthly", label: "Monthly", days: 30, caption: "Last 30 days" },
+  { value: "yearly", label: "Yearly", days: 365, caption: "Last 12 months" },
+  { value: "all", label: "All time", days: null, caption: "All time" },
+];
+
+function ClaimsOverview() {
   const { derived } = useStore();
-  const list = flow ? derived.filter((c) => c.flow === flow) : derived;
-  const open = list.filter((c) => c.case_status === "open").length;
+  const [horizon, setHorizon] = useState<Horizon>("weekly");
+  const hz = HORIZONS.find((x) => x.value === horizon)!;
+  // Mock data has no live clock: the window ends at the latest incident date on file.
+  const latest = derived.reduce((m, c) => (String(c.facts["incident_date"] ?? "") > m ? String(c.facts["incident_date"]) : m), "");
+  const list = derived.filter((c) => {
+    if (hz.days === null) return true;
+    const d = c.facts["incident_date"];
+    if (typeof d !== "string" || !latest) return false;
+    const diff = (Date.parse(latest) - Date.parse(d)) / 864e5;
+    return diff >= 0 && diff < hz.days;
+  });
+  const total = list.length;
+  const count = (f: Flow) => list.filter((c) => c.flow === f).length;
+  const openOf = (f?: Flow) => list.filter((c) => c.case_status === "open" && (!f || c.flow === f)).length;
+  const segs: { flow: Flow; label: string; n: number }[] = [
+    { flow: "red", label: "Red", n: count("red") },
+    { flow: "yellow", label: "Yellow", n: count("yellow") },
+    { flow: "green", label: "Green", n: count("green") },
+  ];
+
   return (
-    <Link
-      to="/claims"
-      search={{ flow: filter }}
-      className="card-panel group flex flex-col justify-between gap-6 p-5 transition-[border-color,box-shadow] duration-150 hover:border-border-strong hover:shadow-sheet"
-    >
-      <div className="flex items-center gap-2 text-sm font-medium text-text-2">
-        {flow && <Dot flow={flow} />}
-        {title}
-      </div>
-      <div>
-        <div className="tnum text-5xl font-medium tracking-tight">{list.length}</div>
-        <div className="tnum mt-1 text-xs text-muted-foreground">
-          {open} open / {list.length - open} closed
+    <section className="card-panel p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-sm font-medium text-text-2">Overall claims</div>
+          <div className="mt-2 flex items-baseline gap-3">
+            <span className="tnum text-5xl font-medium tracking-tight">{total}</span>
+            <span className="tnum text-xs text-muted-foreground">{openOf()} open</span>
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <label htmlFor="horizon" className="sr-only">Time horizon</label>
+          <Select value={horizon} onValueChange={(v) => setHorizon(v as Horizon)}>
+            <SelectTrigger id="horizon" className="h-8 w-36 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {HORIZONS.map((x) => (
+                <SelectItem key={x.value} value={x.value} className="text-xs">{x.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="text-[11px] text-muted-foreground">{hz.caption}</span>
         </div>
       </div>
-      <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+
+      <div className="mt-6 flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full bg-surface-2" role="img" aria-label={segs.map((s) => `${s.label} ${s.n} of ${total}`).join(", ")}>
+        {total > 0 && segs.filter((s) => s.n > 0).map((s) => (
+          <div key={s.flow} className={`h-full ${FLOW_DOT[s.flow]}`} style={{ width: `${(s.n / total) * 100}%` }} />
+        ))}
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        {segs.map((s) => (
+          <Link
+            key={s.flow}
+            to="/claims"
+            search={{ flow: s.flow }}
+            className="group rounded-lg border border-border px-4 py-3 transition-colors duration-150 hover:border-border-strong hover:bg-surface"
+          >
+            <div className="flex items-center gap-2 text-xs font-medium text-text-2">
+              <Dot flow={s.flow} /> {s.label} claims
+            </div>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="tnum text-2xl font-medium">{s.n}</span>
+              <span className="tnum text-xs text-muted-foreground">of {total}</span>
+              <span className="tnum ml-auto text-xs text-muted-foreground">{openOf(s.flow)} open</span>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {total === 0 && <p className="mt-4 text-sm text-muted-foreground">No claims in this period.</p>}
+
+      <Link to="/claims" search={{ flow: "all" }} className="group mt-5 inline-flex items-center gap-1.5 text-sm font-medium">
         View claims <ArrowRight className="size-4 transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden />
-      </span>
-    </Link>
+      </Link>
+    </section>
   );
 }
 
@@ -107,11 +174,7 @@ function Dashboard() {
   return (
     <div className="space-y-12">
 
-      <section className="grid gap-4 sm:grid-cols-3">
-        <Tile title="Overall Claims" filter="all" />
-        <Tile title="Yellow Claims" flow="yellow" filter="yellow" />
-        <Tile title="Red Claims" flow="red" filter="red" />
-      </section>
+      <ClaimsOverview />
 
       <section>
         <SectionTitle title="Claims at a glance" right={<span className="eyebrow">Illustrative data</span>} />
