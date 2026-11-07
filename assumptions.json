@@ -1,0 +1,14 @@
+{
+  "_note": "Every value is tagged. ASSUMED = illustrative, must be replaced with insurer data. MEASURED = produced by our code on the named file.",
+  "claims_per_year": {"value": 20000, "status": "ASSUMED", "basis": "illustrative mid-sized motor insurer"},
+  "minutes_manual_triage_per_claim": {"value": 12, "status": "ASSUMED", "basis": "illustrative handler time per claim"},
+  "minutes_routine_confirm_per_claim": {"value": 1, "status": "ASSUMED", "basis": "time to confirm a system routine recommendation"},
+  "minutes_request_info_per_claim": {"value": 4, "status": "ASSUMED", "basis": "time to draft an information request"},
+  "minutes_recheck_per_affected_claim": {"value": 15, "status": "ASSUMED", "basis": "time to re-review one open claim after a rule change"},
+  "reviewer_cost_eur_per_hour": {"value": 45, "status": "ASSUMED", "basis": "fully loaded handler cost"},
+  "system_running_cost_eur_per_year": {"value": 60000, "status": "ASSUMED", "basis": "licence, hosting, maintenance"},
+  "open_claims_share": {"value": 0.35, "status": "ASSUMED", "basis": "share of claims open at any time"},
+  "routine_share_of_claims": {"value": 0.0, "status": "MEASURED-PROXY", "basis": "set from run.py v1 mix on the named file at run time"},
+  "wrong_routine_error_cost_eur": {"value": 2000, "status": "ASSUMED", "basis": "illustrative leakage per wrong routine decision"},
+  "proxy_flip_share_at_v2": {"value": 0.0, "status": "MEASURED-PROXY", "basis": "set from replay on synthetic file at run time"}
+}
