@@ -101,8 +101,8 @@ function Dashboard() {
   const pieData = flows.map((f) => ({ name: REC_LABEL[flowRec[f]], value: derived.filter((c) => c.flow === f).length, flow: f }));
   const pieColor = { red: "var(--chart-3)", yellow: "var(--chart-4)", green: "var(--chart-5)" };
 
-  const before = [BC.openClaimsPortfolio * (BC.minutesPerRecheck[0] / 60), BC.openClaimsPortfolio * (BC.minutesPerRecheck[1] / 60)];
-  const after = [before[0] * BC.flippedShare[0], before[1] * BC.flippedShare[1]];
+  const before: [number, number] = [BC.openClaimsPortfolio * (BC.minutesPerRecheck[0] / 60), BC.openClaimsPortfolio * (BC.minutesPerRecheck[1] / 60)];
+  const after: [number, number] = [before[0] * BC.flippedShare[0], before[1] * BC.flippedShare[1]];
 
   return (
     <div className="space-y-12">
@@ -142,8 +142,8 @@ function Dashboard() {
                   />
                   <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={24} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                   <RTooltip cursor={{ fill: "var(--surface)" }} content={<ChartTip />} />
-                  <Bar dataKey="Open" fill="var(--chart-1)" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="Closed" fill="var(--chart-2)" radius={[3, 3, 0, 0]} />
+                  <Bar isAnimationActive={false} dataKey="Open" fill="var(--chart-1)" radius={[3, 3, 0, 0]} />
+                  <Bar isAnimationActive={false} dataKey="Closed" fill="var(--chart-2)" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -161,7 +161,7 @@ function Dashboard() {
                   <XAxis dataKey="week" tickLine={false} axisLine={{ stroke: "var(--border)" }} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                   <YAxis tickLine={false} axisLine={false} width={24} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                   <RTooltip content={<ChartTip />} cursor={{ stroke: "var(--border-strong)" }} />
-                  <Line type="monotone" dataKey="claims" name="Claims" stroke="var(--foreground)" strokeWidth={1.75} dot={false} activeDot={{ r: 3.5 }} />
+                  <Line isAnimationActive={false} type="monotone" dataKey="claims" name="Claims" stroke="var(--foreground)" strokeWidth={1.75} dot={false} activeDot={{ r: 3.5 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -171,7 +171,7 @@ function Dashboard() {
             <div className="relative h-56">
               <ResponsiveContainer>
                 <PieChart>
-                  <Pie data={pieData} dataKey="value" nameKey="name" innerRadius="62%" outerRadius="86%" paddingAngle={2} stroke="var(--background)">
+                  <Pie isAnimationActive={false} data={pieData} dataKey="value" nameKey="name" innerRadius="62%" outerRadius="86%" paddingAngle={2} stroke="var(--background)">
                     {pieData.map((d) => (
                       <Cell key={d.flow} fill={pieColor[d.flow]} />
                     ))}

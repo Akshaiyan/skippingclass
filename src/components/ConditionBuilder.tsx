@@ -49,7 +49,7 @@ function Leaf({ c, onChange }: { c: Extract<Condition, { field: string }>; onCha
         value={c.field}
         onChange={(e) => {
           const f = FIELD_MAP[e.target.value];
-          onChange({ field: e.target.value, op: f ? OPS_BY_TYPE[f.type][0] : "eq" });
+          onChange({ field: e.target.value, op: f ? (OPS_BY_TYPE[f.type][0] ?? "eq") : "eq" });
         }}
       >
         <option value="">Choose field</option>

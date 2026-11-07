@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClaimsRouteImport } from './routes/claims'
+import { Route as LogRouteImport } from './routes/log'
+import { Route as PolicyRouteImport } from './routes/policy'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +24,49 @@ const ClaimsRoute = ClaimsRouteImport.update({
   path: '/claims',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LogRoute = LogRouteImport.update({
+  id: '/log',
+  path: '/log',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PolicyRoute = PolicyRouteImport.update({
+  id: '/policy',
+  path: '/policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/claims': typeof ClaimsRoute
+  '/log': typeof LogRoute
+  '/policy': typeof PolicyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/claims': typeof ClaimsRoute
+  '/log': typeof LogRoute
+  '/policy': typeof PolicyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/claims': typeof ClaimsRoute
+  '/log': typeof LogRoute
+  '/policy': typeof PolicyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/claims'
+  fullPaths: '/' | '/claims' | '/log' | '/policy'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/claims'
-  id: '__root__' | '/' | '/claims'
+  to: '/' | '/claims' | '/log' | '/policy'
+  id: '__root__' | '/' | '/claims' | '/log' | '/policy'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ClaimsRoute: typeof ClaimsRoute
+  LogRoute: typeof LogRoute
+  PolicyRoute: typeof PolicyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +85,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClaimsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/log': {
+      id: '/log'
+      path: '/log'
+      fullPath: '/log'
+      preLoaderRoute: typeof LogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/policy': {
+      id: '/policy'
+      path: '/policy'
+      fullPath: '/policy'
+      preLoaderRoute: typeof PolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ClaimsRoute: ClaimsRoute,
+  LogRoute: LogRoute,
+  PolicyRoute: PolicyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

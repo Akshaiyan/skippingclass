@@ -18,7 +18,7 @@ type StatusFilter = "open" | "closed" | "all";
 
 export const Route = createFileRoute("/claims")({
   validateSearch: (s: Record<string, unknown>): { flow?: FlowFilter } => {
-    const f = s.flow;
+    const f = s["flow"];
     return f === "red" || f === "yellow" || f === "green" || f === "all" ? { flow: f } : {};
   },
   head: () => ({
@@ -147,7 +147,7 @@ function ClaimsPage() {
               )}
             >
               {f !== "all" && <Dot flow={f} />}
-              {f === "all" ? "All" : f[0].toUpperCase() + f.slice(1)}
+              {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
               <span className="tnum text-muted-foreground">{counts[f]}</span>
             </button>
           ))}
@@ -238,7 +238,7 @@ function ClaimsPage() {
                     >
                       <td className={cn("border-b border-l-2 border-border px-4 py-3", FLOW_BORDER[c.flow])}>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-[13px] font-medium">{c.case_id}</span>
+                          <span className="whitespace-nowrap font-mono text-[13px] font-medium">{c.case_id}</span>
                           {c.ui_status === "reviewed" && (
                             <Chip><Check className="size-3" aria-hidden /> Reviewed</Chip>
                           )}
@@ -246,8 +246,8 @@ function ClaimsPage() {
                       </td>
                       <td className="border-b border-border px-4 py-3"><StatusChip status={c.case_status} /></td>
                       <td className="border-b border-border px-4 py-3"><FlowBadge rec={c.recommendation_v1} /></td>
-                      <td className="border-b border-border px-4 py-3"><RuleChips rule={c.rule_v1} /></td>
-                      <td className="max-w-[260px] border-b border-border px-4 py-3">
+                      <td className="max-w-[210px] border-b border-border px-4 py-3"><RuleChips rule={c.rule_v1} /></td>
+                      <td className="max-w-[200px] border-b border-border px-4 py-3">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <span className="block truncate text-text-2">{c.explanation}</span>

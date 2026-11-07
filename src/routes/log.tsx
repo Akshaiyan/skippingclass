@@ -1,0 +1,147 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { ArrowRight, Check, ChevronRight, Copy, Search, ShieldCheck } from "lucide-react";
+import { Fragment, useMemo, useState } from "react";
+import type { LogEntry } from "@/types";
+import { LATEST_FIRST, LOG_TYPE_LABEL } from "@/copy";
+import { useStore } from "@/store";
+import { cn } from "@/lib/utils";
+import { Chip, FlowBadge, PageHeader, PolicyStamp } from "@/components/status";
+import { Button } from "@/components/ui/button";
+
+export const Route = createFileRoute("/log")({
+  head: () => ({
+    meta: [
+      { title: "Decision log · Motor claims triage" },
+      { name: "description", content: "Append-only record of every system decision, reviewer override and policy sign-off." },
+      { property: "og:title", content: "Decision log · Motor claims triage" },
+      { property: "og:description", content: "An append-only, replayable audit trail for claim recommendations." },
+    ],
+  }),
+  component: LogPage,
+});
+
+function CopyJson({ text }: { text: string }) {
+  const [c, setC] = useState(false);
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
+          /* ignore */
+        }
+        setC(true);
+        setTimeout(() => setC(false), 2000);
+      }}
+    >
+      {c ? <Check aria-hidden /> : <Copy aria-hidden />} {c ? "Copied" : "Copy JSON"}
+    </Button>
+  );
+}
+
+function LogPage() {
+  const { state } = useStore();
+  const [type, setType] = useState<"all" | LogEntry["type"]>("all");
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState<number | null>(null);
+  const sys = state.log.filter((e) => e.type === "system_decision").length;
+
+  const rows = useMemo(
+    () =>
+      [...state.log]
+        .reverse()
+        .filter((e) => type === "all" || e.type === type)
+        .filter((e) => !q.trim() || ("case_id" in e && e.case_id?.toLowerCase().includes(q.trim().toLowerCase()))),
+    [state.log, type, q],
+  );
+
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Decision log" description="Append-only. Records cannot be edited or removed." />
+
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-border bg-surface px-4 py-3 text-sm">
+        <span className="inline-flex items-center gap-2 font-medium"><ShieldCheck className="size-4" aria-hidden /> Hash-chain intact</span>
+        <span className="inline-flex items-center gap-2 font-medium"><ShieldCheck className="size-4" aria-hidden /> <span className="tnum">{sys}/{sys}</span> decisions replay identically</span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="text-xs font-medium text-text-2">
+          <span className="sr-only">Record type</span>
+          <select value={type} onChange={(e) => setType(e.target.value as typeof type)} className="h-8 rounded-md border border-border bg-background px-2 text-xs hover:border-border-strong">
+            <option value="all">All types</option>
+            {(Object.keys(LOG_TYPE_LABEL) as LogEntry["type"][]).map((t) => (
+              <option key={t} value={t}>{LOG_TYPE_LABEL[t]}</option>
+            ))}
+          </select>
+        </label>
+        <label className="relative flex items-center">
+          <Search className="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" aria-hidden />
+          <span className="sr-only">Search by case id</span>
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search case id" className="h-8 w-48 rounded-md border border-border bg-background pl-8 pr-2 font-mono text-xs hover:border-border-strong" />
+        </label>
+        <span className="text-xs text-muted-foreground">{LATEST_FIRST}</span>
+      </div>
+
+      {rows.length === 0 ? (
+        <div className="card-panel py-16 text-center text-sm text-muted-foreground">No records match these filters.</div>
+      ) : (
+        <div className="card-panel overflow-x-auto">
+          <table className="w-full min-w-[1100px] text-sm">
+            <thead>
+              <tr className="text-left">
+                {["", "Seq", "Timestamp (UTC)", "Type", "Case", "Actor", "From → to", "Reason code", "Note", "Policy"].map((h, i) => (
+                  <th key={i} className="eyebrow border-b border-border px-3 py-2.5 font-medium">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((e) => {
+                const isOpen = open === e.seq;
+                const note = "reason" in e ? e.reason : "note" in e ? e.note : undefined;
+                return (
+                  <Fragment key={e.seq}>
+                    <tr
+                      tabIndex={0}
+                      aria-expanded={isOpen}
+                      onClick={() => setOpen(isOpen ? null : e.seq)}
+                      onKeyDown={(k) => (k.key === "Enter" || k.key === " ") && (k.preventDefault(), setOpen(isOpen ? null : e.seq))}
+                      className="cursor-pointer border-b border-border hover:bg-surface"
+                    >
+                      <td className="px-3 py-2.5"><ChevronRight className={cn("size-3.5 text-muted-foreground transition-transform", isOpen && "rotate-90")} aria-hidden /></td>
+                      <td className="tnum px-3 py-2.5 font-mono text-xs">{e.seq}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5 font-mono text-xs text-text-2">{e.timestamp.replace("T", " ").slice(0, 19)}</td>
+                      <td className="px-3 py-2.5"><Chip tone={e.type === "reviewer_override" || e.type.startsWith("policy_a") || e.type === "policy_rejected" ? "solid" : "neutral"}>{LOG_TYPE_LABEL[e.type]}</Chip></td>
+                      <td className="px-3 py-2.5 font-mono text-xs">{"case_id" in e ? e.case_id ?? "—" : "—"}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5">{e.actor}</td>
+                      <td className="px-3 py-2.5">
+                        <span className="inline-flex flex-wrap items-center gap-1">
+                          {"from_rec" in e && e.from_rec && <><FlowBadge rec={e.from_rec} size="sm" /><ArrowRight className="size-3 text-muted-foreground" aria-label="to" /></>}
+                          {"to_rec" in e && e.to_rec ? <FlowBadge rec={e.to_rec} size="sm" /> : <span className="text-muted-foreground">—</span>}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-xs">{"reason_code" in e ? e.reason_code : "—"}</td>
+                      <td className="max-w-[240px] truncate px-3 py-2.5 text-text-2">{note ?? "—"}</td>
+                      <td className="px-3 py-2.5"><PolicyStamp version={e.policy_version} hash={e.policy_hash} /></td>
+                    </tr>
+                    {isOpen && (
+                      <tr className="border-b border-border bg-surface">
+                        <td colSpan={10} className="px-6 py-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <pre className="overflow-x-auto font-mono text-[12px] leading-5 text-text-2">{JSON.stringify(e, null, 2)}</pre>
+                            <CopyJson text={JSON.stringify(e, null, 2)} />
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -52,7 +52,7 @@ describe("draft v2", () => {
   it("an incomplete rule fails check 3", () => {
     const rules = [...buildV2Rules(1200), { id: "R1.x", outcome: "human_review" as const, description: "x", condition: { all: [] } }];
     expect(isConditionComplete({ all: [] })).toBe(false);
-    const c3 = exhaustiveChecks(SEED_CLAIMS, V1_RULES, rules)[2];
+    const c3 = exhaustiveChecks(SEED_CLAIMS, V1_RULES, rules)[2]!;
     expect(c3.pass).toBe(false);
     expect(c3.message).toBe("Rule R1.x has an incomplete condition");
   });

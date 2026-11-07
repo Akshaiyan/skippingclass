@@ -57,7 +57,7 @@ function suggestion(claim: DerivedClaim, limit: number) {
       outcomes: `If attached: ${REC_LABEL.routine_processing}. If still missing: ${REC_LABEL.request_information}.`,
     };
   }
-  const field = absent.includes("quote_eur") ? "quote_eur" : absent[0];
+  const field: string = absent.includes("quote_eur") ? "quote_eur" : (absent[0] ?? "");
   const meta = FIELD_MAP[field];
   let outcomes: string;
   if (field === "quote_eur") outcomes = `If provided and within limits: ${REC_LABEL.routine_processing}. If above EUR ${limit.toLocaleString("en-US")}: ${REC_LABEL.human_review}.`;

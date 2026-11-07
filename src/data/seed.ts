@@ -108,7 +108,7 @@ const RAW: { case_id: string; case_status: "open" | "closed"; claim_summary: str
   { case_id: "PRA-003", case_status: "open", claim_summary: "Collision reported shortly after the policy was taken out.", facts: base({ policy_active_on_incident: false, incident_date: "2026-03-02", policy_start_date: "2026-03-15", quote_eur: 1250, claimed_amount_eur: 1250 }) },
   { case_id: "PRA-004", case_status: "closed", claim_summary: "Wing mirror damage, matching an earlier claim on the same vehicle.", facts: base({ case_status: "closed", duplicate_flag: true, quote_eur: 420, claimed_amount_eur: 420, claim_type: "vandalism", incident_date: "2026-08-21" }) },
   { case_id: "PRA-005", case_status: "open", claim_summary: "Front-end damage after a low-speed collision; quote and report outstanding.", facts: base({ quote_eur: null, incident_report_present: null, incident_date: "2026-10-18" }) },
-  { case_id: "PRA-006", case_status: "open", claim_summary: "Two-vehicle collision on a roundabout; liability position not yet stated.", facts: base({ liability_disputed: null, quote_eur: 1320, claimed_amount_eur: 1300, incident_date: "2026-10-20" }) },
+  { case_id: "PRA-006", case_status: "open", claim_summary: "Two-vehicle collision on a roundabout; liability position not yet stated.", facts: base({ liability_disputed: null, quote_eur: 980, claimed_amount_eur: 950, incident_date: "2026-10-20" }) },
   { case_id: "PRA-007", case_status: "open", claim_summary: "Door and sill dent from a slow collision with a bollard.", facts: base({ quote_eur: 1450, claimed_amount_eur: 1400, incident_date: "2026-10-22" }) },
   { case_id: "PRA-008", case_status: "open", claim_summary: "Stone chip turned windscreen crack; glass partner quote received.", facts: base({ claim_type: "glass", repair_type: "glass_repair", quote_eur: 380, claimed_amount_eur: 380, itemized_quote_present: false, incident_date: "2026-10-24" }) },
   { case_id: "PRA-009", case_status: "closed", claim_summary: "Scratched paintwork in a residential street; photo check outstanding.", facts: base({ case_status: "closed", claim_type: "vandalism", evidence_conflict: null, quote_eur: 610, claimed_amount_eur: 600, incident_date: "2026-08-30" }) },
@@ -117,7 +117,7 @@ const RAW: { case_id: string; case_status: "open" | "closed"; claim_summary: str
   { case_id: "PRA-012", case_status: "closed", claim_summary: "Front bumper scrape while parking, repaired at a partner garage.", facts: base({ case_status: "closed", quote_eur: 1300, claimed_amount_eur: 1300, incident_date: "2026-09-02" }) },
 ];
 
-for (const r of RAW) r.facts.case_status = r.case_status;
+for (const r of RAW) r.facts["case_status"] = r.case_status;
 
 export const SEED_CLAIMS: Claim[] = RAW.map((r) => {
   const ev = evaluate(V1_RULES, r.facts);
@@ -144,7 +144,7 @@ const BASE_TS = Date.UTC(2026, 10, 7, 9, 0, 0);
 const daysAgo = (d: number, h = 0) => new Date(BASE_TS - d * 864e5 + h * 36e5).toISOString();
 
 export const SEED_LOG: LogEntry[] = (() => {
-  const out: Omit<LogEntry, "seq">[] = [];
+  const out: Record<string, unknown>[] = [];
   SEED_CLAIMS.forEach((c, i) => {
     out.push({
       type: "system_decision",
@@ -190,6 +190,6 @@ export const SEED_LOG: LogEntry[] = (() => {
     timestamp: daysAgo(1, 2),
   });
   return out
-    .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+    .sort((a, b) => String(a["timestamp"]).localeCompare(String(b["timestamp"])))
     .map((e, i) => ({ ...e, seq: i + 1 }) as LogEntry);
 })();

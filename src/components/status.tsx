@@ -81,7 +81,7 @@ export function RuleChips({ rule }: { rule: string }) {
         <span
           key={p}
           className={cn(
-            "rounded-md px-1.5 py-0.5 font-mono text-[11px] leading-4",
+            "break-all rounded-md px-1.5 py-0.5 font-mono text-[11px] leading-4",
             p.startsWith("ABSENT") ? "bg-unknown-tint text-unknown" : p === "R3.routine" ? "bg-surface-2 text-muted-foreground" : "border border-border bg-background text-foreground",
           )}
         >
