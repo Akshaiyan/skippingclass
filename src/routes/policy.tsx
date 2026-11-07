@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowRight, Check, Pause, Pencil, Plus, RotateCcw, Rocket, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from "recharts";
 import type { Condition, PolicyDecision, PolicyRule, Rec } from "@/types";
-import { ADD_RULE, CONSISTENCY_CAPTION, HOLD_V2, REC_LABEL, REC_ORDER, RELEASE_V2 } from "@/copy";
+import { ADD_RULE, HOLD_V2, REC_LABEL, REC_ORDER, RELEASE_V2, RULE_BASED } from "@/copy";
 import { useStore } from "@/store";
-import { conditionChips, diffLines, exhaustiveChecks, flipList, removedRules, ruleStatus } from "@/lib/report";
+import { exhaustiveChecks, flipList, ruleStatus } from "@/lib/report";
 import { validateGate } from "@/lib/guards";
-import { BUSINESS_CASE as BC } from "@/data/businessCase";
 import { cn } from "@/lib/utils";
-import { Chip, EvidenceChip, FlowBadge, PageHeader, PolicyStamp, Refusal, RuleChips, SectionTitle, WhyDisabled } from "@/components/status";
+import { Chip, FlowBadge, PageHeader, PolicyStamp, Refusal, WhyDisabled } from "@/components/status";
 import { ConditionBuilder, emptyLeaf } from "@/components/ConditionBuilder";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from "@/components/ui/dialog";
@@ -16,20 +16,28 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/policy")({
   head: () => ({
     meta: [
-      { title: "Policy change · Motor claims triage" },
-      { name: "description", content: "Edit draft rules and see exactly which stored claims change before anything goes live." },
-      { property: "og:title", content: "Policy change · Motor claims triage" },
-      { property: "og:description", content: "Policy as criteria: a live impact report and a four-eyes release gate." },
+      { title: "Policy overview · Motor claims triage" },
+      { name: "description", content: "Edit and activate draft rules while expected claim volume updates live." },
+      { property: "og:title", content: "Policy overview · Motor claims triage" },
+      { property: "og:description", content: "A clear rule overview with live claim-volume impact and named sign-off." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: PolicyPage,
 });
 
 const AUTHOR = "Lena Vogt";
+const CHART_LABEL: Record<Rec, string> = {
+  human_review: "Human review",
+  request_information: "Request info",
+  routine_processing: "Routine",
+};
 
 function RuleDialog({ rule, open, onClose, onSave, existingIds }: { rule: PolicyRule | null; open: boolean; onClose: () => void; onSave: (r: PolicyRule, prevId?: string) => void; existingIds: string[] }) {
   const [draft, setDraft] = useState<PolicyRule | null>(rule);
@@ -42,8 +50,12 @@ function RuleDialog({ rule, open, onClose, onSave, existingIds }: { rule: Policy
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[640px]">
         <DialogTitle>{prevId ? "Edit rule" : ADD_RULE}</DialogTitle>
-        <DialogDescription>Edits stay in this session&apos;s draft. Nothing is released until a second person signs off.</DialogDescription>
+        <DialogDescription>The chart updates when you save.</DialogDescription>
         <div className="space-y-4">
+          <div>
+            <Label htmlFor="r-desc">Rule name</Label>
+            <Input id="r-desc" className="mt-1.5" value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
+          </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label htmlFor="r-id">Rule id</Label>
@@ -60,14 +72,10 @@ function RuleDialog({ rule, open, onClose, onSave, existingIds }: { rule: Policy
             </div>
           </div>
           <div>
-            <Label htmlFor="r-desc">Plain-English description</Label>
-            <Input id="r-desc" className="mt-1.5" value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
-          </div>
-          <div>
             <Label>Condition</Label>
             <div className="mt-1.5">
               {fixed ? (
-                <p className="rounded-md bg-surface p-3 text-sm text-muted-foreground">Fixed fallback: applies when no other rule fires or is undecidable.</p>
+                <p className="rounded-md bg-surface p-3 text-sm text-muted-foreground">Applies when no other rule decides the claim.</p>
               ) : (
                 <ConditionBuilder value={draft.condition ?? emptyLeaf()} onChange={(c: Condition) => setDraft({ ...draft, condition: c })} />
               )}
@@ -87,6 +95,20 @@ function RuleDialog({ rule, open, onClose, onSave, existingIds }: { rule: Policy
   );
 }
 
+function VolumeTip({ active, payload }: { active?: boolean; payload?: { name: string; value: number }[] }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="card-panel px-3 py-2 text-xs">
+      {payload.map((p) => (
+        <div key={p.name} className="tnum flex justify-between gap-5 text-text-2">
+          <span>{p.name}</span>
+          <span className="font-medium text-foreground">{p.value} claims</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PolicyPage() {
   const { state, dispatch, derived, v1Rules, v1Hash, draftHash } = useStore();
   const rules = state.draftRules;
@@ -98,25 +120,27 @@ function PolicyPage() {
 
   const flips = useMemo(() => flipList(derived), [derived]);
   const checks = useMemo(() => exhaustiveChecks(state.claims, v1Rules, rules), [state.claims, v1Rules, rules]);
-  const diff = useMemo(() => diffLines(v1Rules, rules), [v1Rules, rules]);
-  const removed = removedRules(v1Rules, rules);
   const allPass = checks.every((c) => c.pass);
   const towardRoutine = flips.some((f) => f.towardRoutine);
   const gate = validateGate({ author: AUTHOR, approver, reason, checksPass: allPass });
-
   const openFlips = flips.filter((f) => f.status === "recheck");
-  const intoReview = openFlips.filter((f) => f.to === "human_review").length;
-  const openCount = derived.filter((c) => c.case_status === "open").length;
-  const recheckMin: [number, number] = [openFlips.length * BC.minutesPerRecheck[0], openFlips.length * BC.minutesPerRecheck[1]];
-  const allMin: [number, number] = [openCount * BC.minutesPerRecheck[0], openCount * BC.minutesPerRecheck[1]];
-  const addedMin: [number, number] = [intoReview * BC.addedMinutesPerHumanReview[0], intoReview * BC.addedMinutesPerHumanReview[1]];
-
+  const activeCount = rules.filter((r) => r.active !== false).length;
   const fixedLast = [...rules.filter((r) => r.id !== "R3.routine"), ...rules.filter((r) => r.id === "R3.routine")];
+
+  const chartData = useMemo(() => REC_ORDER.map((rec) => ({
+    name: CHART_LABEL[rec],
+    current: derived.filter((c) => c.case_status === "open" && c.recommendation_v1 === rec).length,
+    draft: derived.filter((c) => c.case_status === "open" && c.recommendation_v2 === rec).length,
+  })), [derived]);
 
   const save = (r: PolicyRule, prevId?: string) => {
     const next = prevId ? rules.map((x) => (x.id === prevId ? r : x)) : [...rules.filter((x) => x.id !== "R3.routine"), r, ...rules.filter((x) => x.id === "R3.routine")];
     dispatch({ type: "setRules", rules: next });
     setEditing(null);
+  };
+
+  const toggleRule = (id: string) => {
+    dispatch({ type: "setRules", rules: rules.map((r) => r.id === id ? { ...r, active: r.active === false } : r) });
   };
 
   const decide = (type: PolicyDecision["type"]) => {
@@ -142,82 +166,84 @@ function PolicyPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Policy change"
+        title="Policy overview"
         description={
           <span className="flex flex-wrap items-center gap-2">
-            Editing draft v2 (based on v1) <PolicyStamp version="v1" hash={v1Hash} /> <ArrowRight className="size-3.5" aria-hidden /> <PolicyStamp version="v2" hash={draftHash} />
-            <span className="text-xs">Changes are kept for this session only</span>
+            <PolicyStamp version="v1" hash={v1Hash} /> <ArrowRight className="size-3.5" aria-hidden /> <PolicyStamp version="v2" hash={draftHash} />
+            <span className="text-xs">Session only</span>
           </span>
-        }
-        action={
-          <WhyDisabled disabled={!gate.canRelease} reason={releaseReason}>
-            <Button disabled={!gate.canRelease} onClick={() => decide("policy_approved")}>
-              <Rocket aria-hidden /> {RELEASE_V2}
-            </Button>
-          </WhyDisabled>
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-12">
-        <section className="space-y-4 lg:col-span-5">
-          <div className="card-panel p-4">
-            <div className="eyebrow mb-2">What-if sweep</div>
-            <div className="flex flex-wrap items-center gap-3">
-              <label htmlFor="quote-limit" className="text-sm font-medium">
-                Quote limit
-              </label>
-              <span className="relative inline-flex items-center">
-                <span className="pointer-events-none absolute left-2.5 font-mono text-xs text-muted-foreground">EUR</span>
-                <input
-                  id="quote-limit"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  step={50}
-                  disabled={!quoteRule}
-                  value={limitText}
-                  onChange={(e) => commitLimit(e.target.value)}
-                  className="tnum h-8 w-36 rounded-md border border-border bg-background pl-11 pr-2 font-mono text-xs hover:border-border-strong focus:border-border-strong focus:outline-none"
-                />
-              </span>
-            </div>
-          </div>
-
+      <div className="grid items-start gap-6 lg:grid-cols-12">
+        <section className="space-y-4 lg:col-span-5" aria-labelledby="rules-title">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="section-title">Rules, in order</h2>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => dispatch({ type: "resetDraft" })}>
-                <RotateCcw aria-hidden /> Reset draft to v1
+            <div>
+              <h2 id="rules-title" className="section-title">Rules, in order</h2>
+              <p className="tnum text-xs text-muted-foreground">{activeCount} of {rules.length} active</p>
+            </div>
+            <div className="flex gap-1.5">
+              <Button variant="ghost" size="sm" onClick={() => dispatch({ type: "resetDraft" })}>
+                <RotateCcw aria-hidden /> Reset
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setEditing({ rule: { id: "R1.custom", outcome: "human_review", description: "", condition: emptyLeaf() }, key: Date.now() })}>
+              <Button variant="outline" size="sm" onClick={() => setEditing({ rule: { id: "R1.custom", outcome: "human_review", description: "", condition: emptyLeaf(), active: true }, key: Date.now() })}>
                 <Plus aria-hidden /> {ADD_RULE}
               </Button>
             </div>
           </div>
 
+          <div className="card-panel flex flex-wrap items-center justify-between gap-3 p-4">
+            <label htmlFor="quote-limit" className="text-sm font-medium">Quote limit</label>
+            <span className="relative inline-flex items-center">
+              <span className="pointer-events-none absolute left-2.5 font-mono text-xs text-muted-foreground">EUR</span>
+              <input
+                id="quote-limit"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                step={50}
+                disabled={!quoteRule}
+                value={limitText}
+                onChange={(e) => commitLimit(e.target.value)}
+                className="tnum h-8 w-32 rounded-md border border-border bg-background pl-11 pr-2 font-mono text-xs hover:border-border-strong focus:border-border-strong focus:outline-none"
+              />
+            </span>
+          </div>
+
           <ol className="space-y-2">
-            {fixedLast.map((r) => {
+            {fixedLast.map((r, index) => {
               const st = ruleStatus(v1Rules, r);
+              const active = r.active !== false;
+              const fixed = r.id === "R3.routine";
               return (
-                <li key={r.id} className="card-panel group p-4 transition-colors hover:border-border-strong">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs font-medium">{r.id}</span>
-                    <FlowBadge rec={r.outcome} size="sm" />
-                    {st === "changed" && <Chip tone="solid">Changed</Chip>}
-                    {st === "added" && <Chip tone="solid">Added</Chip>}
+                <li key={r.id} className={cn("card-panel p-4 transition-colors hover:border-border-strong", !active && "bg-surface")}>
+                  <div className="flex items-start gap-3">
+                    <span className="tnum mt-0.5 w-5 shrink-0 font-mono text-xs text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>
+                    <div className="min-w-0 flex-1">
+                      <h3 className={cn("text-sm font-medium leading-5", !active && "text-muted-foreground")}>{r.description || "Untitled rule"}</h3>
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        <FlowBadge rec={r.outcome} size="sm" />
+                        {st === "changed" && <Chip tone="solid">Changed</Chip>}
+                        {st === "added" && <Chip tone="solid">Added</Chip>}
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Label htmlFor={`active-${r.id}`} className="text-xs text-muted-foreground">{fixed ? "Always active" : active ? "Active" : "Inactive"}</Label>
+                      <Switch
+                        id={`active-${r.id}`}
+                        checked={active}
+                        disabled={fixed}
+                        aria-label={`${active ? "Deactivate" : "Activate"} ${r.description}`}
+                        onCheckedChange={() => toggleRule(r.id)}
+                      />
+                    </div>
                   </div>
-                  <p className="mt-1.5 text-sm text-text-2">{r.description || <span className="italic text-muted-foreground">No description</span>}</p>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {conditionChips(r.condition).map((t, i) => (
-                      <span key={i} className="rounded-md border border-border bg-surface px-1.5 py-0.5 font-mono text-[11px]">{r.id === "R3.routine" ? "Otherwise: routine processing" : t}</span>
-                    ))}
-                  </div>
-                  <div className="mt-3 flex gap-1.5">
+                  <div className="mt-3 flex justify-end gap-1.5 border-t border-border pt-3">
                     <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setEditing({ rule: r, key: Date.now() })}>
                       <Pencil aria-hidden /> Edit
                     </Button>
-                    {r.id === "R3.routine" ? (
-                      <WhyDisabled disabled reason="The fallback rule is fixed and cannot be deleted">
+                    {fixed ? (
+                      <WhyDisabled disabled reason="The fallback rule cannot be deleted">
                         <Button variant="ghost" size="sm" className="h-7 text-xs" disabled>
                           <Trash2 aria-hidden /> Delete
                         </Button>
@@ -230,7 +256,7 @@ function PolicyPage() {
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-64 space-y-3 text-sm">
-                          <p>Remove <span className="font-mono text-xs">{r.id}</span> from the draft?</p>
+                          <p>Remove this rule from the draft?</p>
                           <Button size="sm" variant="destructive" onClick={() => dispatch({ type: "setRules", rules: rules.filter((x) => x.id !== r.id) })}>
                             <Trash2 aria-hidden /> Delete rule
                           </Button>
@@ -241,182 +267,119 @@ function PolicyPage() {
                 </li>
               );
             })}
-            {removed.map((r) => (
-              <li key={r.id} className="rounded-lg border border-dashed border-border p-4 opacity-70">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs line-through">{r.id}</span>
-                  <Chip tone="outline">Removed</Chip>
-                </div>
-                <p className="mt-1 text-sm line-through text-muted-foreground">{r.description}</p>
-              </li>
-            ))}
           </ol>
         </section>
 
-        <section className="space-y-6 lg:col-span-7">
+        <section className="space-y-4 lg:col-span-7" aria-labelledby="impact-title">
           <div className="card-panel p-5">
-            <SectionTitle title="What changes" />
-            {diff.length ? (
-              <ul className="space-y-1.5 text-sm">
-                {diff.map((d) => (
-                  <li key={d} className="flex gap-2"><span className="mt-2 size-1 shrink-0 rounded-full bg-foreground" aria-hidden />{d}</li>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h2 id="impact-title" className="section-title">Expected claim volume</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">Open stored claims · {RULE_BASED.toLowerCase()}</p>
+              </div>
+              <div className="text-right" aria-live="polite" aria-atomic="true">
+                <div className="tnum text-2xl font-medium">{openFlips.length}</div>
+                <div className="text-xs text-muted-foreground">open claims change</div>
+              </div>
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-4 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-sm bg-chart-2" aria-hidden />Current</span>
+              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-sm bg-chart-1" aria-hidden />Draft</span>
+            </div>
+            <div className="mt-1 h-64 w-full" role="img" aria-label={chartData.map((d) => `${d.name}: current ${d.current}, draft ${d.draft}`).join(". ")}>
+              <ResponsiveContainer>
+                <BarChart data={chartData} barGap={5} margin={{ top: 12, right: 4, left: -18, bottom: 0 }}>
+                  <CartesianGrid vertical={false} stroke="var(--border)" />
+                  <XAxis dataKey="name" interval={0} tickLine={false} axisLine={{ stroke: "var(--border)" }} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={30} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                  <ChartTooltip cursor={{ fill: "var(--surface)" }} content={<VolumeTip />} />
+                  <Bar isAnimationActive={false} dataKey="current" name="Current" fill="var(--chart-2)" radius={[3, 3, 0, 0]} maxBarSize={42} />
+                  <Bar isAnimationActive={false} dataKey="draft" name="Draft" fill="var(--chart-1)" radius={[3, 3, 0, 0]} maxBarSize={42} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="card-panel p-5">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="section-title">Changed claims</h2>
+              <span className="tnum text-xs text-muted-foreground">{openFlips.length} open</span>
+            </div>
+            {openFlips.length === 0 ? (
+              <p className="py-3 text-sm text-muted-foreground">No open claims change.</p>
+            ) : (
+              <ul className="max-h-64 divide-y divide-border overflow-y-auto">
+                {openFlips.map((f) => (
+                  <li key={f.claim.case_id} className="flex flex-wrap items-center gap-2 py-3 first:pt-0 last:pb-0">
+                    <span className="w-20 font-mono text-xs font-medium">{f.claim.case_id}</span>
+                    <FlowBadge rec={f.from} size="sm" />
+                    <ArrowRight className="size-3 text-muted-foreground" aria-label="to" />
+                    <FlowBadge rec={f.to} size="sm" />
+                  </li>
                 ))}
               </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">The draft matches v1.</p>
-            )}
-          </div>
-
-          <div className="card-panel p-5">
-            <SectionTitle
-              title="Impact on stored claims"
-              subtitle={`${flips.length} of ${derived.length} claims change · ${openFlips.length} open flagged for recheck · ${flips.length - openFlips.length} locked, kept`}
-            />
-            {flips.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">No stored claims change under this draft.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[640px] text-sm">
-                  <thead>
-                    <tr className="text-left">
-                      {["Case", "Change", "Caused by", "Status"].map((h) => (
-                        <th key={h} className="eyebrow border-b border-border py-2 pr-3 font-medium">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {flips.map((f) => (
-                      <tr key={f.claim.case_id} className="border-b border-border last:border-0">
-                        <td className="whitespace-nowrap py-2.5 pr-3 font-mono text-xs font-medium">{f.claim.case_id}</td>
-                        <td className="py-2.5 pr-3">
-                          {f.status === "locked" ? (
-                            <span className="inline-flex items-center gap-1.5"><FlowBadge rec={f.from} size="sm" /><span className="text-xs text-muted-foreground">unchanged</span></span>
-                          ) : (
-                            <span className="inline-flex flex-wrap items-center gap-1"><FlowBadge rec={f.from} size="sm" /><ArrowRight className="size-3 text-muted-foreground" aria-label="to" /><FlowBadge rec={f.to} size="sm" /></span>
-                          )}
-                        </td>
-                        <td className="py-2.5 pr-3"><RuleChips rule={f.cause} /></td>
-                        <td className="py-2.5">
-                          <span className="flex flex-wrap gap-1">
-                            {f.status === "locked" ? <Chip>Locked, kept</Chip> : <Chip tone="outline">Flagged for recheck</Chip>}
-                            {f.towardRoutine && <Chip tone="amber">Needs named sign-off</Chip>}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          <div className="card-panel p-5">
-            <SectionTitle title="Exhaustive checks" right={<span className="tnum text-xs text-muted-foreground">{checks.filter((c) => c.pass).length}/5 passing</span>} />
-            <ul className="divide-y divide-border">
-              {checks.map((c) => (
-                <li key={c.id} className="flex gap-3 py-2.5">
-                  <span className={cn("mt-0.5 grid size-5 shrink-0 place-items-center rounded-full", c.pass ? "bg-flow-green-tint text-flow-green" : "bg-flow-red-tint text-flow-red")}>
-                    {c.pass ? <Check className="size-3" aria-hidden /> : <X className="size-3" aria-hidden />}
-                  </span>
-                  <div>
-                    <div className="text-sm font-medium">
-                      {c.label} <span className="sr-only">{c.pass ? "passing" : "failing"}</span>
-                      <span className={cn("ml-2 text-xs font-normal", c.pass ? "text-muted-foreground" : "text-destructive")}>{c.pass ? "Passing" : "Failing"}</span>
-                    </div>
-                    <div className={cn("text-xs", c.message ? "text-destructive" : "text-muted-foreground")}>{c.message ?? c.explain}</div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="card-panel p-5 sm:col-span-2">
-              <SectionTitle title="Before / after on labelled cases" />
-              <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-lg bg-surface p-4">
-                  <div className="eyebrow">v1</div>
-                  <div className="tnum mt-1 text-2xl font-medium">{BC.labelled.v1} of {BC.labelled.total}</div>
-                  <div className="text-xs text-muted-foreground">consistent with reviewer labels</div>
-                </div>
-                <div className="rounded-lg bg-surface p-4">
-                  <div className="eyebrow">v2</div>
-                  <div className="tnum mt-1 text-2xl font-medium">{BC.labelled.v2} of {BC.labelled.total}</div>
-                  <div className="text-xs text-muted-foreground">consistent with reviewer labels</div>
-                </div>
-              </div>
-              <p className="mt-3 text-xs text-muted-foreground">{CONSISTENCY_CAPTION}</p>
-            </div>
-
-            <div className="card-panel p-5 sm:col-span-2">
-              <SectionTitle title="Predicted cost impact" subtitle={`${BC.minutesPerRecheck[0]} to ${BC.minutesPerRecheck[1]} min per recheck`} />
-              <dl className="divide-y divide-border text-sm">
-                {[
-                  { k: `Recheck effort for this change (${openFlips.length} flipped open claims)`, v: `${recheckMin[0]} to ${recheckMin[1]} min`, l: "DERIVED" as const },
-                  { k: `Re-reviewing all ${openCount} open claims by hand`, v: `${allMin[0]} to ${allMin[1]} min`, l: "DERIVED" as const },
-                  { k: "Saved by targeted recheck", v: `${allMin[0] - recheckMin[0]} to ${allMin[1] - recheckMin[1]} min`, l: "DERIVED" as const },
-                  { k: `Added reviewer time (${intoReview} claims moving into human review)`, v: `+${addedMin[0]} to ${addedMin[1]} min`, l: "ASSUMED" as const },
-                ].map((r) => (
-                  <div key={r.k} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-                    <dt className="text-text-2">{r.k}</dt>
-                    <dd className="tnum flex items-center gap-2 font-medium">{r.v} <EvidenceChip label={r.l} /></dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          </div>
-
-          <div className="card-panel sticky bottom-4 z-10 space-y-4 p-5 shadow-sheet">
-            {decision ? (
-              <div className="space-y-3" role="status" aria-live="polite">
-                <div className="flex items-center gap-2 text-sm font-semibold">
-                  <span className="grid size-5 place-items-center rounded-full bg-primary text-primary-foreground"><Check className="size-3" aria-hidden /></span>
-                  {decision.type === "policy_approved" ? "Policy released" : "Policy held"}
-                </div>
-                <pre className="overflow-x-auto rounded-md bg-surface p-3 font-mono text-[12px] leading-5 text-text-2">{JSON.stringify(decision, null, 2)}</pre>
-                <p className="text-xs text-muted-foreground">Nothing is persisted. Reloading resets the draft.</p>
-                <Button variant="outline" size="sm" onClick={() => setDecision(null)}>Done</Button>
-              </div>
-            ) : (
-              <>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h2 className="section-title">Gate and commit</h2>
-                  <Chip tone={state.gateOpen ? "solid" : "outline"}>Release gate: {state.gateOpen ? "OPEN" : "CLOSED"}</Chip>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="g-author">Author</Label>
-                    <Input id="g-author" className="mt-1.5" value={AUTHOR} readOnly disabled />
-                  </div>
-                  <div>
-                    <Label htmlFor="g-appr">Approver</Label>
-                    <Input id="g-appr" className="mt-1.5" value={approver} onChange={(e) => setApprover(e.target.value)} placeholder="A different person" />
-                    {(touched || approver) && gate.approverErr && <Refusal>{gate.approverErr}</Refusal>}
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="g-reason">{towardRoutine ? "Named sign-off for flips toward routine" : "Sign-off reason"}</Label>
-                  <Textarea id="g-reason" className="mt-1.5" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why this draft should or should not go live" />
-                  {touched && gate.reasonErr && <Refusal>{gate.reasonErr}</Refusal>}
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <WhyDisabled disabled={!gate.canRelease} reason={releaseReason}>
-                    <Button disabled={!gate.canRelease} onClick={() => decide("policy_approved")}>
-                      <Rocket aria-hidden /> {RELEASE_V2}
-                    </Button>
-                  </WhyDisabled>
-                  <WhyDisabled disabled={!gate.canHold} reason={gate.approverErr ?? gate.reasonErr ?? undefined}>
-                    <Button variant="outline" disabled={!gate.canHold} onClick={() => decide("policy_rejected")}>
-                      <Pause aria-hidden /> {HOLD_V2}
-                    </Button>
-                  </WhyDisabled>
-                  <span className="text-xs text-muted-foreground">Nothing is persisted. Reloading resets the draft.</span>
-                </div>
-              </>
             )}
           </div>
         </section>
       </div>
+
+      <section className="card-panel p-5" aria-labelledby="release-title">
+        {decision ? (
+          <div className="flex flex-wrap items-center justify-between gap-4" role="status" aria-live="polite">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <span className="grid size-5 place-items-center rounded-full bg-primary text-primary-foreground"><Check className="size-3" aria-hidden /></span>
+              {decision.type === "policy_approved" ? "Policy released" : "Policy held"}
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setDecision(null)}>Done</Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 id="release-title" className="section-title">Review and release</h2>
+              <details className="text-xs">
+                <summary className="tnum cursor-pointer font-medium text-text-2">{checks.filter((c) => c.pass).length}/5 checks passing</summary>
+                <ul className="mt-3 space-y-2 rounded-lg bg-surface p-3">
+                  {checks.map((c) => (
+                    <li key={c.id} className="flex items-start gap-2">
+                      {c.pass ? <Check className="mt-0.5 size-3.5 shrink-0 text-flow-green" aria-hidden /> : <X className="mt-0.5 size-3.5 shrink-0 text-destructive" aria-hidden />}
+                      <span>{c.label} <span className={cn("ml-1", c.pass ? "text-muted-foreground" : "text-destructive")}>{c.pass ? "Passing" : c.message ?? "Failing"}</span></span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div>
+                <Label htmlFor="g-author">Author</Label>
+                <Input id="g-author" className="mt-1.5" value={AUTHOR} readOnly disabled />
+              </div>
+              <div>
+                <Label htmlFor="g-appr">Approver</Label>
+                <Input id="g-appr" className="mt-1.5" value={approver} onChange={(e) => setApprover(e.target.value)} placeholder="A different person" />
+                {(touched || approver) && gate.approverErr && <Refusal>{gate.approverErr}</Refusal>}
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="g-reason">{towardRoutine ? "Named sign-off for flips toward routine" : "Sign-off reason"}</Label>
+              <Textarea id="g-reason" className="mt-1.5" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why this draft should or should not go live" />
+              {touched && gate.reasonErr && <Refusal>{gate.reasonErr}</Refusal>}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <WhyDisabled disabled={!gate.canRelease} reason={releaseReason}>
+                <Button disabled={!gate.canRelease} onClick={() => decide("policy_approved")}>
+                  <Rocket aria-hidden /> {RELEASE_V2}
+                </Button>
+              </WhyDisabled>
+              <WhyDisabled disabled={!gate.canHold} reason={gate.approverErr ?? gate.reasonErr ?? undefined}>
+                <Button variant="outline" disabled={!gate.canHold} onClick={() => decide("policy_rejected")}>
+                  <Pause aria-hidden /> {HOLD_V2}
+                </Button>
+              </WhyDisabled>
+            </div>
+          </div>
+        )}
+      </section>
 
       {editing && (
         <RuleDialog key={editing.key} rule={editing.rule} open onClose={() => setEditing(null)} onSave={save} existingIds={rules.map((r) => r.id)} />
