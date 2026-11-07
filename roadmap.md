@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Open
-- (none)
+- [ ] Case review: rationale-first detail window, recorded confirmation with Undo, guarded overrides and keyboard/focus handling.
 
 ## Done
 - [x] Claims: clean three-column table and fast-handling case summary in the side window; details and reviewer actions remain available.
