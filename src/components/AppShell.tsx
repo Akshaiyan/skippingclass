@@ -1,4 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import aegisLogo from "@/assets/aegis-logo.png.asset.json";
+import aegisMark from "@/assets/aegis-mark.png.asset.json";
 import { Inbox, LayoutDashboard, Menu, PanelLeftClose, PanelLeftOpen, Scale, ScrollText } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useStore } from "@/store";
@@ -97,15 +99,12 @@ function SidebarFooter({ collapsed }: { collapsed: boolean }) {
 function Brand({ collapsed }: { collapsed: boolean }) {
   return (
     <div className={cn("flex items-center gap-2", collapsed && "flex-col gap-1")}>
-      <span className="grid size-7 place-items-center rounded-md bg-primary font-mono text-[11px] font-semibold text-primary-foreground">
-        MT
-      </span>
       {collapsed ? (
-        <span className="text-[10px] font-medium">Triage</span>
+        <img src={aegisMark.url} alt="Aegis" className="h-6 w-auto dark:invert" />
       ) : (
         <div className="leading-tight">
-          <div className="text-sm font-semibold">Motor triage</div>
-          <div className="text-[11px] text-muted-foreground">Recommends, never decides</div>
+          <img src={aegisLogo.url} alt="Aegis" className="h-5 w-auto dark:invert" />
+          <div className="mt-1.5 text-[11px] text-muted-foreground">Truth in triage</div>
         </div>
       )}
     </div>
