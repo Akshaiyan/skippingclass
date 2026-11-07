@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, DoorClosed, DoorOpen, ListChecks, Scale } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from "recharts";
 import { useStore } from "@/store";
-import { PROBLEM_SUBLINE, REC_LABEL } from "@/copy";
+import { REC_LABEL } from "@/copy";
 import { ASSUMPTIONS, BUSINESS_CASE as BC, LABEL_HELP, type EvidenceLabel } from "@/data/businessCase";
 import { Dot, EvidenceChip, SectionTitle } from "@/components/status";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -106,10 +106,6 @@ function Dashboard() {
 
   return (
     <div className="space-y-12">
-      <section className="pt-4 md:pt-10">
-        <p className="eyebrow">The problem</p>
-        <p className="mt-3 max-w-[640px] text-muted-foreground">{PROBLEM_SUBLINE}</p>
-      </section>
 
       <section className="grid gap-4 sm:grid-cols-3">
         <Tile title="Overall Claims" filter="all" />
