@@ -14,10 +14,12 @@ Say: "This claim has complete evidence and no review trigger. The rule that deci
     python -c "import server,json; print(json.dumps(server.handle('GET','/api/case/PRA-006',{},{})[1]['suggestion'], indent=1))"
 Say: "The itemised quote is missing. The system does not guess. It names the document to request, and says it is not a prediction."
 
-## 3. Policy change: flips and sign-off (60 s)
-    python run.py unlabelled_practice_cases.csv out_v2.csv --policy policies/v2_limit_1200.json
-Expected: "v2 ... 2 flips" lines and VALIDATION PASSED.
-Say: "A proposed change is replayed on every stored claim before release. Closed claims keep their original decision. Any move into routine needs a named sign-off."
+## 3. Policy change: before and after (60 s)
+    python run.py unlabelled_practice_cases.csv out_v2.csv --policy policies/v2.json
+Expected: VALIDATION PASSED.
+    python quality_report.py labelled_development_cases.csv unlabelled_practice_cases.csv
+Expected: the practice file shows "fixed 4, worsened 0, still wrong 0", and the last line reads "NO OPEN CLAIM WORSENED; EVERY OPEN CLAIM NOW MATCHES THE NOTICE".
+Say: "The change in the notice is replayed on every stored claim. Nothing that was right got worse. Closed claims keep their v1 decision. Agreement is with our reading of the notice, not with hidden labels. Any move into routine needs a named sign-off."
 
 ## 4. Live reviewer override (40 s)
     python -c "import server,json; print(json.dumps(server.handle('POST','/api/override',{},{'case_id':'PRA-001','actor':'reviewer-demo','reason':'demo override','policy_version':'v1','corrected_recommendation':'human_review'})[1], indent=1))"
