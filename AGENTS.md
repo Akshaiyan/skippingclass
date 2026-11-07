@@ -34,3 +34,4 @@ use the editor.
 - Recommendations are always computed by the pure three-valued evaluator in `src/lib/evaluate.ts` (seed data included) so seed and logic never disagree.
 - All rule-bound UI copy lives in `src/copy.ts` for auditability.
 - Session state lives in one reducer in `src/store.tsx`; derived v2 results are recomputed, never stored.
+- A module exports either components or non-components, never both: the provider lives in `src/store.provider.tsx` while `src/store.tsx` holds only the context, hook, reducer and types, because mixing them makes hot reload leave a stale context and blank the preview.
