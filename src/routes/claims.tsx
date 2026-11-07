@@ -220,10 +220,10 @@ function ClaimsPage() {
                 <col className="w-[11%]" />
                 <col className="w-[8%]" />
                 <col className="w-[13%]" />
-                <col className="w-[17%]" />
-                <col className="w-[12%]" />
-                <col className="w-[10%]" />
-                <col className="w-[29%]" />
+                <col className="w-[15%]" />
+                <col className="w-[11%]" />
+                <col className="w-[9%]" />
+                <col className="w-[33%]" />
               </colgroup>
               <thead>
                 <tr className="text-left">
@@ -252,7 +252,7 @@ function ClaimsPage() {
                       tabIndex={0}
                       onClick={() => open(c.case_id)}
                       onKeyDown={(e) => onRowKey(e, c.case_id)}
-                      className="group h-16 cursor-pointer transition-colors duration-150 hover:bg-surface focus-visible:bg-surface"
+                      className="group h-[70px] cursor-pointer transition-colors duration-150 hover:bg-surface focus-visible:bg-surface"
                     >
                       <td className={cn("border-b border-l-2 border-border px-4 py-2.5", FLOW_BORDER[c.flow])}>
                         <div className="flex items-center gap-2">
@@ -276,7 +276,7 @@ function ClaimsPage() {
                       <td className="border-b border-border px-4 py-2.5">
                         {c.case_status === "open" && c.needs_recheck && <RecheckChip from={c.recommendation_v1} to={c.recommendation_v2} />}
                       </td>
-                      <td className="border-b border-border px-4 py-2.5">
+                      <td className="border-b border-border px-2 py-2.5">
                         <QuickActions c={c} onPick={(r) => open(c.case_id, r)} />
                       </td>
                     </tr>
