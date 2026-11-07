@@ -1,3 +1,45 @@
+# Taktile claims triage: submission
+
+**Read this first.** One command runs every check: `python run_checks.py`. It exits 0 only if all of them pass.
+
+## Run it (judges)
+
+```
+python run_checks.py                                  # every check
+python run.py <claims.csv> results.csv --policy policies/v2.json   # your file, v2
+```
+
+The results file has the columns the policy document names: `case_id, recommendation_v1, recommendation_v2, needs_recheck, rule_v1, rule_v2, explanation`. Rows that could not be read are listed as QUARANTINED with their line and field, and decided as request information, never guessed.
+
+The runtime makes no web calls. It needs Python 3.10 or newer and the standard library only.
+
+## Criteria map
+
+| Judged criterion | Where the evidence is | What it shows | What it does not show |
+|---|---|---|---|
+| Accurate results for most claims | `quality_metrics.py`, `test_v2.py`, `exhaustive_shapes.py` | v1 agrees with the 14 organiser labels (14 of 14, precision and recall 1.0, small sample). v2 agrees with our reading of the change notice on 118,098 field combinations. | Accuracy on the hidden cases. Hidden results come from the judges. |
+| Human in the loop for complicated cases | `server.py` (overrides, four-eyes sign-off), `test_ui_view.py`, the reviewer screen | Every review case goes to a person. Overrides need a name and a reason. A policy release that moves a claim into routine needs a named second person. | That reviewers decide well. We have no reviewer data yet. |
+| Measuring the quality of what happens | `quality_report.py`, `quality_metrics.py`, `MONITORING.md`, `monitor_report.py` | Changed claims, incorrect-routine and unnecessary-review counts, precision, recall and F1 per class, and the signals to watch after deployment. | Post-deployment results. Those need real outcomes. |
+| A solid business case | `BUSINESS_CASE.md`, `business_model.py`, `assumptions.json` | A policy change costs about EUR 78,750 to re-review by hand and about EUR 12,423 with the system. Every input is labelled ASSUMED or MEASURED-PROXY. | Real handling times, real claim volume, or an annual figure. |
+| Design prize (UI, design, message) | `frontend/` (team app), `reviewer.html` (fallback) | One clear recommendation per claim with its rule, facts, blanks and next step; decision memory per claim; a policy-change check before release. | A user study. |
+
+## Honest limits
+
+- No independent labels beyond the 14 organiser cases. The 12 practice claims have a reviewer check by a non-expert and two model checks, all on the same source text.
+- A blank repair type and a blank or unknown case status both ask for information. The organiser has not confirmed this.
+- An unquoted comma that leaves the cell count unchanged cannot be detected without guessing. The advice to the organiser is to quote commas in claim summaries.
+- The decision log is protected against tampering and torn writes within one server process. Several processes writing one log file need a file lock, which is not built.
+
+## Questions for the organiser
+
+1. Should a blank repair type request information under v1 as well as v2?
+2. Should a negative or non-numeric quote be unreadable (our reading) or refuse the file?
+3. Are claim summaries allowed to contain commas, and should they be quoted?
+4. Does the change notice move the v1 threshold from 1,500 to 1,200, or only add a trigger? We read it as moving the threshold.
+
+
+---
+
 # Taktile claims triage: thinc! Munich submission
 
 A rules-based triage prototype for motor claims. It recommends one of three next steps
