@@ -23,6 +23,9 @@ STEPS = [
     ("document boundary: documents propose, never decide", ["test_doc_facts.py"]),
     ("business saving per policy change", ["test_business.py"]),
     ("before-and-after quality report for the v2 change", ["quality_report.py"]),
+    ("brief quality counts: unit checks on hand-built pairs", ["test_quality_metrics.py"]),
+    ("app-facing API, policy change summary and the sign-off gate", ["test_ui_view.py"]),
+    ("brief quality counts: v1 against labels, v2 against the notice, changed cases", ["quality_metrics.py"]),
 ]
 failed = []
 for label, cmd in STEPS:

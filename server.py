@@ -24,6 +24,7 @@ import engine  # noqa: E402
 import io_csv  # noqa: E402
 import policy  # noqa: E402
 import suggest  # noqa: E402
+import ui_view  # noqa: E402
 import history  # noqa: E402
 from decision_log import DecisionLog, verify_chain  # noqa: E402
 
@@ -56,7 +57,7 @@ def _case_view(cid):
     rec, rule, why = engine.decide(row)
     blanks = [k for k in FACT_FIELDS if (row.get(k) or "").strip() == ""]
     return {"case_id": cid, "recommendation_v1": rec, "rule_v1": rule, "explanation": why,
-            "facts": {k: v for k, v in row.items() if k != "claim_summary"}, "blank_fields": blanks,
+            "facts": {k: v for k, v in row.items() if k not in ui_view.NOT_FACTS}, "blank_fields": blanks,
             "policy_version": "v1", "suggestion": suggest.suggest(row),
             "timeline": history.timeline(cid, LOG_PATH)}
 
@@ -64,7 +65,8 @@ def _case_view(cid):
 def handle(method, path, query, body):
     """Return (status, payload). A pure function of its inputs, so tests can call it without a socket."""
     if method == "GET" and path == "/api/cases":
-        return 200, [{"case_id": cid, "recommendation_v1": engine.decide(r)[0]} for cid, r in _cases().items()]
+        v1, v2 = policy.load(ui_view.V1_PATH), policy.load(ui_view.V2_PATH)
+        return 200, ui_view.cases(CASES_FILE, v1, v2, ui_view.policy_hash(ui_view.V1_PATH), ui_view.policy_hash(ui_view.V2_PATH))
     if method == "GET" and path.startswith("/api/case/"):
         view = _case_view(path.rsplit("/", 1)[1])
         return (200, view) if view else (404, {"error": "unknown case"})
@@ -74,10 +76,14 @@ def handle(method, path, query, body):
         if row is None:
             return 404, {"error": "unknown case"}
         original = engine.decide(row)[0]
+        # The app sends note / to_rec / reason_code; the original API sends reason / corrected_recommendation. Accept both.
         record = {"type": "reviewer_override", "case_id": cid, "actor": body.get("actor", ""),
-                  "reason": body.get("reason", ""), "policy_version": body.get("policy_version", "v1"),
+                  "reason": body.get("reason") or body.get("note", ""),
+                  "reason_code": body.get("reason_code", ""),
+                  "policy_version": body.get("policy_version", "v1"),
+                  "policy_hash": body.get("policy_hash", ""),
                   "original_recommendation": original,
-                  "corrected_recommendation": body.get("corrected_recommendation", "")}
+                  "corrected_recommendation": body.get("corrected_recommendation") or body.get("to_rec", "")}
         log = DecisionLog(LOG_PATH)
         try:
             log.append(record)
@@ -103,9 +109,26 @@ def handle(method, path, query, body):
         return 200, {"policy": new["name"], "open_flips": flips, "into_routine": into,
                      "closed_kept_as_v1": True}
     if method == "POST" and path == "/api/policy-decision":
+        # Why this gate exists (decision record):
+        # Source: vendor and practitioner write-ups on champion-challenger and rule change (secondary, WebSearch 2026-11-07):
+        #   a policy change that looks reasonable can cause a portfolio spike; review before release, not after.
+        #   Four-eyes approval for model and policy change appears in SR 11-7 summaries (secondary, not checked against the Fed text).
+        # Validation: the shipped v2 only tightens rules, so no shipped change moves a claim into routine. The gate is
+        #   proved on a temporary looser policy in test_ui_view.py, and it fails when the check is removed (mutation run).
+        # Rule: a release that moves any claim into routine is refused unless each such claim is named in signoff_for.
+        #   The change is recomputed here, never trusted from the client.
+        # Consequences: a reviewer must name every claim moving into routine before release; rejecting a change never needs
+        #   a sign-off; the rule is only as good as the change summary it reads, so the summary's tests guard it.
+        named = sorted(set(body.get("signoff_for") or []))
+        if body.get("decision") == "approved":
+            v1, v2 = policy.load(ui_view.V1_PATH), policy.load(ui_view.V2_PATH)
+            change = ui_view.change_summary(CASES_FILE, v1, v2, ui_view.policy_hash(ui_view.V1_PATH), ui_view.policy_hash(ui_view.V2_PATH))
+            missing = [c for c in change["into_routine"] if c not in named]
+            if missing:
+                return 400, {"error": "claims moving into routine need a named sign-off: " + ", ".join(missing)}
         record = {"type": "policy_decision", "actor": body.get("actor", ""), "reason": body.get("reason", ""),
                   "policy_version": body.get("policy_version", ""), "decision": body.get("decision", ""),
-                  "proposed_by": body.get("proposed_by", "")}
+                  "proposed_by": body.get("proposed_by", ""), "signoff_for": named}
         log = DecisionLog(LOG_PATH)
         try:
             log.append(record)
@@ -127,6 +150,22 @@ def handle(method, path, query, body):
         if not p.exists():
             return 404, {"error": "run business_model.py first"}
         return 200, json.loads(p.read_text(encoding="utf-8"))
+    if method == "GET" and path == "/api/policy/change":
+        v1, v2 = policy.load(ui_view.V1_PATH), policy.load(ui_view.V2_PATH)
+        return 200, ui_view.change_summary(CASES_FILE, v1, v2, ui_view.policy_hash(ui_view.V1_PATH), ui_view.policy_hash(ui_view.V2_PATH))
+    if method == "GET" and path == "/api/policy/ui":
+        name = query.get("name", ["v1"])[0]
+        if name not in ("v1", "v2"):
+            return 400, {"error": "name must be v1 or v2"}
+        src = HERE / "policies" / f"{name}.json"
+        return 200, {"version": name, "hash": ui_view.policy_hash(src),
+                     "rules": ui_view.to_ui_rules(policy.load(src))}
+    if method == "GET" and path == "/api/log":
+        bad = verify_chain(LOG_PATH)
+        entries = DecisionLog(LOG_PATH).read()
+        return 200, {"intact": bad is None, "broken_at": None if bad is None else bad[0],
+                     "reason": None if bad is None else bad[1],
+                     "entries": [ui_view.ui_log_entry(e, i + 1) for i, e in enumerate(entries)]}
     return 404, {"error": "unknown route"}
 
 
