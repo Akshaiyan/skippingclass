@@ -28,3 +28,9 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Architecture rules
+- Frontend only: no backend, network calls or persistence; all reads/writes go through `src/data/api.ts` so the mock layer can be swapped for the real JSON API.
+- Recommendations are always computed by the pure three-valued evaluator in `src/lib/evaluate.ts` (seed data included) so seed and logic never disagree.
+- All rule-bound UI copy lives in `src/copy.ts` for auditability.
+- Session state lives in one reducer in `src/store.tsx`; derived v2 results are recomputed, never stored.
