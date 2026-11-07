@@ -72,7 +72,7 @@ function ClaimsPage() {
 
   const onRowKey = (e: KeyboardEvent, id: string) => {
     const idx = rows.findIndex((r) => r.case_id === id);
-    if (e.key === "Enter") open(id);
+    if (e.key === "Enter") { e.preventDefault(); open(id); }
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
       const next = rows[idx + (e.key === "ArrowDown" ? 1 : -1)];
@@ -180,7 +180,7 @@ function ClaimsPage() {
         </div>
       )}
 
-      <CaseSheet claim={openClaim} open={!!openClaim} onOpenChange={(o) => !o && setOpenId(null)} />
+      <CaseSheet claim={openClaim} open={!!openClaim} onOpenChange={(o) => !o && setOpenId(null)} onReturnFocus={() => { if (openId) rowRefs.current[openId]?.focus(); }} />
     </div>
   );
 }

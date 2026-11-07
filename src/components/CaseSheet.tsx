@@ -3,9 +3,8 @@ import { toast } from "sonner";
 import { Check, ChevronDown, Copy, FileText, GitBranch, Lock, Plug } from "lucide-react";
 import type { Rec } from "@/types";
 import {
-  CASE_OVERVIEW,
-  CASE_DETAILS,
-  CONFIRM_REC,
+  REVIEW_COPY,
+  confirmAction,
   CONFIRM_TOAST,
   COPY_TEXT,
   EMAIL_LABEL,
@@ -92,13 +91,15 @@ export function CaseSheet({
   open,
   onOpenChange,
   initialOverride,
+  onReturnFocus,
 }: {
   claim: DerivedClaim | null;
   open: boolean;
   onOpenChange: (o: boolean) => void;
   initialOverride?: Rec | "open";
+  onReturnFocus?: () => void;
 }) {
-  const { dispatch } = useStore();
+  const { state, dispatch } = useStore();
   const [mode, setMode] = useState<"view" | "override">("view");
   const [target, setTarget] = useState<Rec | undefined>();
   const [infoOpen, setInfoOpen] = useState(false);
@@ -121,15 +122,38 @@ export function CaseSheet({
   const passed = sorted.filter((c) => c.result === "false");
   const notPassed = sorted.filter((c) => c.result !== "false");
   const sug = yellow ? suggestion(claim, 1500) : null;
+  const reviewed = claim.ui_status === "reviewed";
+  const confirm = () => {
+    if (locked || reviewed || mode !== "view" || !state.reviewer.trim()) return;
+    const timestamp = new Date().toISOString();
+    dispatch({ type: "confirm", case_id: claim.case_id, timestamp });
+    toast.success(CONFIRM_TOAST, {
+      duration: 6000,
+      action: {
+        label: REVIEW_COPY.undo,
+        onClick: () => {
+          dispatch({ type: "undoConfirm", case_id: claim.case_id, confirmationTimestamp: timestamp, timestamp: new Date().toISOString(), previousStatus: claim.ui_status });
+          toast.success(REVIEW_COPY.undone);
+        },
+      },
+    });
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-hidden p-0 shadow-sheet sm:max-w-[680px]">
+      <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-hidden p-0 shadow-sheet sm:max-w-[680px]" onCloseAutoFocus={(event) => { if (onReturnFocus) { event.preventDefault(); onReturnFocus(); } }} onKeyDown={(event) => {
+        const target = event.target;
+        if (event.key === "Enter" && !(target instanceof HTMLElement && target.closest("button, input, textarea, select, summary, a, [role=radio], [contenteditable=true]"))) {
+          event.preventDefault();
+          confirm();
+        }
+      }}>
         <div className="border-b border-border px-6 pb-5 pt-6">
           <div className="flex flex-wrap items-center gap-2 pr-20">
             <SheetTitle className="font-mono text-2xl font-semibold tracking-tight">{claim.case_id}</SheetTitle>
             <FlowBadge rec={claim.recommendation_v1} />
             <StatusChip status={claim.case_status} />
+            {reviewed && <Chip tone="outline"><Check className="size-3" aria-hidden />{REVIEW_COPY.reviewed}</Chip>}
 
           </div>
           <SheetDescription className="mt-2 text-sm text-text-2">{claim.claim_summary}</SheetDescription>
@@ -156,20 +180,14 @@ export function CaseSheet({
           ) : (
             <>
               <section aria-labelledby="case-overview-title">
-                <h3 id="case-overview-title" className="section-title mb-3">{CASE_OVERVIEW}</h3>
-                <dl className="grid grid-cols-2 gap-x-5 gap-y-4 border-y border-border py-4">
-                  {["incident_date", "claim_type", "quote_eur", "claimed_amount_eur"].map((field) => {
-                    const value = claim.facts[field];
-                    return <div key={field} className="min-w-0"><dt className="text-xs text-muted-foreground">{fieldLabel(field)}</dt><dd className="tnum mt-1 text-sm font-medium">{value === null || value === undefined ? <NotProvided /> : typeof value === "number" ? `EUR ${value.toLocaleString("en-US")}` : String(value).replaceAll("_", " ")}</dd></div>;
-                  })}
-                </dl>
-                <ul className="mt-4 space-y-2 text-sm text-text-2">
+                <h3 id="case-overview-title" className="text-lg font-semibold">{REVIEW_COPY.why}</h3>
+                <ul className="mt-4 space-y-3 text-sm text-text-2">
                   {notPassed.length ? notPassed.map((check) => <li key={check.id} className="flex items-start gap-2"><span className="mt-0.5 shrink-0"><TriGlyph result={check.result} outcome={check.outcome} /></span><span>{check.description}{check.result === "unknown" ? " · not provided, not assumed" : ""}</span></li>) : <li>{claim.explanation}</li>}
                 </ul>
                 {!locked && claim.needs_recheck && <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-3 text-xs text-text-2">Needs recheck · Expected <FlowBadge rec={claim.recommendation_v2} size="sm" /></div>}
               </section>
-              <details className="border-t border-border pt-4">
-                <summary className="cursor-pointer text-sm font-semibold">{CASE_DETAILS}</summary>
+              <details open className="border-t border-border pt-4">
+                <summary className="cursor-pointer text-sm font-semibold">{REVIEW_COPY.evidence}</summary>
                 <section className="mt-4">
                 <PolicyStamp version={claim.policy_version} hash={claim.policy_hash} />
                 <div className="mt-3" />
@@ -215,7 +233,7 @@ export function CaseSheet({
                   {Object.entries(claim.facts).map(([k, v]) => (
                     <div key={k} className="flex items-baseline justify-between gap-3 border-b border-border py-2 text-sm">
                       <dt className="text-xs text-muted-foreground">{fieldLabel(k)}</dt>
-                      <dd className="tnum text-right">
+                           <dd className="tnum min-w-0 break-words text-right">
                         {claim.blank_fields.includes(k) || v === null ? (
                           <NotProvided />
                         ) : k === "case_status" ? (
