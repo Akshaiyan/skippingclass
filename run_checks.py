@@ -16,6 +16,9 @@ STEPS = [
     ("flip report for each prepared change", ["compare_policies.py"]),
     ("every allowed field combination (87,480 shapes)", ["exhaustive_shapes.py"]),
     ("JSON API over real sockets (four-eyes, override record, replay)", ["test_server.py"]),
+    ("agreement statistics for a blinded labeller", ["test_agreement.py"]),
+    ("document boundary: documents propose, never decide", ["test_doc_facts.py"]),
+    ("business saving per policy change", ["test_business.py"]),
 ]
 failed = []
 for label, cmd in STEPS:
