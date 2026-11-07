@@ -4,6 +4,7 @@ from pathlib import Path
 HERE = Path(__file__).parent
 PY = sys.executable
 STEPS = [
+    ("generate seeded synthetic test data (not shipped in the repo)", ["gen_synthetic.py", "10000", "1", "final_synthetic_10k.csv"]),
     ("main engine + validator + trace + log tests", ["test_all.py"]),
     ("release gate and override report", ["test_release_gate.py"]),
     ("suggestion engine", ["test_suggest.py"]),

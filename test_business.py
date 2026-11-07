@@ -9,7 +9,9 @@ def check(name, ok, detail=""):
     print(("PASS" if ok else "FAIL") + ": " + name + ("" if ok else f"  ({detail})"))
     if not ok: FAILS.append(name)
 r = b.policy_change_saving(str(Path(__file__).parent / "policies" / "v2_limit_1200.json"))
-check("1200-limit saving reproduces the earlier measured EUR 70,122", r["saving_eur"] == 70122, r)
+# Figure from the seeded generator (seed 1, 10,000 claims). An earlier file that could not be regenerated gave
+# EUR 70,122; the saving changed when the data was regenerated, so the seed is the reference, not the old number.
+check("1200-limit saving with the seeded synthetic file is EUR 69,722", r["saving_eur"] == 69722, r)
 check("the result labels its status as proxy with ASSUMED costs", "proxy" in r["status"] and "ASSUMED" in r["status"], r)
 with tempfile.TemporaryDirectory() as d:
     same = Path(d) / "same.json"
