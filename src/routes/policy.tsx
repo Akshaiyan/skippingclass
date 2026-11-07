@@ -265,7 +265,7 @@ function PolicyPage() {
               <p className="py-6 text-center text-sm text-muted-foreground">No stored claims change under this draft.</p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[560px] text-sm">
+                <table className="w-full min-w-[640px] text-sm">
                   <thead>
                     <tr className="text-left">
                       {["Case", "Change", "Caused by", "Status"].map((h) => (
@@ -276,7 +276,7 @@ function PolicyPage() {
                   <tbody>
                     {flips.map((f) => (
                       <tr key={f.claim.case_id} className="border-b border-border last:border-0">
-                        <td className="py-2.5 pr-3 font-mono text-xs font-medium">{f.claim.case_id}</td>
+                        <td className="whitespace-nowrap py-2.5 pr-3 font-mono text-xs font-medium">{f.claim.case_id}</td>
                         <td className="py-2.5 pr-3">
                           {f.status === "locked" ? (
                             <span className="inline-flex items-center gap-1.5"><FlowBadge rec={f.from} size="sm" /><span className="text-xs text-muted-foreground">unchanged</span></span>
