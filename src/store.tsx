@@ -1,0 +1,103 @@
+import { createContext, useContext, useMemo, useReducer, type ReactNode } from "react";
+import type { Claim, LogEntry, PolicyDecision, PolicyRule, Rec, ReviewerOverride } from "@/types";
+import { appendLog, getClaims, getDraftPolicy, getLog, getPolicy } from "@/data/api";
+import { FLOW_OF } from "@/copy";
+import { hashRules } from "@/lib/evaluate";
+import { deriveClaims, type DerivedClaim } from "@/lib/report";
+
+export type QuoteLimit = 1000 | 1200 | 1500;
+
+interface State {
+  claims: Claim[];
+  draftRules: PolicyRule[];
+  log: LogEntry[];
+  reviewer: string;
+  quoteLimit: QuoteLimit;
+  gateOpen: boolean;
+}
+
+type Action =
+  | { type: "confirm"; case_id: string }
+  | { type: "override"; record: Omit<ReviewerOverride, "timestamp">; timestamp: string }
+  | { type: "setReviewer"; name: string }
+  | { type: "setRules"; rules: PolicyRule[] }
+  | { type: "resetDraft" }
+  | { type: "setQuoteLimit"; limit: QuoteLimit }
+  | { type: "policyDecision"; record: PolicyDecision };
+
+function withLimit(rules: PolicyRule[], limit: number): PolicyRule[] {
+  return rules.map((r) =>
+    r.id === "R1.quote_over_limit" && r.condition && "field" in r.condition
+      ? {
+          ...r,
+          description: `Quote above the EUR ${limit.toLocaleString("en-US")} routine limit`,
+          condition: { ...r.condition, right: { kind: "value", value: limit } },
+        }
+      : r,
+  );
+}
+
+function reducer(s: State, a: Action): State {
+  switch (a.type) {
+    case "confirm":
+      return { ...s, claims: s.claims.map((c) => (c.case_id === a.case_id ? { ...c, ui_status: "reviewed" } : c)) };
+    case "override": {
+      const c = s.claims.find((x) => x.case_id === a.record.case_id);
+      if (!c || c.case_status === "closed" || a.record.from_rec === a.record.to_rec || !a.record.note.trim() || !a.record.actor.trim()) return s;
+      return {
+        ...s,
+        claims: s.claims.map((x) =>
+          x.case_id === c.case_id ? { ...x, recommendation_v1: a.record.to_rec, flow: FLOW_OF[a.record.to_rec], ui_status: "reviewed" } : x,
+        ),
+        log: appendLog(s.log, { ...a.record, timestamp: a.timestamp }),
+      };
+    }
+    case "setReviewer":
+      return { ...s, reviewer: a.name };
+    case "setRules":
+      return { ...s, draftRules: a.rules };
+    case "resetDraft":
+      return { ...s, draftRules: getPolicy().rules, quoteLimit: 1500 };
+    case "setQuoteLimit":
+      return { ...s, quoteLimit: a.limit, draftRules: withLimit(s.draftRules, a.limit) };
+    case "policyDecision":
+      return { ...s, log: appendLog(s.log, a.record), gateOpen: s.gateOpen || a.record.type === "policy_approved" };
+  }
+}
+
+interface Ctx {
+  state: State;
+  dispatch: (a: Action) => void;
+  derived: DerivedClaim[];
+  v1Rules: PolicyRule[];
+  v1Hash: string;
+  draftHash: string;
+}
+const StoreCtx = createContext<Ctx | null>(null);
+
+export function StoreProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(reducer, undefined, () => ({
+    claims: getClaims(),
+    draftRules: getDraftPolicy().rules,
+    log: getLog(),
+    reviewer: "Jonas Weber",
+    quoteLimit: 1200 as QuoteLimit,
+    gateOpen: false,
+  }));
+  const v1 = useMemo(() => getPolicy(), []);
+  const derived = useMemo(() => deriveClaims(state.claims, state.draftRules), [state.claims, state.draftRules]);
+  const draftHash = useMemo(() => hashRules(state.draftRules), [state.draftRules]);
+  return (
+    <StoreCtx.Provider value={{ state, dispatch, derived, v1Rules: v1.rules, v1Hash: v1.hash, draftHash }}>
+      {children}
+    </StoreCtx.Provider>
+  );
+}
+
+export function useStore() {
+  const c = useContext(StoreCtx);
+  if (!c) throw new Error("StoreProvider missing");
+  return c;
+}
+
+export type { Rec };
