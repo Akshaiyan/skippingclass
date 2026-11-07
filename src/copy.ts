@@ -40,6 +40,13 @@ export const REVIEW_COPY = {
 };
 export const confirmAction = (rec: Rec) => `Confirm: ${REC_LABEL[rec]}`;
 export const IMPACT_COPY = {
+  title: "Expected impact",
+  subtitle: "If you release v2 · rule-based, not a prediction",
+  delta: "Δ",
+  assumed: "ASSUMED",
+  session: "Draft edits are session only. Release records your decision for this session; Reset restores live rules.",
+  locked: "Closed claims stay locked.",
+  releaseSummary: "Review v2 before release",
   volume: "Claim volume",
   live: "Live",
   expected: "Expected",

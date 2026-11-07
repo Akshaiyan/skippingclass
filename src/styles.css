@@ -191,3 +191,12 @@
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
 }
+
+@keyframes impact-change {
+  from { background-color: var(--surface-2); box-shadow: 0 0 0 3px var(--surface-2); }
+  to { background-color: transparent; box-shadow: 0 0 0 3px transparent; }
+}
+
+@utility impact-change {
+  animation: impact-change 1.8s ease-out;
+}
