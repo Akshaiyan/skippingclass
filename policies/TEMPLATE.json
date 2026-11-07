@@ -1,0 +1,8 @@
+{
+  "name": "v2_REPLACE_ME",
+  "review_triggers": [
+    {"id": "R1.example", "field": "quote_eur", "op": "gt", "value": 1500, "outcome": "human_review", "description": "describe the rule in plain words"}
+  ],
+  "must_be_true": ["incident_report_present", "itemized_quote_present"],
+  "evidence": ["policy_active_on_incident", "claim_type", "quote_eur", "incident_report_present", "itemized_quote_present", "injury_reported", "liability_disputed", "duplicate_flag", "evidence_conflict"]
+}
