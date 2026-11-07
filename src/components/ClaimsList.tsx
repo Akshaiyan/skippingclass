@@ -2,15 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight, Check, ChevronDown, RefreshCw, Search, X } from "lucide-react";
 import { useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import type { Flow, Rec } from "@/types";
-import {
-  CHANGE_REC,
-  FLOW_OF,
-  LOCKED_TOOLTIP,
-  REC_LABEL,
-  REC_OF,
-  REC_ORDER,
-  changeTo,
-} from "@/copy";
+import { CHANGE_REC, LOCKED_TOOLTIP, REC_LABEL, REC_ORDER, changeTo } from "@/copy";
 import { useStore } from "@/store";
 import type { DerivedClaim } from "@/lib/report";
 import {
@@ -24,7 +16,7 @@ import {
 } from "@/lib/claim-view";
 import { cn } from "@/lib/utils";
 import { Chip, FlowBadge, NotProvided, StatusChip, WhyDisabled } from "@/components/status";
-import { FLOW_BORDER, FLOW_NAME } from "@/lib/flow-styles";
+import { FLOW_BORDER, FLOW_DOT, FLOW_NAME } from "@/lib/flow-styles";
 import { CaseSheet } from "@/components/CaseSheet";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { Button } from "@/components/ui/button";
@@ -207,7 +199,6 @@ export function ClaimsList({
     "Incident date": 10,
     Action: 11,
   };
-  const reasonWidth = 100 - cols.filter((c) => c !== "Reason").reduce((n, c) => n + width[c]!, 0);
 
   return (
     <div className="space-y-6">
@@ -300,21 +291,27 @@ export function ClaimsList({
         </div>
       ) : (
         <>
-          <div className="card-panel hidden overflow-x-auto md:block">
-            <table className="w-full min-w-[1040px] table-fixed border-separate border-spacing-0 text-sm">
+          {(() => {
+            // The grouped page drops the Recommendation column: the group already says it.
+            const shown = compact ? cols : cols.filter((c) => c !== "Recommendation");
+            const w = compact ? width : { ...width, "Next step": 22 };
+            const rw = 100 - shown.filter((c) => c !== "Reason").reduce((n, c) => n + w[c]!, 0);
+            const colgroup = (
               <colgroup>
-                {cols.map((c) => (
-                  <col key={c} style={{ width: `${c === "Reason" ? reasonWidth : width[c]}%` }} />
+                {shown.map((c) => (
+                  <col key={c} style={{ width: `${c === "Reason" ? rw : w[c]}%` }} />
                 ))}
               </colgroup>
+            );
+            const head = (
               <thead>
                 <tr className="text-left">
-                  {cols.map((h) => (
+                  {shown.map((h) => (
                     <th
                       key={h}
                       scope="col"
                       className={cn(
-                        "border-b border-border px-4 py-3 text-xs font-medium text-muted-foreground",
+                        "border-b border-border px-4 py-2 text-xs font-medium text-muted-foreground",
                         h === "Quote" && "text-right",
                       )}
                     >
@@ -323,94 +320,148 @@ export function ClaimsList({
                   ))}
                 </tr>
               </thead>
-              {groups.map((g) => (
-                <tbody key={g.flow}>
-                  <tr>
-                    <th
-                      colSpan={cols.length}
-                      scope="rowgroup"
-                      className="border-b border-border bg-surface px-4 py-2 text-left text-xs font-semibold"
+            );
+            const row = (c: DerivedClaim, last: boolean) => {
+              const quote = quoteOf(c);
+              const date = incidentDate(c);
+              const td = cn("px-4 py-3 align-top", !last && "border-b border-border");
+              const cell: Record<string, ReactNode> = {
+                Case: (
+                  <span
+                    className={cn(
+                      "whitespace-nowrap font-mono text-sm text-foreground",
+                      compact && "font-medium",
+                    )}
+                  >
+                    {c.case_id}
+                  </span>
+                ),
+                Recommendation: <FlowBadge rec={c.recommendation_v1} />,
+                Reason: (
+                  <p className="line-clamp-2 text-text-2" title={c.explanation}>
+                    {shortReason(c, state.log)}
+                  </p>
+                ),
+                Quote:
+                  quote === null ? (
+                    <span className="text-xs italic text-muted-foreground">not provided</span>
+                  ) : (
+                    quote.toLocaleString("en-US")
+                  ),
+                Status: (
+                  <div className="flex flex-col items-start gap-2">
+                    <StatusChip status={c.case_status} />
+                    {c.case_status === "open" && c.needs_recheck && <RecheckFlag />}
+                  </div>
+                ),
+                "Next step": <StepText step={nextStep(c, state.log)} />,
+                "Incident date": date ?? (
+                  <span className="text-xs italic text-muted-foreground">not provided</span>
+                ),
+                Action: <QuickActions compact c={c} onPick={(r) => open(c.case_id, r)} />,
+              };
+              return (
+                <tr
+                  key={c.case_id}
+                  ref={(el) => {
+                    rowRefs.current[c.case_id] = el;
+                  }}
+                  tabIndex={0}
+                  aria-label={`Open case ${c.case_id}, ${REC_LABEL[c.recommendation_v1]}`}
+                  onClick={() => open(c.case_id)}
+                  onKeyDown={(e) => onRowKey(e, c.case_id)}
+                  className={cn(
+                    "cursor-pointer transition-colors duration-(--dur-fast) hover:bg-surface focus-visible:bg-surface",
+                    !compact && "focus-visible:outline-2 focus-visible:-outline-offset-2",
+                  )}
+                >
+                  {shown.map((col) => (
+                    <td
+                      key={col}
+                      className={cn(
+                        td,
+                        col === "Quote" && "tnum text-right",
+                        col === "Incident date" && "tnum whitespace-nowrap text-text-2",
+                        col === "Action" && "px-3",
+                      )}
                     >
-                      <span className="inline-flex items-center gap-2">
-                        {groupLabel(g.flow)}
-                        <span className="tnum font-normal text-muted-foreground">
-                          {g.items.length} {g.items.length === 1 ? "claim" : "claims"}
-                        </span>
-                      </span>
-                    </th>
-                  </tr>
-                  {g.items.map((c) => {
-                    const quote = quoteOf(c);
-                    const date = incidentDate(c);
-                    return (
-                      <tr
-                        key={c.case_id}
-                        ref={(el) => {
-                          rowRefs.current[c.case_id] = el;
-                        }}
-                        tabIndex={0}
-                        aria-label={`Open case ${c.case_id}, ${REC_LABEL[c.recommendation_v1]}`}
-                        onClick={() => open(c.case_id)}
-                        onKeyDown={(e) => onRowKey(e, c.case_id)}
-                        className="group cursor-pointer transition-colors duration-(--dur-fast) hover:bg-surface focus-visible:bg-surface"
-                      >
-                        <td
-                          className={cn(
-                            "border-b border-l-2 border-border px-4 py-3 align-top",
-                            FLOW_BORDER[c.flow],
-                          )}
-                        >
-                          <span className="whitespace-nowrap font-mono text-sm font-medium">
-                            {c.case_id}
-                          </span>
-                        </td>
-                        <td className="border-b border-border px-4 py-3 align-top">
-                          <FlowBadge rec={c.recommendation_v1} />
-                        </td>
-                        <td className="border-b border-border px-4 py-3 align-top">
-                          <p className="line-clamp-2 text-text-2" title={c.explanation}>
-                            {shortReason(c, state.log)}
-                          </p>
-                        </td>
-                        <td className="tnum border-b border-border px-4 py-3 text-right align-top">
-                          {quote === null ? (
-                            <span className="text-xs italic text-muted-foreground">
-                              not provided
-                            </span>
-                          ) : (
-                            quote.toLocaleString("en-US")
-                          )}
-                        </td>
-                        <td className="border-b border-border px-4 py-3 align-top">
-                          <div className="flex flex-col items-start gap-2">
-                            <StatusChip status={c.case_status} />
-                            {c.case_status === "open" && c.needs_recheck && <RecheckFlag />}
-                          </div>
-                        </td>
-                        <td className="border-b border-border px-4 py-3 align-top">
-                          <StepText step={nextStep(c, state.log)} />
-                        </td>
-                        {showDate && (
-                          <td className="tnum whitespace-nowrap border-b border-border px-4 py-3 align-top text-text-2">
-                            {date ?? (
-                              <span className="text-xs italic text-muted-foreground">
-                                not provided
+                      {cell[col]}
+                    </td>
+                  ))}
+                </tr>
+              );
+            };
+
+            if (compact)
+              return (
+                <div className="card-panel hidden overflow-x-auto md:block">
+                  <table className="w-full min-w-[1040px] table-fixed border-separate border-spacing-0 text-sm">
+                    {colgroup}
+                    {head}
+                    {groups.map((g) => (
+                      <tbody key={g.flow}>
+                        <tr>
+                          <th
+                            colSpan={shown.length}
+                            scope="rowgroup"
+                            className="border-b border-border bg-surface px-4 py-2 text-left text-xs font-semibold"
+                          >
+                            <span className="inline-flex items-center gap-2">
+                              {groupLabel(g.flow)}
+                              <span className="tnum font-normal text-muted-foreground">
+                                {g.items.length} {g.items.length === 1 ? "claim" : "claims"}
                               </span>
-                            )}
-                          </td>
+                            </span>
+                          </th>
+                        </tr>
+                        {g.items.map((c) => row(c, false))}
+                      </tbody>
+                    ))}
+                  </table>
+                </div>
+              );
+
+            // Work queue: one section per recommendation, human review first. The section header
+            // outranks everything in the rows; colour is only the small dot next to its name.
+            return (
+              <div className="hidden space-y-8 md:block">
+                {groups.map((g) => {
+                  const openCount = g.items.filter((i) => i.case_status === "open").length;
+                  return (
+                    <section key={g.flow} aria-labelledby={`group-${g.flow}`}>
+                      <header className="mb-3 flex items-baseline gap-3">
+                        <h2
+                          id={`group-${g.flow}`}
+                          className="inline-flex items-center gap-2 text-lg font-semibold leading-7"
+                        >
+                          <span
+                            className={cn("size-2.5 shrink-0 rounded-full", FLOW_DOT[g.flow])}
+                            aria-hidden
+                          />
+                          {groupLabel(g.flow)}
+                          <span className="tnum font-normal text-muted-foreground">
+                            {g.items.length}
+                          </span>
+                        </h2>
+                        {effectiveStatus !== "open" && (
+                          <span className="tnum text-sm text-muted-foreground">
+                            {openCount} open
+                          </span>
                         )}
-                        {!compact && (
-                          <td className="border-b border-border px-3 py-3 align-top">
-                            <QuickActions compact c={c} onPick={(r) => open(c.case_id, r)} />
-                          </td>
-                        )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              ))}
-            </table>
-          </div>
+                      </header>
+                      <div className="card-panel overflow-x-auto">
+                        <table className="w-full min-w-[960px] table-fixed border-separate border-spacing-0 text-sm">
+                          {colgroup}
+                          {head}
+                          <tbody>{g.items.map((c, i) => row(c, i === g.items.length - 1))}</tbody>
+                        </table>
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           <div className="space-y-6 md:hidden">
             {groups.map((g) => (
