@@ -10,7 +10,7 @@ import {
   routingDiagram,
 } from "@/voice/diagrams";
 import { layoutDiagram } from "@/voice/layout";
-import { createVoiceTools, describeApp, type VoiceEnv } from "@/voice/tools";
+import { createVoiceTools, describeApp, safeTools, type VoiceEnv } from "@/voice/tools";
 
 const claims = deriveClaims(getClaims(), getDraftPolicy().rules);
 const [claimer, lead] = [
@@ -502,5 +502,19 @@ describe("guided tour", () => {
     expect(stop3).toMatch(/never that it is approved/);
     const lastStops = run(makeEnv(), "tour_step", { action: "start" });
     expect(lastStops).toMatch(/\d+ claims are open/);
+  });
+});
+
+describe("the app and the agent agree on the tools", () => {
+  it("registers exactly the tools voice-agent/aegis.config.js gives the agent", async () => {
+    // @ts-expect-error plain JS config outside the frontend, read only to compare names
+    const config = (await import("../../../voice-agent/aegis.config.js")).default as {
+      tools: { name: string }[];
+    };
+    const agent = config.tools.map((t) => t.name).sort();
+    const app = Object.keys(safeTools(() => makeEnv())).sort();
+    // If the agent knows a tool the page lacks, Aegis says it "tried to use" something this app doesn't have.
+    expect(app).toEqual(agent);
+    expect(app).toContain("tour_step");
   });
 });

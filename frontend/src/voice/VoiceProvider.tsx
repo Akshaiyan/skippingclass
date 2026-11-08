@@ -235,7 +235,7 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
           console.warn("[voice] unhandled tool call", call);
           pushLine({
             who: "action",
-            text: `Aegis tried to use "${call.tool_name}", which this app doesn't have. Check the tools in aegis.config.js.`,
+            text: `Aegis tried to use "${call.tool_name}", which this page doesn't have. This page is probably out of date: refresh it (Ctrl+Shift+R) and start a new call.`,
           });
         },
         onError: (message) => console.error("[voice]", message),
