@@ -180,6 +180,9 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
   const start = async () => {
     if (session.current || starting.current) return;
     starting.current = true;
+    // The button that was clicked turns into End call; leaving focus on it would make Space press it
+    // (ending the call) instead of working as the push-to-talk key.
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     const mine = ++generation.current;
     setError(null);
     setStatus("connecting");
