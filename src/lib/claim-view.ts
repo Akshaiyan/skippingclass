@@ -104,6 +104,8 @@ export function nextStep(c: Claim, log: LogEntry[] = []): NextStep {
       events.push({ label: "Recommendation confirmed", kind: "done", timestamp: e.timestamp });
     else if (e.type === "info_request_prepared")
       events.push({ label: "Information request drafted", kind: "done", timestamp: e.timestamp });
+    else if (e.type === "info_request_sent")
+      events.push({ label: "Email sent, waiting for reply", kind: "done", timestamp: e.timestamp });
     else if (e.type === "final_decision")
       events.push({
         label: e.note?.startsWith("Confirmation undone")

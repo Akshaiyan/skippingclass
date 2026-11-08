@@ -40,3 +40,24 @@ describe("claim summaries", () => {
     expect(incidentDate({ ...claim("PRA-001"), facts: {} })).toBeNull();
   });
 });
+
+describe("information request steps", () => {
+  const at = (n: number) => new Date(Date.UTC(2026, 10, 8, 9, n)).toISOString();
+  it("moves from drafted to sent and does not record sent twice", () => {
+    let s = initialStoreState();
+    s = storeReducer(s, { type: "prepareInfo", case_id: "PRA-005", timestamp: at(1) });
+    const drafted = s.claims.find((c) => c.case_id === "PRA-005")!;
+    expect(nextStep(drafted, s.log).label).toBe("Information request drafted");
+    s = storeReducer(s, { type: "markInfoSent", case_id: "PRA-005", timestamp: at(2) });
+    expect(nextStep(drafted, s.log).label).toBe("Email sent, waiting for reply");
+    const length = s.log.length;
+    s = storeReducer(s, { type: "markInfoSent", case_id: "PRA-005", timestamp: at(3) });
+    expect(s.log.length).toBe(length);
+  });
+  it("ignores closed claims", () => {
+    const s = initialStoreState();
+    const closed = s.claims.find((c) => c.case_status === "closed")!;
+    const next = storeReducer(s, { type: "markInfoSent", case_id: closed.case_id, timestamp: at(1) });
+    expect(next.log).toEqual(s.log);
+  });
+});

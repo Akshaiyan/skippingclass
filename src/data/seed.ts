@@ -301,6 +301,13 @@ const ACTIVITY: Record<string, { label: string; daysAgo: number }[]> = {
   "PRA-010": [{ label: "Acknowledgement sent by the claims team", daysAgo: 2 }],
 };
 
+// Demo contacts so the email and call actions can be shown. Real sources will supply their own, or none.
+const DEMO_CONTACTS: Record<string, NonNullable<Claim["contact"]>> = {
+  "PRA-005": { name: "Demo customer", email: "demo.customer@example.com", phone: "+49 89 0000 0005" },
+  "PRA-003": { name: "Demo customer", email: "demo.customer@example.com" },
+  "PRA-002": { name: "Demo customer", phone: "+49 89 0000 0002" },
+};
+
 export const SEED_CLAIMS: Claim[] = RAW.map((r) => {
   const ev = evaluate(V1_RULES, r.facts);
   return {
@@ -319,6 +326,7 @@ export const SEED_CLAIMS: Claim[] = RAW.map((r) => {
     policy_version: POLICY_V1.version,
     policy_hash: POLICY_V1.hash,
     needs_recheck: false,
+    ...(DEMO_CONTACTS[r.case_id] ? { contact: DEMO_CONTACTS[r.case_id] } : {}),
     activity: (ACTIVITY[r.case_id] ?? []).map((a) => ({
       label: a.label,
       timestamp: new Date(Date.UTC(2026, 10, 7, 9, 0, 0) - a.daysAgo * 864e5).toISOString(),

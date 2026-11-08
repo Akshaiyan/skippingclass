@@ -39,6 +39,14 @@ export interface Claim {
   ui_status?: "reviewed";
   /** Things the claims team did outside this tool, e.g. an acknowledgement sent from the mailbox. */
   activity?: ClaimActivity[];
+  /** Who the claimant is and how to reach them. Absent when the source has no contact details. */
+  contact?: ClaimContact;
+}
+
+export interface ClaimContact {
+  name?: string;
+  email?: string;
+  phone?: string;
 }
 
 export interface ClaimActivity {
@@ -76,7 +84,8 @@ export interface SystemRecord {
     | "reviewer_accept"
     | "policy_proposed"
     | "final_decision"
-    | "info_request_prepared";
+    | "info_request_prepared"
+    | "info_request_sent";
   case_id?: string;
   actor: string;
   from_rec?: Rec;

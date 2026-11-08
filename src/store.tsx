@@ -66,6 +66,7 @@ type Action =
     }
   | { type: "override"; record: Omit<ReviewerOverride, "timestamp">; timestamp: string }
   | { type: "prepareInfo"; case_id: string; timestamp: string }
+  | { type: "markInfoSent"; case_id: string; timestamp: string }
   | { type: "signIn"; account: Account }
   | { type: "signOut" }
   | { type: "setRules"; rules: PolicyRule[] }
@@ -216,6 +217,26 @@ export function storeReducer(s: State, a: Action): State {
           case_id: claim.case_id,
           actor: s.reviewer.trim(),
           note: "Information request drafted for copying; not sent by this tool",
+          policy_version: claim.policy_version,
+          policy_hash: claim.policy_hash,
+          timestamp: a.timestamp,
+        }),
+      };
+    }
+    case "markInfoSent": {
+      // The reviewer says the email went out from their own mailbox. This tool cannot know that itself.
+      const claim = s.claims.find((c) => c.case_id === a.case_id);
+      const latest = [...s.log]
+        .reverse()
+        .find((e) => "case_id" in e && e.case_id === a.case_id && e.type !== "system_decision");
+      if (!claim || claim.case_status === "closed" || latest?.type === "info_request_sent") return s;
+      return {
+        ...s,
+        log: appendLog(s.log, {
+          type: "info_request_sent",
+          case_id: claim.case_id,
+          actor: s.reviewer.trim(),
+          note: "Reviewer marked the information request as sent from their own mailbox",
           policy_version: claim.policy_version,
           policy_hash: claim.policy_hash,
           timestamp: a.timestamp,
