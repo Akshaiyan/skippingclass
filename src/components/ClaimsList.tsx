@@ -14,12 +14,6 @@ import {
   shortReason,
   type NextStep,
 } from "@/lib/claim-view";
-import { cn } from "@/lib/utils";
-import { Chip, FlowBadge, NotProvided, StatusChip, WhyDisabled } from "@/components/status";
-import { FLOW_BORDER, FLOW_DOT, FLOW_EDGE, FLOW_NAME } from "@/lib/flow-styles";
-import { CaseSheet } from "@/components/CaseSheet";
-import { TextTabs } from "@/components/TextTabs";
-import { Button } from "@/components/ui/button";
 import {
   applyBaseFilters,
   DEFAULT_FILTERS,
@@ -28,6 +22,12 @@ import {
   type FlowFilter,
   type StatusFilter,
 } from "@/lib/claims-filter";
+import { cn } from "@/lib/utils";
+import { NotProvided, WhyDisabled } from "@/components/status";
+import { FLOW_BORDER, FLOW_EDGE, FLOW_NAME } from "@/lib/flow-styles";
+import { CaseSheet } from "@/components/CaseSheet";
+import { TextTabs } from "@/components/TextTabs";
+import { Button } from "@/components/ui/button";
 
 export type { FlowFilter };
 
@@ -80,15 +80,27 @@ function StepText({ step }: { step: NextStep }) {
   );
 }
 
-function RecheckFlag() {
+function RecheckText() {
   return (
-    <Chip tone="outline">
+    <span className="inline-flex items-center gap-1 text-xs text-text-2">
       <RefreshCw className="size-3" aria-hidden /> Recheck
-    </Chip>
+    </span>
   );
 }
 
-const groupLabel = (f: Flow) => FLOW_NAME[f];
+const statusText = (c: DerivedClaim) => (c.case_status === "open" ? "Open" : "Closed");
+
+/** Flow name with its count on one baseline, the strong rule directly under it. */
+function GroupHeading({ flow, count }: { flow: Flow; count: number }) {
+  return (
+    <span className="flex items-baseline gap-3">
+      <span className="font-display text-2xl font-semibold text-foreground">{FLOW_NAME[flow]}</span>
+      <span className="tnum text-base font-normal text-muted-foreground">
+        {count} {count === 1 ? "claim" : "claims"}
+      </span>
+    </span>
+  );
+}
 
 export function ClaimsList({
   flow,
@@ -165,27 +177,25 @@ export function ClaimsList({
   const showDate = derived.some((c) => incidentDate(c) !== null);
   const cols = [
     "Case",
-    "Recommendation",
     "Reason",
     "Quote",
-    "Status",
     "Next step",
     ...(showDate ? ["Incident date"] : []),
     ...(compact ? [] : ["Move to"]),
   ];
-  // Relative widths; the reason column takes what the optional columns leave.
+  // Relative widths; the reason column takes what the others leave.
   const width: Record<string, number> = {
-    Case: 9,
-    Recommendation: 15,
-    Quote: 9,
-    Status: 10,
-    "Next step": 17,
+    Case: 12,
+    Quote: 8,
+    "Next step": 14,
     "Incident date": 10,
-    "Move to": 33,
+    "Move to": 34,
   };
+  const reasonWidth = 100 - cols.filter((c) => c !== "Reason").reduce((n, c) => n + width[c]!, 0);
+  const loading = state.source === "connecting" && derived.length === 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {heading}
 
       {!compact && (
@@ -199,7 +209,7 @@ export function ClaimsList({
                 options={(["all", "red", "yellow", "green"] as FlowFilter[]).map((f) => ({
                   value: f,
                   count: counts[f],
-                  label: f === "all" ? "All" : groupLabel(f),
+                  label: f === "all" ? "All" : FLOW_NAME[f],
                 }))}
               />
             ) : (
@@ -272,14 +282,16 @@ export function ClaimsList({
         </div>
       )}
 
-      {state.source === "connecting" && derived.length === 0 ? (
-        <div className="space-y-2" role="status" aria-label="Loading claims">
+      {loading ? (
+        <div role="status" aria-label="Loading claims">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="card-panel h-16 animate-pulse bg-surface-2" />
+            <div key={i} className="h-16 border-b border-border py-5">
+              <div className="h-4 w-1/3 animate-pulse bg-surface-2" />
+            </div>
           ))}
         </div>
       ) : rows.length === 0 ? (
-        <div className="card-panel flex flex-col items-center gap-3 px-6 py-16 text-center">
+        <div className="space-y-3 border-y border-border py-10">
           <p className="text-sm text-text-2">
             {derived.length === 0
               ? "There are no claims to show. They appear here once the triage service returns cases."
@@ -295,27 +307,21 @@ export function ClaimsList({
         </div>
       ) : (
         <>
-          {(() => {
-            // The grouped page drops the Recommendation column: the group already says it.
-            const shown = compact ? cols : cols.filter((c) => c !== "Recommendation");
-            const w = compact ? width : { ...width, Quote: 8, Status: 9, "Next step": 13, "Move to": 38 };
-            const rw = 100 - shown.filter((c) => c !== "Reason").reduce((n, c) => n + w[c]!, 0);
-            const colgroup = (
+          <div className="hidden xl:block">
+            <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
               <colgroup>
-                {shown.map((c) => (
-                  <col key={c} style={{ width: `${c === "Reason" ? rw : w[c]}%` }} />
+                {cols.map((c) => (
+                  <col key={c} style={{ width: `${c === "Reason" ? reasonWidth : width[c]}%` }} />
                 ))}
               </colgroup>
-            );
-            const head = (
               <thead>
                 <tr className="text-left">
-                  {shown.map((h) => (
+                  {cols.map((h) => (
                     <th
                       key={h}
                       scope="col"
                       className={cn(
-                        "border-b border-border px-4 py-2 text-xs font-medium text-muted-foreground",
+                        "px-4 pb-2 text-xs font-medium text-muted-foreground first:pl-3",
                         h === "Quote" && "text-right",
                       )}
                     >
@@ -324,158 +330,91 @@ export function ClaimsList({
                   ))}
                 </tr>
               </thead>
-            );
-            const row = (c: DerivedClaim, last: boolean) => {
-              const quote = quoteOf(c);
-              const date = incidentDate(c);
-              const td = cn("px-4 py-3 align-top", !last && "border-b border-border");
-              const cell: Record<string, ReactNode> = {
-                Case: (
-                  <span
-                    className={cn(
-                      "whitespace-nowrap font-mono text-sm text-foreground",
-                      compact && "font-medium",
-                    )}
-                  >
-                    {c.case_id}
-                  </span>
-                ),
-                Recommendation: <FlowBadge rec={c.recommendation_v1} />,
-                Reason: (
-                  <p className="line-clamp-2 text-text-2" title={c.explanation}>
-                    {shortReason(c, state.log)}
-                  </p>
-                ),
-                Quote:
-                  quote === null ? (
-                    <span className="text-xs italic text-muted-foreground">not provided</span>
-                  ) : (
-                    quote.toLocaleString("en-US")
-                  ),
-                Status: (
-                  <div className="flex flex-col items-start gap-2">
-                    <StatusChip status={c.case_status} />
-                    {c.case_status === "open" && c.needs_recheck && <RecheckFlag />}
-                  </div>
-                ),
-                "Next step": <StepText step={nextStep(c, state.log)} />,
-                "Incident date": date ?? (
-                  <span className="text-xs italic text-muted-foreground">not provided</span>
-                ),
-                "Move to": <MoveTo c={c} onPick={(r) => open(c.case_id, r)} />,
-              };
-              return (
-                <tr
-                  key={c.case_id}
-                  ref={(el) => {
-                    rowRefs.current[c.case_id] = el;
-                  }}
-                  tabIndex={0}
-                  aria-label={`Open case ${c.case_id}, ${REC_LABEL[c.recommendation_v1]}`}
-                  onClick={() => open(c.case_id)}
-                  onKeyDown={(e) => onRowKey(e, c.case_id)}
-                  className={cn(
-                    "cursor-pointer transition-colors duration-(--dur-fast) hover:bg-surface focus-visible:bg-surface",
-                    !compact && "focus-visible:outline-2 focus-visible:-outline-offset-2",
-                  )}
-                >
-                  {shown.map((col) => (
-                    <td
-                      key={col}
-                      className={cn(
-                        td,
-                        col === "Quote" && "tnum text-right",
-                        col === "Incident date" && "tnum whitespace-nowrap text-text-2",
-                        col === "Move to" && "px-3",
-                      )}
+              {groups.map((g) => (
+                <tbody key={g.flow}>
+                  <tr>
+                    <th
+                      colSpan={cols.length}
+                      scope="rowgroup"
+                      className="border-b-2 border-foreground px-0 pb-2 pt-10 text-left"
                     >
-                      {cell[col]}
-                    </td>
-                  ))}
-                </tr>
-              );
-            };
-
-            if (compact)
-              return (
-                <div className="card-panel hidden overflow-x-auto md:block">
-                  <table className="w-full min-w-[1040px] table-fixed border-separate border-spacing-0 text-sm">
-                    {colgroup}
-                    {head}
-                    {groups.map((g) => (
-                      <tbody key={g.flow}>
-                        <tr>
-                          <th
-                            colSpan={shown.length}
-                            scope="rowgroup"
-                            className="border-b border-border bg-surface px-4 py-2 text-left text-xs font-semibold"
-                          >
-                            <span className="inline-flex items-center gap-2">
-                              {groupLabel(g.flow)}
-                              <span className="tnum font-normal text-muted-foreground">
-                                {g.items.length} {g.items.length === 1 ? "claim" : "claims"}
-                              </span>
-                            </span>
-                          </th>
-                        </tr>
-                        {g.items.map((c) => row(c, false))}
-                      </tbody>
-                    ))}
-                  </table>
-                </div>
-              );
-
-            // Work queue: one section per recommendation, human review first. The section header
-            // outranks everything in the rows; colour is only the small dot next to its name.
-            return (
-              <div className="hidden space-y-8 md:block">
-                {groups.map((g) => {
-                  const openCount = g.items.filter((i) => i.case_status === "open").length;
-                  return (
-                    <section key={g.flow} aria-labelledby={`group-${g.flow}`}>
-                      <header className="mb-3 flex items-baseline gap-3">
-                        <h2
-                          id={`group-${g.flow}`}
-                          className="section-title inline-flex items-center gap-2 text-lg leading-7"
+                      <GroupHeading flow={g.flow} count={g.items.length} />
+                    </th>
+                  </tr>
+                  {g.items.map((c) => {
+                    const quote = quoteOf(c);
+                    const date = incidentDate(c);
+                    return (
+                      <tr
+                        key={c.case_id}
+                        ref={(el) => {
+                          rowRefs.current[c.case_id] = el;
+                        }}
+                        tabIndex={0}
+                        aria-label={`Open case ${c.case_id}, ${REC_LABEL[c.recommendation_v1]}`}
+                        onClick={() => open(c.case_id)}
+                        onKeyDown={(e) => onRowKey(e, c.case_id)}
+                        className="group cursor-pointer transition-colors duration-(--dur-fast) hover:bg-surface focus-visible:bg-surface"
+                      >
+                        <td
+                          className={cn(
+                            "border-b border-l-2 border-border px-4 py-4 pl-3 align-top",
+                            FLOW_BORDER[c.flow],
+                          )}
                         >
-                          <span
-                            className={cn("size-2.5 shrink-0 rounded-none", FLOW_DOT[g.flow])}
-                            aria-hidden
-                          />
-                          {groupLabel(g.flow)}
-                          <span className="tnum font-normal text-muted-foreground">
-                            {g.items.length}
-                          </span>
-                        </h2>
-                        {effectiveStatus !== "open" && (
-                          <span className="tnum text-sm text-muted-foreground">
-                            {openCount} open
-                          </span>
+                          <div className="whitespace-nowrap font-mono text-base font-semibold">
+                            {c.case_id}
+                          </div>
+                          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                            <span>{statusText(c)}</span>
+                            {c.case_status === "open" && c.needs_recheck && <RecheckText />}
+                          </div>
+                        </td>
+                        <td className="border-b border-border px-4 py-4 align-top">
+                          <p className="line-clamp-2 text-foreground" title={c.explanation}>
+                            {shortReason(c, state.log)}
+                          </p>
+                        </td>
+                        <td className="tnum border-b border-border px-4 py-4 text-right align-top">
+                          {quote === null ? (
+                            <span className="text-xs italic text-muted-foreground">
+                              not provided
+                            </span>
+                          ) : (
+                            quote.toLocaleString("en-US")
+                          )}
+                        </td>
+                        <td className="border-b border-border px-4 py-4 align-top">
+                          <StepText step={nextStep(c, state.log)} />
+                        </td>
+                        {showDate && (
+                          <td className="tnum whitespace-nowrap border-b border-border px-4 py-4 align-top text-text-2">
+                            {date ?? (
+                              <span className="text-xs italic text-muted-foreground">
+                                not provided
+                              </span>
+                            )}
+                          </td>
                         )}
-                      </header>
-                      <div className="card-panel overflow-x-auto">
-                        <table className="w-full min-w-[960px] table-fixed border-separate border-spacing-0 text-sm">
-                          {colgroup}
-                          {head}
-                          <tbody>{g.items.map((c, i) => row(c, i === g.items.length - 1))}</tbody>
-                        </table>
-                      </div>
-                    </section>
-                  );
-                })}
-              </div>
-            );
-          })()}
+                        {!compact && (
+                          <td className="border-b border-border px-4 py-3 align-top">
+                            <MoveTo c={c} onPick={(r) => open(c.case_id, r)} />
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              ))}
+            </table>
+          </div>
 
-          <div className="space-y-6 md:hidden">
+          <div className="space-y-10 xl:hidden">
             {groups.map((g) => (
-              <div key={g.flow} className="space-y-2">
-                <div className="flex items-center gap-2 text-xs font-semibold">
-                  {groupLabel(g.flow)}
-                  <span className="tnum font-normal text-muted-foreground">
-                    {g.items.length} {g.items.length === 1 ? "claim" : "claims"}
-                  </span>
-                </div>
+              <section key={g.flow} aria-label={FLOW_NAME[g.flow]}>
+                <h2 className="border-b-2 border-foreground pb-2">
+                  <GroupHeading flow={g.flow} count={g.items.length} />
+                </h2>
                 {g.items.map((c) => {
                   const quote = quoteOf(c);
                   return (
@@ -487,26 +426,27 @@ export function ClaimsList({
                       onClick={() => open(c.case_id)}
                       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && open(c.case_id)}
                       className={cn(
-                        "card-panel space-y-2 border-l-2 p-4 hover:bg-surface",
+                        "space-y-2 border-b border-l-2 border-border py-4 pl-3 hover:bg-surface",
                         FLOW_BORDER[c.flow],
                       )}
                     >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-sm font-medium">{c.case_id}</span>
-                        <FlowBadge rec={c.recommendation_v1} size="sm" />
-                        <StatusChip status={c.case_status} />
+                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                        <span className="font-mono text-base font-semibold">{c.case_id}</span>
+                        <span className="text-xs text-muted-foreground">{statusText(c)}</span>
+                        {c.case_status === "open" && c.needs_recheck && <RecheckText />}
                         <span className="tnum ml-auto text-sm">
                           {quote === null ? <NotProvided /> : eur(quote)}
                         </span>
                       </div>
-                      <p className="text-sm text-text-2">{shortReason(c, state.log)}</p>
+                      <p className="line-clamp-3 text-sm text-foreground">
+                        {shortReason(c, state.log)}
+                      </p>
                       <StepText step={nextStep(c, state.log)} />
-                      {c.case_status === "open" && c.needs_recheck && <RecheckFlag />}
                       {!compact && <MoveTo c={c} onPick={(r) => open(c.case_id, r)} />}
                     </div>
                   );
                 })}
-              </div>
+              </section>
             ))}
           </div>
         </>
