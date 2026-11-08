@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import type { ReviewerOverride } from "@/types";
 import { postOverride } from "@/data/live";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRovingRadio } from "@/hooks/use-roving-radio";
 
 export function OverrideFlow({
@@ -27,6 +28,7 @@ export function OverrideFlow({
   onDone: () => void;
 }) {
   const { state, dispatch } = useStore();
+  const queryClient = useQueryClient();
   const [to, setTo] = useState<Rec | null>(
     initialTarget && initialTarget !== claim.recommendation_v1 ? initialTarget : null,
   );
@@ -85,6 +87,8 @@ export function OverrideFlow({
       setSendError(null);
       postOverride(record)
         .then(() => {
+          // Reload the snapshot so the integrity banner and the log are checked again, not left at load time.
+          queryClient.invalidateQueries({ queryKey: ["live-snapshot"] });
           dispatch({ type: "override", record, timestamp });
           setDone(record);
         })

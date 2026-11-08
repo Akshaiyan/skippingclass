@@ -3,6 +3,8 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { Check, ChevronRight, Pause, Pencil, Plus, RotateCcw, Rocket, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchChange, postPolicyDecision } from "@/data/live";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Condition, PolicyDecision, PolicyRule, Rec } from "@/types";
@@ -167,6 +169,7 @@ const selectClass =
 
 function PolicyPage() {
   const { state, dispatch, derived, v1Rules, draftHash } = useStore();
+  const queryClient = useQueryClient();
   const rules = state.draftRules;
   const [editing, setEditing] = useState<{ rule: PolicyRule; key: number } | null>(null);
   const [approver, setApprover] = useState("");
@@ -286,6 +289,31 @@ function PolicyPage() {
   const decide = (type: PolicyDecision["type"]) => {
     if (type === "policy_approved" ? !canRelease : !canHold) return;
     setConfirmOpen(false);
+    if (state.source === "live") {
+      // The engine records the decision. It approves only the policy version the reviewer saw (policy_hash),
+      // and the claims that move into routine are passed as the named sign-off it requires.
+      fetchChange()
+        .then((change) =>
+          postPolicyDecision({
+            decision: type === "policy_approved" ? "approved" : "rejected",
+            actor: approver.trim(),
+            reason: reason.trim(),
+            policy_version: "v2",
+            policy_hash: draftHash,
+            proposed_by: "",
+            signoff_for: change.into_routine,
+          }),
+        )
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ["live-snapshot"] });
+          setReason("");
+          setApprover("");
+          if (type === "policy_approved") toast.success(POLICY_COPY.releasedToast);
+          else toast(POLICY_COPY.heldToast);
+        })
+        .catch((e: unknown) => toast.error(e instanceof Error ? e.message : "The decision was not recorded."));
+      return;
+    }
     const record: PolicyDecision = {
       type,
       actor: approver.trim(),
