@@ -73,17 +73,24 @@ function LogPage() {
       [...state.log]
         .reverse()
         .filter((e) => type === "all" || e.type === type)
-        .filter(
-          (e) =>
-            !q.trim() ||
-            ("case_id" in e && e.case_id?.toLowerCase().includes(q.trim().toLowerCase())),
-        ),
+        .filter((e) => {
+          const needle = q.trim().toLowerCase();
+          if (!needle) return true;
+          // Search the case, the person and the written reason, as a reviewer looks for "who decided this, and why".
+          const reason = "reason" in e ? e.reason : "note" in e ? e.note : "";
+          const caseId = "case_id" in e ? (e.case_id ?? "") : "";
+          return [caseId, e.actor, reason ?? ""].some((s) => s.toLowerCase().includes(needle));
+        }),
     [state.log, type, q],
   );
 
   return (
     <div className="space-y-6">
       <PageHeader title="Decision log" />
+      <p className="-mt-3 max-w-[70ch] text-sm text-text-2">
+        Every override and policy decision is recorded here with who decided, why, and the policy in force. Records
+        are append-only and hash-chained, so none can be edited without showing.
+      </p>
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-border bg-surface px-4 py-3 text-sm">
         {integrity ? (
@@ -132,14 +139,17 @@ function LogPage() {
             className="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground"
             aria-hidden
           />
-          <span className="sr-only">Search by case id</span>
+          <span className="sr-only">Search by case, person or reason</span>
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search case id"
-            className="h-8 w-48 rounded-md border border-border bg-background pl-8 pr-2 font-mono text-xs hover:border-border-strong"
+            placeholder="Search case, person or reason"
+            className="h-8 w-64 rounded-md border border-border bg-background pl-8 pr-2 text-xs hover:border-border-strong"
           />
         </label>
+        <span className="tnum text-xs text-muted-foreground">
+          {rows.length} of {state.log.length} records
+        </span>
         <span className="text-xs text-muted-foreground">{SORT_RECENT}</span>
       </div>
 
