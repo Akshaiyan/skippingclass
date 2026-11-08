@@ -57,10 +57,15 @@ export function DecisionMemory({ caseId }: { caseId: string }) {
           No earlier decisions or policy changes on this claim. A correction recorded here appears at the top.
         </p>
       ) : (
-        <ol className="space-y-4 border-l border-border pl-5">
+        <ol className="ml-1.5 space-y-3 border-l-2 border-border pl-6">
           {items.map((it) => (
-            <li key={it.key} className="relative">
-              <span aria-hidden className="absolute -left-[26px] top-1.5 block size-2.5 rounded-full border-2 border-accent bg-background" />
+            <li key={it.key} className="relative rounded-md border border-border bg-surface px-3 py-2.5">
+              <span
+                aria-hidden
+                className={`absolute -left-[29px] top-3.5 block size-3 rounded-full ring-4 ring-background ${
+                  it.kind === "policy" ? "border-2 border-foreground bg-background" : "bg-foreground"
+                }`}
+              />
               {it.kind === "policy" ? (
                 <>
                   <p className="flex flex-wrap items-center gap-2 text-sm">
