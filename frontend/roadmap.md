@@ -4,6 +4,11 @@
 - (none)
 
 ## Done
+- [x] Case review: rationale-first detail window, session audit confirmations with Undo, guarded overrides, locked actions and focus return; browser verified.
+- [x] Policy: bounded cause-and-effect columns, signed impact deltas, assumed-cost labels, changed-number feedback and four-eyes release summary; browser verified.
+- [x] Claims: clean three-column table and fast-handling case summary in the side window; details and reviewer actions remain available.
+- [x] Policy: full-color live and expected flow pie charts by count.
+- [x] Policy: live and expected weighted handling cost per claim; rates start blank and are editable for the session.
 - [x] Policy: two-column rule overview with edit/delete and activate/deactivate controls.
 - [x] Policy: live current-versus-draft claim volume chart and compact sign-off.
 - [x] Policy: quote limit is now a typed number field (was a 1,000 / 1,200 / 1,500 choice).

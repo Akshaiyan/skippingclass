@@ -1,4 +1,4 @@
-import type { Claim, LogEntry, Policy, PolicyRule } from "@/types";
+import type { Account, Claim, LogEntry, Policy, PolicyRule } from "@/types";
 import { evaluate, hashRules } from "@/lib/evaluate";
 import { FLOW_OF } from "@/copy";
 
@@ -7,13 +7,21 @@ export const V1_RULES: PolicyRule[] = [
     id: "R1.policy_inactive",
     outcome: "human_review",
     description: "Policy not active on the incident date",
-    condition: { field: "policy_active_on_incident", op: "eq", right: { kind: "value", value: false } },
+    condition: {
+      field: "policy_active_on_incident",
+      op: "eq",
+      right: { kind: "value", value: false },
+    },
   },
   {
     id: "R1.incident_before_start",
     outcome: "human_review",
     description: "Incident date is before the policy start",
-    condition: { field: "incident_date", op: "before", right: { kind: "field", field: "policy_start_date" } },
+    condition: {
+      field: "incident_date",
+      op: "before",
+      right: { kind: "field", field: "policy_start_date" },
+    },
   },
   {
     id: "R1.quote_over_limit",
@@ -43,18 +51,36 @@ export const V1_RULES: PolicyRule[] = [
     id: "R2.incident_report_missing",
     outcome: "request_information",
     description: "Incident report not attached",
-    condition: { field: "incident_report_present", op: "eq", right: { kind: "value", value: false } },
+    condition: {
+      field: "incident_report_present",
+      op: "eq",
+      right: { kind: "value", value: false },
+    },
   },
   {
     id: "R2.itemized_quote_missing",
     outcome: "request_information",
     description: "Itemized repair quote not attached",
-    condition: { field: "itemized_quote_present", op: "eq", right: { kind: "value", value: false } },
+    condition: {
+      field: "itemized_quote_present",
+      op: "eq",
+      right: { kind: "value", value: false },
+    },
   },
-  { id: "R3.routine", outcome: "routine_processing", description: "Otherwise: routine processing", condition: null },
+  {
+    id: "R3.routine",
+    outcome: "routine_processing",
+    description: "Otherwise: routine processing",
+    condition: null,
+  },
 ];
 
-export const POLICY_V1: Policy = { version: "v1", author: "Lena Vogt", hash: "sha256:a1b2c3…", rules: V1_RULES };
+export const POLICY_V1: Policy = {
+  version: "v1",
+  author: "Lena Vogt",
+  hash: "sha256:a1b2c3…",
+  rules: V1_RULES,
+};
 
 export function buildV2Rules(limit = 1200): PolicyRule[] {
   const rules = V1_RULES.map((r) => structuredClone(r));
@@ -73,7 +99,11 @@ export function buildV2Rules(limit = 1200): PolicyRule[] {
     id: "R1.quote_above_claimed",
     outcome: "human_review",
     description: "Quote more than 10% above the claimed amount",
-    condition: { field: "quote_eur", op: "gt", right: { kind: "field", field: "claimed_amount_eur", factor: 1.1 } },
+    condition: {
+      field: "quote_eur",
+      op: "gt",
+      right: { kind: "field", field: "claimed_amount_eur", factor: 1.1 },
+    },
   };
   const idx = rules.findIndex((r) => r.id === "R1.quote_over_limit");
   rules.splice(idx + 1, 0, added);
@@ -102,22 +132,185 @@ const base = (o: Partial<F>): F => ({
   ...o,
 });
 
-const RAW: { case_id: string; case_status: "open" | "closed"; claim_summary: string; facts: F }[] = [
-  { case_id: "PRA-001", case_status: "open", claim_summary: "Rear-end collision at a junction, bumper and tailgate replaced.", facts: base({ quote_eur: 4800, claimed_amount_eur: 4600, duplicate_flag: true, incident_date: "2026-10-04" }) },
-  { case_id: "PRA-002", case_status: "open", claim_summary: "Side impact in a car park; the other driver disputes who reversed.", facts: base({ liability_disputed: true, evidence_conflict: true, quote_eur: 1100, claimed_amount_eur: 1100, repair_type: "independent_garage", incident_date: "2026-10-09" }) },
-  { case_id: "PRA-003", case_status: "open", claim_summary: "Collision reported shortly after the policy was taken out.", facts: base({ policy_active_on_incident: false, incident_date: "2026-03-02", policy_start_date: "2026-03-15", quote_eur: 1250, claimed_amount_eur: 1250 }) },
-  { case_id: "PRA-004", case_status: "closed", claim_summary: "Wing mirror damage, matching an earlier claim on the same vehicle.", facts: base({ case_status: "closed", duplicate_flag: true, quote_eur: 420, claimed_amount_eur: 420, claim_type: "vandalism", incident_date: "2026-08-21" }) },
-  { case_id: "PRA-005", case_status: "open", claim_summary: "Front-end damage after a low-speed collision; quote and report outstanding.", facts: base({ quote_eur: null, incident_report_present: null, incident_date: "2026-10-18" }) },
-  { case_id: "PRA-006", case_status: "open", claim_summary: "Two-vehicle collision on a roundabout; liability position not yet stated.", facts: base({ liability_disputed: null, quote_eur: 980, claimed_amount_eur: 950, incident_date: "2026-10-20" }) },
-  { case_id: "PRA-007", case_status: "open", claim_summary: "Door and sill dent from a slow collision with a bollard.", facts: base({ quote_eur: 1450, claimed_amount_eur: 1400, incident_date: "2026-10-22" }) },
-  { case_id: "PRA-008", case_status: "open", claim_summary: "Stone chip turned windscreen crack; glass partner quote received.", facts: base({ claim_type: "glass", repair_type: "glass_repair", quote_eur: 380, claimed_amount_eur: 380, itemized_quote_present: false, incident_date: "2026-10-24" }) },
-  { case_id: "PRA-009", case_status: "closed", claim_summary: "Scratched paintwork in a residential street; photo check outstanding.", facts: base({ case_status: "closed", claim_type: "vandalism", evidence_conflict: null, quote_eur: 610, claimed_amount_eur: 600, incident_date: "2026-08-30" }) },
-  { case_id: "PRA-010", case_status: "open", claim_summary: "Windscreen replacement after a highway stone strike.", facts: base({ claim_type: "glass", repair_type: "glass_repair", quote_eur: 640, claimed_amount_eur: 520, incident_date: "2026-10-26" }) },
-  { case_id: "PRA-011", case_status: "open", claim_summary: "Hail damage to roof and bonnet during a summer storm.", facts: base({ claim_type: "weather", quote_eur: 1180, claimed_amount_eur: 1150, incident_date: "2026-10-27" }) },
-  { case_id: "PRA-012", case_status: "closed", claim_summary: "Front bumper scrape while parking, repaired at a partner garage.", facts: base({ case_status: "closed", quote_eur: 1300, claimed_amount_eur: 1300, incident_date: "2026-09-02" }) },
-];
+const RAW: { case_id: string; case_status: "open" | "closed"; claim_summary: string; facts: F }[] =
+  [
+    {
+      case_id: "PRA-001",
+      case_status: "open",
+      claim_summary: "Rear-end collision at a junction, bumper and tailgate replaced.",
+      facts: base({
+        quote_eur: 4800,
+        claimed_amount_eur: 4600,
+        duplicate_flag: true,
+        incident_date: "2026-10-04",
+      }),
+    },
+    {
+      case_id: "PRA-002",
+      case_status: "open",
+      claim_summary: "Side impact in a car park; the other driver disputes who reversed.",
+      facts: base({
+        liability_disputed: true,
+        evidence_conflict: true,
+        quote_eur: 1100,
+        claimed_amount_eur: 1100,
+        repair_type: "independent_garage",
+        incident_date: "2026-10-09",
+      }),
+    },
+    {
+      case_id: "PRA-003",
+      case_status: "open",
+      claim_summary: "Collision reported shortly after the policy was taken out.",
+      facts: base({
+        policy_active_on_incident: false,
+        incident_date: "2026-03-02",
+        policy_start_date: "2026-03-15",
+        quote_eur: 1250,
+        claimed_amount_eur: 1250,
+      }),
+    },
+    {
+      case_id: "PRA-004",
+      case_status: "closed",
+      claim_summary: "Wing mirror damage, matching an earlier claim on the same vehicle.",
+      facts: base({
+        case_status: "closed",
+        duplicate_flag: true,
+        quote_eur: 420,
+        claimed_amount_eur: 420,
+        claim_type: "vandalism",
+        incident_date: "2026-08-21",
+      }),
+    },
+    {
+      case_id: "PRA-005",
+      case_status: "open",
+      claim_summary: "Front-end damage after a low-speed collision; quote and report outstanding.",
+      facts: base({ quote_eur: null, incident_report_present: null, incident_date: "2026-10-18" }),
+    },
+    {
+      case_id: "PRA-006",
+      case_status: "open",
+      claim_summary: "Two-vehicle collision on a roundabout; liability position not yet stated.",
+      facts: base({
+        liability_disputed: null,
+        quote_eur: 980,
+        claimed_amount_eur: 950,
+        incident_date: "2026-10-20",
+      }),
+    },
+    {
+      case_id: "PRA-007",
+      case_status: "open",
+      claim_summary: "Door and sill dent from a slow collision with a bollard.",
+      facts: base({ quote_eur: 1450, claimed_amount_eur: 1400, incident_date: "2026-10-22" }),
+    },
+    {
+      case_id: "PRA-008",
+      case_status: "open",
+      claim_summary: "Stone chip turned windscreen crack; glass partner quote received.",
+      facts: base({
+        claim_type: "glass",
+        repair_type: "glass_repair",
+        quote_eur: 380,
+        claimed_amount_eur: 380,
+        itemized_quote_present: false,
+        incident_date: "2026-10-24",
+      }),
+    },
+    {
+      case_id: "PRA-009",
+      case_status: "closed",
+      claim_summary: "Scratched paintwork in a residential street; photo check outstanding.",
+      facts: base({
+        case_status: "closed",
+        claim_type: "vandalism",
+        evidence_conflict: null,
+        quote_eur: 610,
+        claimed_amount_eur: 600,
+        incident_date: "2026-08-30",
+      }),
+    },
+    {
+      case_id: "PRA-010",
+      case_status: "open",
+      claim_summary: "Windscreen replacement after a highway stone strike.",
+      facts: base({
+        claim_type: "glass",
+        repair_type: "glass_repair",
+        quote_eur: 640,
+        claimed_amount_eur: 520,
+        incident_date: "2026-10-26",
+      }),
+    },
+    {
+      case_id: "PRA-011",
+      case_status: "open",
+      claim_summary: "Hail damage to roof and bonnet during a summer storm.",
+      facts: base({
+        claim_type: "weather",
+        quote_eur: 1180,
+        claimed_amount_eur: 1150,
+        incident_date: "2026-10-27",
+      }),
+    },
+    {
+      case_id: "PRA-012",
+      case_status: "closed",
+      claim_summary: "Front bumper scrape while parking, repaired at a partner garage.",
+      facts: base({
+        case_status: "closed",
+        quote_eur: 1300,
+        claimed_amount_eur: 1300,
+        incident_date: "2026-09-02",
+      }),
+    },
+  ];
 
 for (const r of RAW) r.facts["case_status"] = r.case_status;
+
+// One past reviewer override. PRA-012 was routine under v1; the reviewer asked for the missing
+// garage invoice before it closed, so the claim shows the corrected step, as a live override would.
+const SEED_OVERRIDE = {
+  type: "reviewer_override",
+  case_id: "PRA-012",
+  from_rec: "routine_processing",
+  to_rec: "request_information",
+  reason_code: "data_wrong",
+  note: "Parking sensor repair was not on the itemized quote; asked the garage for the invoice before closing.",
+  policy_version: "v1",
+  policy_hash: POLICY_V1.hash,
+} as const;
+
+const applyOverride = (c: Claim): Claim =>
+  c.case_id === SEED_OVERRIDE.case_id && c.recommendation_v1 === SEED_OVERRIDE.from_rec
+    ? {
+        ...c,
+        recommendation_v1: SEED_OVERRIDE.to_rec,
+        flow: FLOW_OF[SEED_OVERRIDE.to_rec],
+        ui_status: "reviewed",
+      }
+    : c;
+
+// What the claims team already did outside this tool. This tool never sends anything itself.
+const ACTIVITY: Record<string, { label: string; daysAgo: number }[]> = {
+  "PRA-001": [{ label: "Acknowledgement sent by the claims team", daysAgo: 9 }],
+  "PRA-002": [{ label: "Both drivers asked for statements", daysAgo: 6 }],
+  "PRA-005": [{ label: "Customer emailed for the repair quote", daysAgo: 4 }],
+  "PRA-010": [{ label: "Acknowledgement sent by the claims team", daysAgo: 2 }],
+};
+
+// Demo contacts so the email and call actions can be shown. Real sources will supply their own, or none.
+const DEMO_CONTACTS: Record<string, NonNullable<Claim["contact"]>> = {
+  "PRA-005": {
+    name: "Demo customer",
+    email: "demo.customer@example.com",
+    phone: "+49 89 0000 0005",
+  },
+  "PRA-003": { name: "Demo customer", email: "demo.customer@example.com" },
+  "PRA-002": { name: "Demo customer", phone: "+49 89 0000 0002" },
+};
 
 export const SEED_CLAIMS: Claim[] = RAW.map((r) => {
   const ev = evaluate(V1_RULES, r.facts);
@@ -137,8 +330,13 @@ export const SEED_CLAIMS: Claim[] = RAW.map((r) => {
     policy_version: POLICY_V1.version,
     policy_hash: POLICY_V1.hash,
     needs_recheck: false,
+    ...(DEMO_CONTACTS[r.case_id] ? { contact: DEMO_CONTACTS[r.case_id] } : {}),
+    activity: (ACTIVITY[r.case_id] ?? []).map((a) => ({
+      label: a.label,
+      timestamp: new Date(Date.UTC(2026, 10, 7, 9, 0, 0) - a.daysAgo * 864e5).toISOString(),
+    })),
   };
-});
+}).map(applyOverride);
 
 const BASE_TS = Date.UTC(2026, 10, 7, 9, 0, 0);
 const daysAgo = (d: number, h = 0) => new Date(BASE_TS - d * 864e5 + h * 36e5).toISOString();
@@ -157,18 +355,7 @@ export const SEED_LOG: LogEntry[] = (() => {
       timestamp: daysAgo(21 - i * 1.5, 1),
     });
   });
-  out.push({
-    type: "reviewer_override",
-    case_id: "PRA-004",
-    actor: "Jonas Weber",
-    from_rec: "routine_processing",
-    to_rec: "human_review",
-    reason_code: "data_wrong",
-    note: "Duplicate flag was missing on intake; same mirror claimed in August.",
-    policy_version: "v1",
-    policy_hash: POLICY_V1.hash,
-    timestamp: daysAgo(12, 3),
-  });
+  out.push({ ...SEED_OVERRIDE, actor: "Jonas Weber", timestamp: daysAgo(12, 3) });
   SEED_CLAIMS.filter((c) => c.case_status === "closed").forEach((c, i) => {
     out.push({
       type: "final_decision",
@@ -193,3 +380,14 @@ export const SEED_LOG: LogEntry[] = (() => {
     .sort((a, b) => String(a["timestamp"]).localeCompare(String(b["timestamp"])))
     .map((e, i) => ({ ...e, seq: i + 1 }) as LogEntry);
 })();
+
+// Demo profiles. Each role lives on the account; the sign-in screen never asks for it.
+export const DEMO_ACCOUNTS: Account[] = [
+  {
+    id: "u-jonas",
+    name: "Jonas Weber",
+    email: "jonas.weber@aegis.example",
+    role: "insurance_claimer",
+  },
+  { id: "u-lena", name: "Lena Vogt", email: "lena.vogt@aegis.example", role: "operations_lead" },
+];

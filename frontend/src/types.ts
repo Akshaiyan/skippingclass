@@ -1,3 +1,13 @@
+export type Role = "insurance_claimer" | "operations_lead";
+
+/** A user profile. The role is stored on the profile and never chosen at sign-in. */
+export interface Account {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+}
+
 export type Rec = "routine_processing" | "request_information" | "human_review";
 export type Flow = "green" | "yellow" | "red";
 export type Tri = "true" | "false" | "unknown"; // fired / passed / undecidable
@@ -27,6 +37,21 @@ export interface Claim {
   policy_hash: string;
   needs_recheck: boolean;
   ui_status?: "reviewed";
+  /** Things the claims team did outside this tool, e.g. an acknowledgement sent from the mailbox. */
+  activity?: ClaimActivity[];
+  /** Who the claimant is and how to reach them. Absent when the source has no contact details. */
+  contact?: ClaimContact;
+}
+
+export interface ClaimContact {
+  name?: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface ClaimActivity {
+  label: string;
+  timestamp: string;
 }
 
 export type ReasonCode = "policy_wrong" | "data_wrong" | "judgement";
@@ -54,7 +79,13 @@ export interface PolicyDecision {
 }
 
 export interface SystemRecord {
-  type: "system_decision" | "reviewer_accept" | "policy_proposed" | "final_decision";
+  type:
+    | "system_decision"
+    | "reviewer_accept"
+    | "policy_proposed"
+    | "final_decision"
+    | "info_request_prepared"
+    | "info_request_sent";
   case_id?: string;
   actor: string;
   from_rec?: Rec;

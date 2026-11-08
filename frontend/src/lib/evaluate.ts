@@ -14,7 +14,8 @@ export interface Evaluation {
 
 const isBlank = (v: unknown) => v === null || v === undefined || v === "";
 
-const fmt = (v: unknown) => (typeof v === "number" ? String(v) : Array.isArray(v) ? `[${v.join(",")}]` : String(v));
+const fmt = (v: unknown) =>
+  typeof v === "number" ? String(v) : Array.isArray(v) ? `[${v.join(",")}]` : String(v);
 const OP_SYM: Record<string, string> = {
   eq: "=",
   neq: "≠",
@@ -60,7 +61,10 @@ function cmp(op: string, l: unknown, r: unknown): boolean {
   return false;
 }
 
-function resolveRight(right: Operand | undefined, facts: Facts): { value: unknown; label: string; blank?: string } {
+function resolveRight(
+  right: Operand | undefined,
+  facts: Facts,
+): { value: unknown; label: string; blank?: string } {
   if (!right) return { value: undefined, label: "" };
   if (right.kind === "value") return { value: right.value, label: fmt(right.value) };
   const raw = facts[right.field];
@@ -101,13 +105,23 @@ export function evalCondition(c: Condition, facts: Facts): LeafOut {
   if (c.op === "is_blank" || c.op === "is_not_blank") {
     const b = isBlank(left);
     const res = c.op === "is_blank" ? b : !b;
-    return { result: res ? "true" : "false", evidence: [`${c.field} ${b ? "is blank" : "is not blank"}`], blanks: [] };
+    return {
+      result: res ? "true" : "false",
+      evidence: [`${c.field} ${b ? "is blank" : "is not blank"}`],
+      blanks: [],
+    };
   }
-  if (isBlank(left)) return { result: "unknown", evidence: [`${c.field}: not provided`], blanks: [c.field] };
+  if (isBlank(left))
+    return { result: "unknown", evidence: [`${c.field}: not provided`], blanks: [c.field] };
   const r = resolveRight(c.right, facts);
-  if (r.blank) return { result: "unknown", evidence: [`${r.blank}: not provided`], blanks: [r.blank] };
+  if (r.blank)
+    return { result: "unknown", evidence: [`${r.blank}: not provided`], blanks: [r.blank] };
   const ok = cmp(c.op, left, r.value);
-  return { result: ok ? "true" : "false", evidence: [`${c.field}=${fmt(left)} ${OP_SYM[c.op]} ${r.label}`], blanks: [] };
+  return {
+    result: ok ? "true" : "false",
+    evidence: [`${c.field}=${fmt(left)} ${OP_SYM[c.op]} ${r.label}`],
+    blanks: [],
+  };
 }
 
 function merge(parts: LeafOut[], result: Tri): LeafOut {
@@ -135,7 +149,9 @@ export function evaluate(rules: PolicyRule[], facts: Facts): Evaluation {
   }
   const fallback = rules.find((r) => r.active !== false && r.condition === null);
   const firedRed = checklist.filter((c) => c.outcome === "human_review" && c.result === "true");
-  const firedInfo = checklist.filter((c) => c.outcome === "request_information" && c.result === "true");
+  const firedInfo = checklist.filter(
+    (c) => c.outcome === "request_information" && c.result === "true",
+  );
   const anyUnknown = checklist.some((c) => c.result === "unknown");
 
   let recommendation: Rec;
@@ -164,7 +180,10 @@ export function evaluate(rules: PolicyRule[], facts: Facts): Evaluation {
       description: fallback.description,
       outcome: fallback.outcome,
       result: recommendation === "routine_processing" ? "true" : "false",
-      evidence: recommendation === "routine_processing" ? "no other rule fired or was undecidable" : "another rule decided first",
+      evidence:
+        recommendation === "routine_processing"
+          ? "no other rule fired or was undecidable"
+          : "an earlier rule decided",
     });
   }
   return { recommendation, rule, checklist, explanation, absentFields: absent };

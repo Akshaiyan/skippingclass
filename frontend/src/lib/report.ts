@@ -10,17 +10,37 @@ export function conditionText(c: Condition | null): string {
   if ("any" in c) return c.any.map(wrap).join(" or ") || "(empty group)";
   if ("not" in c) return `not (${conditionText(c.not)})`;
   if (!c.field) return "(no field)";
-  const sym: Record<string, string> = { eq: "=", neq: "≠", gt: ">", gte: "≥", lt: "<", lte: "≤", in: "in", not_in: "not in", before: "before", after: "after" };
+  const sym: Record<string, string> = {
+    eq: "=",
+    neq: "≠",
+    gt: ">",
+    gte: "≥",
+    lt: "<",
+    lte: "≤",
+    in: "in",
+    not_in: "not in",
+    before: "before",
+    after: "after",
+  };
   if (c.op === "is_blank") return `${c.field} is blank`;
   if (c.op === "is_not_blank") return `${c.field} is not blank`;
   if (!c.right) return `${c.field} ${sym[c.op]} ?`;
   if (c.right.kind === "field")
     return `${c.field} ${sym[c.op]} ${c.right.field || "?"}${c.right.factor && c.right.factor !== 1 ? ` × ${c.right.factor.toFixed(2)}` : ""}`;
   const v = c.right.value;
-  const vs = Array.isArray(v) ? v.join(", ") : typeof v === "number" ? fmtNum(v) : typeof v === "boolean" ? (v ? "yes" : "no") : v || "?";
+  const vs = Array.isArray(v)
+    ? v.join(", ")
+    : typeof v === "number"
+      ? fmtNum(v)
+      : typeof v === "boolean"
+        ? v
+          ? "yes"
+          : "no"
+        : v || "?";
   return `${c.field} ${sym[c.op]} ${vs}`;
 }
-const wrap = (c: Condition) => ("all" in c || "any" in c ? `(${conditionText(c)})` : conditionText(c));
+const wrap = (c: Condition) =>
+  "all" in c || "any" in c ? `(${conditionText(c)})` : conditionText(c);
 
 export function conditionChips(c: Condition | null): string[] {
   if (!c) return ["otherwise"];
@@ -34,21 +54,40 @@ export function ruleStatus(v1: PolicyRule[], rule: PolicyRule): RuleDiffStatus {
   if (!o) return "added";
   return JSON.stringify(o) === JSON.stringify(rule) ? "same" : "changed";
 }
-export const removedRules = (v1: PolicyRule[], draft: PolicyRule[]) => v1.filter((r) => !draft.some((d) => d.id === r.id));
+export const removedRules = (v1: PolicyRule[], draft: PolicyRule[]) =>
+  v1.filter((r) => !draft.some((d) => d.id === r.id));
 
 const limitOf = (r?: PolicyRule) =>
-  r?.condition && "field" in r.condition && r.condition.right?.kind === "value" ? Number(r.condition.right.value) : null;
+  r?.condition && "field" in r.condition && r.condition.right?.kind === "value"
+    ? Number(r.condition.right.value)
+    : null;
+
+/** The quote limit a rule set enforces, or null when it has no quote-limit rule. */
+export const quoteLimitOf = (rules: PolicyRule[]) =>
+  limitOf(rules.find((r) => r.id === "R1.quote_over_limit" && r.active !== false));
 
 export function diffLines(v1: PolicyRule[], draft: PolicyRule[]): string[] {
   const lines: string[] = [];
   for (const r of draft) {
     const s = ruleStatus(v1, r);
-    if (s === "added") lines.push(`Added: ${r.description.toLowerCase()} goes to ${REC_LABEL[r.outcome].toLowerCase()}`);
+    if (s === "added")
+      lines.push(
+        `Added: ${r.description.toLowerCase()} goes to ${REC_LABEL[r.outcome].toLowerCase()}`,
+      );
     if (s === "changed") {
       const o = v1.find((x) => x.id === r.id)!;
-      if (r.id === "R1.quote_over_limit" && limitOf(o) !== null && limitOf(r) !== null && JSON.stringify(o.outcome) === JSON.stringify(r.outcome)) {
-        const a = limitOf(o)!, b = limitOf(r)!;
-        if (a !== b) lines.push(`Quote limit ${b < a ? "lowered" : "raised"} from EUR ${fmtNum(a)} to EUR ${fmtNum(b)}`);
+      if (
+        r.id === "R1.quote_over_limit" &&
+        limitOf(o) !== null &&
+        limitOf(r) !== null &&
+        JSON.stringify(o.outcome) === JSON.stringify(r.outcome)
+      ) {
+        const a = limitOf(o)!,
+          b = limitOf(r)!;
+        if (a !== b)
+          lines.push(
+            `Quote limit ${b < a ? "lowered" : "raised"} from EUR ${fmtNum(a)} to EUR ${fmtNum(b)}`,
+          );
         else lines.push(`Changed: ${r.description}`);
       } else if (r.id === "R2.itemized_quote_missing" && r.description.includes("above EUR 500")) {
         lines.push("Itemized quote now only required above EUR 500");
@@ -71,7 +110,12 @@ export function deriveClaims(claims: Claim[], draft: PolicyRule[]): DerivedClaim
       return { ...c, recommendation_v2: ev.recommendation, rule_v2: ev.rule, needs_recheck: false };
     }
     const ev = evaluate(draft, c.facts);
-    return { ...c, recommendation_v2: ev.recommendation, rule_v2: ev.rule, needs_recheck: ev.recommendation !== c.recommendation_v1 };
+    return {
+      ...c,
+      recommendation_v2: ev.recommendation,
+      rule_v2: ev.rule,
+      needs_recheck: ev.recommendation !== c.recommendation_v1,
+    };
   });
 }
 
@@ -96,6 +140,18 @@ export function flipList(d: DerivedClaim[]): Flip[] {
     }));
 }
 
+/**
+ * True when the given rules reproduce each claim's stored decision from its facts: every rule in the
+ * stored checklist must come out the same (fired, passed or unknown). Compares outcomes, not wording,
+ * because the engine and the browser format rule ids and evidence text differently.
+ */
+export function replaysStored(claims: Claim[], rules: PolicyRule[]): boolean {
+  return claims.every((c) => {
+    const now = new Map(evaluate(rules, c.facts).checklist.map((k) => [k.id, k.result]));
+    return c.checklist.every((k) => !now.has(k.id) || now.get(k.id) === k.result);
+  });
+}
+
 export interface CheckResult {
   id: number;
   label: string;
@@ -104,37 +160,84 @@ export interface CheckResult {
   message?: string;
 }
 
-export function exhaustiveChecks(claims: Claim[], v1: PolicyRule[], draft: PolicyRule[]): CheckResult[] {
+export function exhaustiveChecks(
+  claims: Claim[],
+  v1: PolicyRule[],
+  draft: PolicyRule[],
+): CheckResult[] {
   const evals = claims.map((c) => ({ c, ev: evaluate(draft, c.facts) }));
-  const blankOk = evals.every(({ ev }) => !ev.checklist.some((k) => k.result === "unknown") || ev.recommendation !== "routine_processing");
-  const redOk = evals.every(({ ev }) => !ev.checklist.some((k) => k.outcome === "human_review" && k.result === "true") || ev.recommendation === "human_review");
-  const incomplete = draft.find((r) => r.active !== false && r.id !== "R3.routine" && !isConditionComplete(r.condition));
-  const replayOk = evals.every(({ c, ev }) => REC_ORDER.includes(ev.recommendation) && JSON.stringify(evaluate(draft, c.facts)) === JSON.stringify(ev));
-  const closedOk = deriveClaims(claims, draft).every((c) => c.case_status === "open" || !c.needs_recheck);
+  const blankOk = evals.every(
+    ({ ev }) =>
+      !ev.checklist.some((k) => k.result === "unknown") ||
+      ev.recommendation !== "routine_processing",
+  );
+  const redOk = evals.every(
+    ({ ev }) =>
+      !ev.checklist.some((k) => k.outcome === "human_review" && k.result === "true") ||
+      ev.recommendation === "human_review",
+  );
+  const incomplete = draft.find(
+    (r) => r.active !== false && r.id !== "R3.routine" && !isConditionComplete(r.condition),
+  );
+  // Replay against the stored baseline: re-running the live rules on the stored facts must
+  // reproduce the rule and checklist recorded when the claim was decided.
+  const replayOk =
+    evals.every(({ ev }) => REC_ORDER.includes(ev.recommendation)) && replaysStored(claims, v1);
+  const closedOk = deriveClaims(claims, draft).every(
+    (c) => c.case_status === "open" || !c.needs_recheck,
+  );
   const changedIds = new Set([
     ...draft.filter((r) => ruleStatus(v1, r) !== "same").map((r) => r.id),
     ...removedRules(v1, draft).map((r) => r.id),
   ]);
   const changedFields = new Set(
-    [...draft.filter((r) => changedIds.has(r.id)), ...removedRules(v1, draft)].flatMap((r) => conditionFields(r.condition)),
+    [...draft.filter((r) => changedIds.has(r.id)), ...removedRules(v1, draft)].flatMap((r) =>
+      conditionFields(r.condition),
+    ),
   );
   const attribOk = flipList(deriveClaims(claims, draft)).every((f) => {
     const ids = [...f.claim.rule_v1.split("+"), ...f.claim.rule_v2.split("+")];
     if (ids.some((i) => changedIds.has(i))) return true;
     const m = [f.claim.rule_v1, f.claim.rule_v2].join(" ").match(/ABSENT\(([^)]*)\)/g) ?? [];
-    return m.some((s) => s.slice(7, -1).split(",").some((x) => changedFields.has(x)));
+    return m.some((s) =>
+      s
+        .slice(7, -1)
+        .split(",")
+        .some((x) => changedFields.has(x)),
+    );
   });
   return [
-    { id: 1, label: "Blank is never treated as no", explain: "Any undecidable rule leads to a request for information, never routine.", pass: blankOk },
-    { id: 2, label: "A fired red-flag rule always means human review", explain: "No claim with a fired human-review rule gets a softer next step.", pass: redOk },
+    {
+      id: 1,
+      label: "Blank is never treated as no",
+      explain: "Any undecidable rule leads to a request for information, never routine.",
+      pass: blankOk,
+    },
+    {
+      id: 2,
+      label: "A fired red-flag rule always means human review",
+      explain: "No claim with a fired human-review rule gets a softer next step.",
+      pass: redOk,
+    },
     {
       id: 3,
       label: "Every claim gets exactly one recommendation, and it replays identically",
-      explain: "Each rule is complete and two evaluations of every claim match.",
+      explain:
+        "Each rule is complete, and the live rules reproduce every stored decision from its facts.",
       pass: !incomplete && replayOk,
       message: incomplete ? `Rule ${incomplete.id} has an incomplete condition` : undefined,
     },
-    { id: 4, label: "Closed claims never change", explain: "Closed claims are kept as decided and never flagged for recheck.", pass: closedOk },
-    { id: 5, label: "Every changed outcome traces to a named rule edit", explain: "Each flip in the list is caused by a rule that changed in this draft.", pass: attribOk },
+    {
+      id: 4,
+      label: "Closed claims never change",
+      explain: "Closed claims are kept as decided and never flagged for recheck.",
+      pass: closedOk,
+    },
+    {
+      id: 5,
+      label: "Every changed outcome traces to a named rule edit",
+      explain: "Each flip in the list is caused by a rule that changed in this draft.",
+      pass: attribOk,
+    },
   ];
 }

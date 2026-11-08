@@ -24,17 +24,135 @@ export const REC_OF: Record<Flow, Rec> = {
 export const REC_ORDER: Rec[] = ["human_review", "request_information", "routine_processing"];
 
 export const NOT_PROVIDED = "not provided, not assumed";
-export const LOCKED = "Locked";
-export const LOCKED_TOOLTIP = "Locked: closed claims cannot change";
-export const LOCKED_BANNER = "Locked: this claim is closed and is not affected by policy changes.";
+export const LOCKED = "Closed";
+export const LOCKED_TOOLTIP = "Closed claims cannot change";
+export const LOCKED_BANNER = "This claim is closed. Policy changes do not affect it.";
 export const RULE_BASED = "Rule-based, not a prediction";
+export const CASE_OVERVIEW = "Case overview";
+export const CASE_DETAILS = "Rules and evidence";
+export const REVIEW_COPY = {
+  why: "Why this recommendation",
+  evidence: "Why / Rules and evidence",
+  audit: "Your decision will be recorded in the audit log.",
+  reviewed: "Reviewed",
+  undo: "Undo",
+  undone: "Confirmation undone — recorded",
+};
+export const confirmAction = (rec: Rec) => `Confirm: ${REC_LABEL[rec]}`;
+export const IMPACT_COPY = {
+  title: "Expected impact",
+  subtitle: "If you release v2. Rule-based, not a prediction.",
+  delta: "Δ",
+  assumed: "ASSUMED",
+  session:
+    "Draft edits are session only. Release records your decision for this session; Reset restores live rules.",
+  locked: "Closed claims stay locked.",
+  releaseSummary: "Review v2 before release",
+  volume: "Claim volume",
+  live: "Live",
+  expected: "Expected",
+  cost: "Handling cost per claim",
+  rates: "Handling cost by flow · EUR / claim",
+  flows: { green: "Routine processing", yellow: "Missing information", red: "Human review" },
+};
+
+// Policy change page. Rule tags say "Added", never "new" (copy rule).
+export const POLICY_COPY = {
+  title: "Policy change",
+  subtitle: "Edit triage rules and preview their expected impact.",
+  rulesChanged: (n: number) => `${n} ${n === 1 ? "rule" : "rules"} changed`,
+  notReleased: "not released",
+  noChanges: "No changes · live rules apply",
+  released: "v2 is live",
+  discard: "Discard",
+  reviewChanges: "Review changes",
+  rules: "Rules",
+  rulesHelp:
+    "What decides each claim's flow. Red flags decide before missing information; otherwise routine.",
+  quoteLimit: "Quote limit",
+  tagChanged: "Changed",
+  tagAdded: "Added",
+  tagInactive: "Inactive",
+  removed: "Removed from draft",
+  expectations: "Expectations",
+  expectationsHelp: "How open claims would flow under the draft. Rule-based, not a prediction.",
+  preview: "Preview · unreleased",
+  nowLiveTag: "Live",
+  distribution: "Case distribution",
+  live: "Live",
+  expected: "Expected",
+  nowLive: "Now live",
+  openClaims: (n: number) => `${n} open claims`,
+  changedClaims: "Claims that changed",
+  changedOf: (n: number, total: number) => `${n} of ${total}`,
+  causedBy: "Caused by",
+  stricter: "Stricter",
+  lessScrutiny: "Less scrutiny",
+  noChangesYet: "No changes yet — edit a rule to preview impact",
+  blankCaption: "Blank fields shown as not provided — never assumed.",
+  handlingCost: "Handling cost / claim",
+  extraReviewCost: "Extra Human review cost / month",
+  missingFacts: (fields: string) => `Missing facts: ${fields}`,
+  reviewRelease: "Review & release",
+  reasonLabel: "Reason for this change",
+  reasonPlaceholder: "Why release v2 now? (visible in the audit log)",
+  approverLabel: "Second approver required",
+  approverPlaceholder: "Select approver",
+  routedDifferently: (n: number) =>
+    `${n} ${n === 1 ? "claim" : "claims"} would be routed differently.`,
+  intoRoutine: (n: number) => `${n} ${n === 1 ? "moves" : "move"} into Routine processing.`,
+  needReasonApprover: "Add a reason and approver to release",
+  needChange: "Edit a rule to enable release — the draft matches the live rules",
+  statusNotReleased: "Not released",
+  statusReleased: "Released",
+  statusHeld: "Held",
+  releasedToast: "v2 is live. Incoming claims use these rules from now.",
+  heldToast: "v2 held. The live rules stay in place.",
+  confirmTitle: "Release v2?",
+};
+
+// Cost impact page. Every figure wears its tier: inputs are ASSUMED, projections DERIVED, nothing MEASURED.
+export const COST_COPY = {
+  title: "Cost impact",
+  subtitle: "What the draft does to Human review cost at your volume.",
+  honesty: "Inputs are ASSUMED. Nothing here is MEASURED on real claims.",
+  reset: "Reset",
+  settings: "Settings",
+  settingsHelp: "The assumptions that drive every number below.",
+  volume: "What-if volume",
+  volumeUnit: "claims per month",
+  keyFigures: "Key figures",
+  derived: "DERIVED",
+  assumed: "ASSUMED",
+  perClaim: "Cost per claim",
+  perClaimHelp: "Human review cost ÷ claims per month",
+  inReview: "Claims in review",
+  inReviewHelp: "Share of claims sent to Human review",
+  twelveMonths: "12-month cost",
+  twelveMonthsHelp: "Human review cost, next 12 months",
+  growthTag: (pct: number) => `growth ${pct}%/yr ASSUMED`,
+  vsLive: (v: string) => `vs live ${v}`,
+  sample: (n: number) => `Projected from ${n} sample ${n === 1 ? "claim" : "claims"}`,
+  showMath: "Show the math",
+  mixTitle: "Where the claims go",
+  mixHelp: "Share of open claims per flow, live rules against the draft.",
+  mixCaption: (pp: number) =>
+    pp === 0
+      ? "The draft keeps the same share in Human review."
+      : `The draft moves ${Math.abs(pp)} pp ${pp > 0 ? "into" : "out of"} Human review.`,
+  lineTitle: "Human review cost, next 12 months",
+  lineHelp: "Live rules (solid) against the draft (dashed), volume growing as set above.",
+  lineTier: "DERIVED · growth ASSUMED",
+  live: "Live",
+  draft: "Draft",
+};
 
 export const CONFIRM_REC = "Confirm recommendation";
 export const OVERRIDE_REC = "Override recommendation";
 export const CHANGE_REC = "Change recommendation";
 export const PREPARE_INFO = "Prepare information request";
 export const COPY_TEXT = "Copy text";
-export const CONFIRM_TOAST = "Marked as reviewed. Not recorded in the decision log.";
+export const CONFIRM_TOAST = "Recommendation confirmed — recorded";
 export const changeTo = (r: Rec) => `Change to ${REC_LABEL[r]}`;
 
 export const REASON_LABEL: Record<ReasonCode, { label: string; help: string }> = {
@@ -55,13 +173,11 @@ export const REFUSAL = {
 export const RELEASE_V2 = "Release v2";
 export const HOLD_V2 = "Hold v2";
 export const ADD_RULE = "Add rule";
-export const LATEST_FIRST = "Latest first";
+export const SORT_RECENT = "Sorted most recent to oldest";
 
-export const INFO_FOOTNOTE = "Copy and send from your usual channel. This tool never sends anything.";
+export const INFO_FOOTNOTE =
+  "Copy and send from your usual channel. This tool never sends anything.";
 export const EMAIL_LABEL = "AI-drafted placeholder text. Nothing is generated or sent here.";
-export const CONSISTENCY_CAPTION =
-  "Consistency, not accuracy. Labels are past reviewer outcomes, not ground truth.";
-
 export const LOG_TYPE_LABEL: Record<LogEntry["type"], string> = {
   system_decision: "System decision",
   reviewer_accept: "Reviewer accepted",
@@ -70,4 +186,6 @@ export const LOG_TYPE_LABEL: Record<LogEntry["type"], string> = {
   policy_approved: "Policy released",
   policy_rejected: "Policy held",
   final_decision: "Final decision",
+  info_request_prepared: "Information request prepared",
+  info_request_sent: "Information request marked as sent",
 };
