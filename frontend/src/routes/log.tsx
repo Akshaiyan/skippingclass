@@ -16,6 +16,7 @@ import { replaysStored } from "@/lib/report";
 import { cn } from "@/lib/utils";
 import { Chip, FlowBadge, PageHeader, PolicyStamp } from "@/components/status";
 import { Button } from "@/components/ui/button";
+import { ActivityGrid } from "@/components/ActivityGrid";
 
 export const Route = createFileRoute("/log")({
   head: () => ({
@@ -206,6 +207,8 @@ function LogPage() {
           claims replay from their stored facts
         </span>
       </div>
+
+      <ActivityGrid log={state.log} />
 
       <div className="flex flex-wrap items-center gap-3">
         <label className="text-xs font-medium text-text-2">
