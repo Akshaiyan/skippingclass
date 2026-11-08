@@ -5,12 +5,11 @@ import { DEMO_ACCOUNTS, SEED_CLAIMS, SEED_LOG, POLICY_V1, POLICY_V2_DRAFT } from
 import { evaluate as evaluateLocal, type Facts, type Evaluation } from "@/lib/evaluate";
 import { policyImpact, type HandlingRates } from "@/lib/policy-impact";
 import type { DerivedClaim } from "@/lib/report";
-import { flipList } from "@/lib/report";
 import {
+  costFigures,
   flowShares,
+  policySavings,
   projectTwelveMonths,
-  ruleEffects,
-  sweepQuoteLimit,
   type SavingsAssumptions,
 } from "@/lib/savings";
 
@@ -41,29 +40,22 @@ export function signIn(email: string, password: string): Account | null {
 export const getAccount = (id: string): Account | null =>
   structuredClone(DEMO_ACCOUNTS.find((a) => a.id === id) ?? null);
 
-/** Quote limits for the cost against limit chart. */
-const LIMIT_RANGE = Array.from({ length: 30 }, (_, i) => 200 + i * 200);
-
 /**
  * All datasets of the Cost impact page. Today they are projected from the sample claims.
  * Swap this one function for real insurer data; the page only reads its result.
- * `source` tells the page which provenance text to print under each chart.
  */
-export function getCostImpact(
-  claims: DerivedClaim[],
-  draftRules: PolicyRule[],
-  assumptions: SavingsAssumptions,
-  applyLimit: (rules: PolicyRule[], limit: number) => PolicyRule[],
-) {
+export function getCostImpact(claims: DerivedClaim[], assumptions: SavingsAssumptions) {
   const live = flowShares(claims, "live");
   const draft = flowShares(claims, "draft");
+  const months = projectTwelveMonths(live, draft, assumptions);
+  const sampleSize = claims.filter((c) => c.case_status === "open").length;
   return {
     source: "sample" as const,
-    sampleSize: claims.filter((c) => c.case_status === "open").length,
+    sampleSize,
     live,
     draft,
-    months: projectTwelveMonths(live, draft, assumptions),
-    limits: sweepQuoteLimit(claims, draftRules, LIMIT_RANGE, assumptions, applyLimit),
-    rules: ruleEffects(flipList(claims)),
+    months,
+    figures: costFigures(live, draft, months, sampleSize, assumptions),
+    counts: policySavings(claims, assumptions),
   };
 }

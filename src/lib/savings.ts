@@ -1,7 +1,6 @@
-import type { Flow, PolicyRule } from "@/types";
-import type { DerivedClaim, Flip } from "@/lib/report";
+import type { Flow } from "@/types";
+import type { DerivedClaim } from "@/lib/report";
 import { FLOW_OF } from "@/copy";
-import { evaluate } from "@/lib/evaluate";
 
 export type AssumptionStatus = "ASSUMED" | "SOURCED";
 
@@ -25,7 +24,7 @@ export const DEFAULT_ASSUMPTIONS: SavingsAssumptions = {
   eurPerMinute: 1,
   reviewMinutes: 10,
   claimsPerMonth: 2000,
-  growthPercent: 0,
+  growthPercent: 8,
   unnecessaryReviewShare: 0.3,
   wrongRoutineCost: 2000,
 };
@@ -75,8 +74,6 @@ export interface PolicySavings {
   redDraft: number;
   /** Extra cost of Human review per month at the company volume. Negative means a saving. */
   extraReviewCostPerMonth: number;
-  /** Secondary line: expected cost of wrong routine decisions per month. */
-  wrongRoutineCostPerMonth: number;
 }
 
 /** Cost effect of the draft against the live rules, on open claims only. Missing information is not priced. */
@@ -108,12 +105,6 @@ export function policySavings(claims: DerivedClaim[], a: SavingsAssumptions): Po
     redLive,
     redDraft,
     extraReviewCostPerMonth: netShare * a.claimsPerMonth * reviewCost(a),
-    wrongRoutineCostPerMonth: n
-      ? (movedToRoutine / n) *
-        a.claimsPerMonth *
-        (1 - a.unnecessaryReviewShare) *
-        a.wrongRoutineCost
-      : 0,
   };
 }
 
@@ -164,46 +155,34 @@ export function projectTwelveMonths(
   });
 }
 
-export interface LimitPoint {
-  limit: number;
-  cost: number;
+export interface CostFigures {
+  /** Human review cost per claim at your volume: share in Human review × cost of one review. */
+  perClaim: number;
+  /** Share of open claims in Human review, 0..1. */
+  reviewShare: number;
+  /** Human review cost over the next 12 months, with volume growth applied. */
+  twelveMonths: number;
 }
 
-/** Human review cost per month for each quote limit, evaluating the open sample claims against the draft rules. */
-export function sweepQuoteLimit(
-  claims: DerivedClaim[],
-  draftRules: PolicyRule[],
-  limits: number[],
+/**
+ * The three key figures for the live rules and the draft. Null when no claim is open:
+ * there is no share to project from, and a blank is never treated as zero.
+ */
+export function costFigures(
+  live: FlowShares,
+  draft: FlowShares,
+  months: MonthPoint[],
+  openClaims: number,
   a: SavingsAssumptions,
-  applyLimit: (rules: PolicyRule[], limit: number) => PolicyRule[],
-): LimitPoint[] {
-  const open = claims.filter((c) => c.case_status === "open");
-  return limits.map((limit) => {
-    const rules = applyLimit(draftRules, limit);
-    const red = open.filter(
-      (c) => FLOW_OF[evaluate(rules, c.facts).recommendation] === "red",
-    ).length;
-    return { limit, cost: open.length ? monthlyReviewCost(red / open.length, a) : 0 };
-  });
-}
-
-export interface RuleEffect {
-  rule: string;
-  /** Human reviews added minus removed by this rule, on open claims. */
-  net: number;
-}
-
-/** Which rules add or remove Human reviews, from the open flips, largest effect first. */
-export function ruleEffects(flips: Flip[]): RuleEffect[] {
-  const by = new Map<string, number>();
-  for (const f of flips) {
-    if (f.claim.case_status !== "open") continue;
-    const wasRed = FLOW_OF[f.from] === "red";
-    const isRed = FLOW_OF[f.to] === "red";
-    if (wasRed === isRed) continue;
-    by.set(f.cause, (by.get(f.cause) ?? 0) + (isRed ? 1 : -1));
-  }
-  return [...by.entries()]
-    .map(([rule, net]) => ({ rule, net }))
-    .sort((x, y) => Math.abs(y.net) - Math.abs(x.net));
+): { live: CostFigures; draft: CostFigures } | null {
+  if (!openClaims) return null;
+  const sum = (k: "live" | "draft") => months.reduce((t, m) => t + m[k], 0);
+  return {
+    live: { perClaim: live.red * reviewCost(a), reviewShare: live.red, twelveMonths: sum("live") },
+    draft: {
+      perClaim: draft.red * reviewCost(a),
+      reviewShare: draft.red,
+      twelveMonths: sum("draft"),
+    },
+  };
 }
