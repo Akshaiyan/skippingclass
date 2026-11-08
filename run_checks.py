@@ -31,6 +31,8 @@ STEPS = [
     ("one URL: the engine serves the built app, deep links, no path escape", ["test_static.py"]),
     ("durable log: each record forced to disk, intact after a restart", ["test_durable.py"]),
     ("voice token endpoint: key stays on the server, errors readable, hourly cap", ["test_voice.py"]),
+    ("document check route: proposals only, nothing changed, nothing logged", ["test_documents_api.py"]),
+    ("web app parity fixture is current and covers unreadable quotes", ["test_parity_fixture.py"]),
     ("explanation describes its own recommendation (judge-simulator finding)", ["test_explanation.py"]),
     ("decision memory API: corrections, policy changes per claim, integrity", ["test_memory_api.py"]),
     ("tampering and restart: edits, torn writes, repair", ["test_tamper_restart.py"]),

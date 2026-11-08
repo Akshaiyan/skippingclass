@@ -45,6 +45,7 @@ ALLOWED_ORIGIN=https://your-app.example ALLOWED_HOST=engine.your-app.example pyt
 | Method and path | Body | Effect |
 |---|---|---|
 | `POST /api/override` | `case_id`, `actor`, `to_rec`, `note`, `reason_code`, `policy_version` | Records one reviewer decision. Returns the correction, reviewer, reason, timestamp and hash. |
+| `POST /api/documents/check` | `case_id`, `text` (up to 20,000 characters) | Read-only. Returns the facts a document proposes (with the source line and page) and whether each agrees with the claim form, disagrees with it, or proposes a value for a blank field. Changes no field, no decision and writes no log record. |
 | `POST /api/replay` | `policy` | Read-only replay of a policy against the open claims. Returns the flips and the claims that would move into routine. |
 | `POST /api/policy-decision` | `decision` (`approved` or `rejected`), `actor`, `proposed_by`, `policy_version`, `reason`, `signoff_for` | Records a policy decision. An approval recomputes the change server-side and refuses unless every claim moving into routine is named in `signoff_for`. |
 

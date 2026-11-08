@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { Chip, FlowBadge, PageHeader, PolicyStamp } from "@/components/status";
 import { Button } from "@/components/ui/button";
 import { ActivityGrid } from "@/components/ActivityGrid";
+import { matchesLogQuery, parseLogQuery } from "@/lib/log-query";
 
 export const Route = createFileRoute("/log")({
   head: () => ({
@@ -158,20 +159,20 @@ function LogPage() {
   const replayed = state.claims.filter((c) => replaysStored([c], v1Rules)).length;
   const integrity = state.source === "live" ? state.integrity : null;
 
+  // The search understands qualifiers (actor:, case:, policy:, type:) like GitHub's issue search. The tab counts
+  // follow the search, so they always say how many records each tab would show.
+  const searched = useMemo(() => {
+    const parsed = parseLogQuery(q);
+    return [...state.log].reverse().filter((e) => matchesLogQuery(e, parsed));
+  }, [state.log, q]);
+  const typeCounts = useMemo(() => {
+    const m = new Map<LogEntry["type"], number>();
+    for (const e of searched) m.set(e.type, (m.get(e.type) ?? 0) + 1);
+    return m;
+  }, [searched]);
   const rows = useMemo(
-    () =>
-      [...state.log]
-        .reverse()
-        .filter((e) => type === "all" || e.type === type)
-        .filter((e) => {
-          const needle = q.trim().toLowerCase();
-          if (!needle) return true;
-          // Search the case, the person and the written reason, as a reviewer looks for "who decided this, and why".
-          const reason = "reason" in e ? e.reason : "note" in e ? e.note : "";
-          const caseId = "case_id" in e ? (e.case_id ?? "") : "";
-          return [caseId, e.actor, reason ?? ""].some((s) => s.toLowerCase().includes(needle));
-        }),
-    [state.log, type, q],
+    () => searched.filter((e) => type === "all" || e.type === type),
+    [searched, type],
   );
 
   return (
@@ -210,35 +211,57 @@ function LogPage() {
 
       <ActivityGrid log={state.log} />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="text-xs font-medium text-text-2">
-          <span className="sr-only">Record type</span>
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value as typeof type)}
-            className="h-8 rounded-md border border-border bg-background px-2 text-xs hover:border-border-strong"
-          >
-            <option value="all">All types</option>
-            {(Object.keys(LOG_TYPE_LABEL) as LogEntry["type"][]).map((t) => (
-              <option key={t} value={t}>
-                {LOG_TYPE_LABEL[t]}
-              </option>
-            ))}
-          </select>
-        </label>
+      <div className="space-y-2">
         <label className="relative flex items-center">
           <Search
-            className="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground"
+            className="pointer-events-none absolute left-3 size-4 text-muted-foreground"
             aria-hidden
           />
-          <span className="sr-only">Search by case, person or reason</span>
+          <span className="sr-only">Filter the decision log</span>
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search case, person or reason"
-            className="h-8 w-64 rounded-md border border-border bg-background pl-8 pr-2 text-xs hover:border-border-strong"
+            placeholder="Filter: actor:jonas case:PRA-006 policy:v2 type:override, or words from a reason"
+            className="h-9 w-full rounded-md border border-border bg-background pl-9 pr-3 text-sm hover:border-border-strong"
           />
         </label>
+        <p className="text-xs text-muted-foreground">
+          Qualifiers: <code className="font-mono">actor:</code> <code className="font-mono">case:</code>{" "}
+          <code className="font-mono">policy:</code> <code className="font-mono">type:</code>; other words search
+          the reason.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-x-4 gap-y-2 border-b border-border">
+        <div className="flex flex-wrap gap-1" role="tablist" aria-label="Record type">
+          {(["all", ...(Object.keys(LOG_TYPE_LABEL) as LogEntry["type"][]).filter((t) => (typeCounts.get(t) ?? 0) > 0)] as const).map(
+            (t) => {
+              const n = t === "all" ? searched.length : (typeCounts.get(t) ?? 0);
+              const active = type === t;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setType(t)}
+                  className={cn(
+                    "-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm",
+                    active
+                      ? "border-foreground font-semibold text-foreground"
+                      : "border-transparent text-text-2 hover:text-foreground",
+                  )}
+                >
+                  {t === "all" ? "All" : LOG_TYPE_LABEL[t]}
+                  <span className="tnum rounded-full bg-surface-2 px-1.5 text-xs">{n}</span>
+                </button>
+              );
+            },
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
         <span className="tnum text-xs text-muted-foreground">
           {rows.length} of {state.log.length} records
         </span>

@@ -22,6 +22,6 @@ describe("app evaluator agrees with the engine on the fixture", () => {
   });
 
   it("the fixture covers the expected number of claims", () => {
-    expect(fixture.cases.length).toBe(163);
+    expect(fixture.cases.length).toBe(898);
   });
 });

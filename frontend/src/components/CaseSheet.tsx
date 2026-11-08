@@ -33,6 +33,7 @@ import {
   WhyDisabled,
 } from "./status";
 import { DecisionMemory } from "./DecisionMemory";
+import { DocumentCheck } from "./DocumentCheck";
 import { OverrideFlow } from "./OverrideFlow";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import {
@@ -536,6 +537,13 @@ export function CaseSheet({
                     <AccordionTrigger className={TRIGGER}>Decision memory</AccordionTrigger>
                     <AccordionContent>
                       <DecisionMemory caseId={claim.case_id} />
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="documents" className={SECTION}>
+                    <AccordionTrigger className={TRIGGER}>Check a document</AccordionTrigger>
+                    <AccordionContent>
+                      <DocumentCheck caseId={claim.case_id} />
                     </AccordionContent>
                   </AccordionItem>
 
