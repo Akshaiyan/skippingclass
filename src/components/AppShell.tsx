@@ -165,6 +165,8 @@ function Brand({ collapsed }: { collapsed: boolean }) {
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
+  // The Claims table uses the whole width next to the sidebar; other pages keep a readable line length.
+  const fullWidth = useRouterState({ select: (st) => st.location.pathname }) === "/claims";
   const { state } = useStore();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -229,7 +231,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               : "The triage service is not reachable, so decisions shown here are not from the engine and are not recorded."}
           </div>
         )}
-        <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 md:px-8 md:py-8">
+        <main
+          className={cn(
+            "mx-auto w-full flex-1 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 md:px-8 md:py-8",
+            !fullWidth && "max-w-[1440px]",
+          )}
+        >
           {children}
         </main>
       </div>

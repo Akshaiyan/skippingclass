@@ -181,7 +181,7 @@ export function ClaimsList({
     Status: 10,
     "Next step": 17,
     "Incident date": 10,
-    "Move to": 26,
+    "Move to": 33,
   };
 
   return (
@@ -298,7 +298,7 @@ export function ClaimsList({
           {(() => {
             // The grouped page drops the Recommendation column: the group already says it.
             const shown = compact ? cols : cols.filter((c) => c !== "Recommendation");
-            const w = compact ? width : { ...width, "Next step": 14 };
+            const w = compact ? width : { ...width, Quote: 8, Status: 9, "Next step": 13, "Move to": 38 };
             const rw = 100 - shown.filter((c) => c !== "Reason").reduce((n, c) => n + w[c]!, 0);
             const colgroup = (
               <colgroup>
