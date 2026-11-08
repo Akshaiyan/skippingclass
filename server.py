@@ -162,7 +162,7 @@ def _handle(method, path, query, body):
         claims = list(_cases().values())
         base = policy.load(HERE / "policies" / "v1.json")
         flips = [c["case_id"] for c in claims
-                 if triage.status_of(c) != "closed"
+                 if triage.status_of(c) == "open"
                  and policy.decide(c, base)[0] != policy.decide(c, new)[0]]
         into = [c["case_id"] for c in claims
                 if c["case_id"] in flips and policy.decide(c, new)[0] == "routine_processing"]
@@ -174,6 +174,12 @@ def _handle(method, path, query, body):
             return 400, {"error": "fields must be text; signoff_for must be a list of case ids"}
         if body.get("policy_version") not in ("v1", "v2"):
             return 400, {"error": "policy_version must be v1 or v2"}
+        if body.get("proposed_by") and body.get("proposed_by") == body.get("actor"):
+            return 400, {"error": "four-eyes: the approver must differ from the proposer"}
+        if body.get("decision") == "approved" and body.get("policy_hash"):
+            shown = ui_view.policy_hash(ui_view.V2_PATH if body.get("policy_version") == "v2" else ui_view.V1_PATH)
+            if body["policy_hash"] != shown:
+                return 409, {"error": "the policy changed after it was reviewed; reload the draft and review again"}
         # Why this gate exists (decision record):
         # Source: vendor and practitioner write-ups on champion-challenger and rule change (secondary, WebSearch 2026-11-07):
         #   a policy change that looks reasonable can cause a portfolio spike; review before release, not after.
