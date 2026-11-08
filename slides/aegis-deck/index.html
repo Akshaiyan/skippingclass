@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aegis: Truth in triage</title>
+<style>
+/* ===========================================================
+   FONTS (local, same families as the Aegis app)
+   Oxanium: titles and big numbers. Inter: text. JetBrains Mono: ids and hashes only.
+   =========================================================== */
+@font-face { font-family: "Oxanium Variable"; src: url("assets/fonts/oxanium.woff2") format("woff2"); font-weight: 200 800; font-display: block; }
+@font-face { font-family: "Inter Variable"; src: url("assets/fonts/inter.woff2") format("woff2"); font-weight: 100 900; font-display: block; }
+@font-face { font-family: "JetBrains Mono Variable"; src: url("assets/fonts/jetbrains-mono.woff2") format("woff2"); font-weight: 100 800; font-display: block; }
+
+/* ===========================================================
+   DESIGN TOKENS (copied from the Aegis app, src/styles.css)
+   Monochrome instrument panel. Colour only as small signals.
+   Radius 0 everywhere. 4pt grid (stage is 1920 wide, so steps are x2 of the app).
+   =========================================================== */
+:root {
+  --background: oklch(1 0 0);
+  --surface: oklch(0.985 0 0);
+  --surface-2: oklch(0.967 0.001 286.4);
+  --border: oklch(0.92 0.004 286.3);
+  --border-strong: oklch(0.871 0.005 286.3);
+  --foreground: oklch(0.145 0 0);
+  --text-2: oklch(0.37 0.012 285.8);
+  --muted: oklch(0.552 0.014 285.9);
+  --faint: oklch(0.62 0.013 286.1);
+  --green: oklch(0.627 0.17 149.2);
+  --yellow: oklch(0.681 0.142 75.8);
+  --red: oklch(0.577 0.215 27.3);
+  --unknown: oklch(0.54 0.184 278.3);        /* indigo: "not provided, never guessed" */
+  --unknown-tint: oklch(0.953 0.017 286.1);
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.04), 0 4px 16px oklch(0 0 0 / 0.04);
+
+  /* DECK ACCENT (open decision): one emphasis colour used sparingly.
+     Placeholder = the app's indigo. Change this single line to restyle every highlight. */
+  --accent: var(--unknown);
+  --accent-tint: var(--unknown-tint);
+
+  --font-display: "Oxanium Variable", "Oxanium", "Inter Variable", sans-serif;
+  --font-sans: "Inter Variable", "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --pad: 120px;                 /* slide margin */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --stage-bg: oklch(0.2 0 0);   /* letterbox colour around the stage */
+  --slide-bg: var(--background);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ===== FIXED 16:9 STAGE: viewport-base.css (frontend-slides skill), included in full ===== */
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--stage-bg, #000); }
+.deck-viewport { position: fixed; inset: 0; overflow: hidden; background: var(--stage-bg, #000); }
+.deck-stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; transform-origin: 0 0; background: var(--slide-bg, #fff); }
+.slide { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden; display: block; visibility: hidden; opacity: 0; pointer-events: none; background: var(--slide-bg, #fff); }
+.slide.active, .slide.visible { visibility: visible; opacity: 1; pointer-events: auto; z-index: 1; }
+img, video, canvas, svg { max-width: 100%; max-height: 100%; }
+.deck-controls { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 1000; }
+@media print {
+  html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
+  .deck-viewport { position: static; overflow: visible; background: #fff; }
+  .deck-stage { position: static; width: auto; height: auto; transform: none !important; background: none; }
+  .slide { position: relative; display: block !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; width: 1920px; height: 1080px; break-after: page; page-break-after: always; }
+  .slide:last-child { break-after: auto; page-break-after: auto; }
+  .deck-controls { display: none !important; }
+  .reveal { opacity: 1 !important; transform: none !important; }
+  @page { size: 1920px 1080px; margin: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.2s !important; }
+}
+
+/* ===========================================================
+   SLIDE BASE
+   =========================================================== */
+.slide { font-family: var(--font-sans); color: var(--foreground); font-feature-settings: "cv11", "ss01"; -webkit-font-smoothing: antialiased; }
+.slide .inner { position: absolute; inset: 0; padding: 128px var(--pad) 120px; display: flex; flex-direction: column; }
+
+/* Chrome: logo top left, page number bottom right. Real deck chrome only. */
+.chrome-logo { position: absolute; left: var(--pad); top: 48px; height: 40px; color: var(--foreground); }
+.chrome-meta { position: absolute; left: var(--pad); right: var(--pad); bottom: 44px; display: flex; justify-content: space-between; font-size: 22px; color: var(--muted); }
+
+/* Type ramp (stage px) */
+.eyebrow { font-size: 26px; line-height: 32px; color: var(--muted); letter-spacing: 0; margin-bottom: 24px; }
+h1, h2, .display { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.01em; color: var(--foreground); }
+h1 { font-size: 144px; line-height: 1.0; }
+h2 { font-size: 80px; line-height: 1.06; max-width: 1500px; }
+.lead { font-size: 36px; line-height: 52px; color: var(--text-2); max-width: 1300px; margin-top: 32px; }
+.body { font-size: 30px; line-height: 44px; color: var(--text-2); }
+.caption { font-size: 22px; line-height: 32px; color: var(--muted); }
+.num { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.02em; line-height: 1; }
+.mono { font-family: var(--font-mono); font-size: 0.82em; }
+em.hl { font-style: normal; color: var(--accent); }
+
+/* Evidence tags: outline chips, square, same idea as the app */
+.tag { display: inline-block; font-family: var(--font-sans); font-size: 18px; line-height: 24px; font-weight: 500; padding: 2px 10px; border: 1.5px solid var(--border-strong); color: var(--text-2); background: transparent; letter-spacing: 0.02em; white-space: nowrap; }
+.tag.todo { border-color: var(--unknown); color: var(--unknown); }       /* placeholder that still needs research */
+
+/* Cards and rules */
+.card { border: 1.5px solid var(--border); background: var(--background); padding: 40px; box-shadow: var(--shadow-card); }
+.card.flat { box-shadow: none; background: var(--surface); }
+.rule { height: 2px; background: var(--foreground); width: 96px; margin: 0 0 32px; }
+.grid { display: grid; gap: 32px; }
+
+/* Signature element: thin flow bar (human review | request info | routine) */
+.flowbar { display: flex; height: 10px; width: 100%; }
+.flowbar i { display: block; height: 100%; }
+.flowbar .r { background: var(--red); } .flowbar .y { background: var(--yellow); } .flowbar .g { background: var(--green); }
+
+/* Policy stamp */
+.stamp { font-family: var(--font-mono); font-size: 20px; color: var(--muted); border: 1.5px solid var(--border-strong); padding: 4px 12px; display: inline-block; }
+
+/* Motion: one calm entrance per slide, staggered. Nothing loops. */
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s var(--ease-out), transform 0.6s var(--ease-out); }
+.slide.visible .reveal { opacity: 1; transform: none; }
+.slide.visible .d1 { transition-delay: .08s } .slide.visible .d2 { transition-delay: .16s }
+.slide.visible .d3 { transition-delay: .24s } .slide.visible .d4 { transition-delay: .32s }
+.slide.visible .d5 { transition-delay: .40s } .slide.visible .d6 { transition-delay: .48s }
+
+/* Notes live in the HTML for the presenter, never on screen */
+aside.notes { display: none; }
+
+/* ===========================================================
+   SLIDE-SPECIFIC LAYOUTS
+   =========================================================== */
+/* 1 Title */
+.s-title .logo-big { height: 150px; color: var(--foreground); margin-bottom: 72px; }
+.s-title .tagline { font-family: var(--font-display); font-size: 72px; line-height: 1.1; font-weight: 500; }
+.s-title .sub { margin-top: 40px; font-size: 32px; color: var(--muted); }
+.s-title .flowbar { position: absolute; left: var(--pad); right: var(--pad); bottom: 120px; width: auto; width: calc(100% - 2*var(--pad)); }
+
+/* 2 Problem */
+.s-problem .cols { display: grid; grid-template-columns: 1.1fr 1fr; gap: 96px; margin-top: 56px; flex: 1; }
+.s-problem .stat { border-top: 2px solid var(--foreground); padding-top: 24px; margin-bottom: 40px; }
+.s-problem .stat .num { font-size: 120px; }
+
+/* 3 Industries */
+.s-ind .grid { grid-template-columns: repeat(4, 1fr); margin-top: 64px; }
+.s-ind .card { min-height: 420px; display: flex; flex-direction: column; justify-content: space-between; }
+.s-ind .card h3 { font-family: var(--font-display); font-size: 40px; line-height: 1.1; font-weight: 600; margin-bottom: 20px; }
+
+/* 4 Minimum requirements */
+.s-min .grid { grid-template-columns: repeat(4, 1fr); margin-top: 56px; }
+.s-min .card { padding: 36px 32px; min-height: 520px; display: flex; flex-direction: column; gap: 20px; }
+.s-min .nr { font-family: var(--font-display); font-size: 28px; color: var(--muted); }
+.s-min h3 { font-family: var(--font-display); font-size: 38px; line-height: 1.1; font-weight: 600; }
+.s-min .proof { margin-top: auto; border-top: 1.5px solid var(--border); padding-top: 20px; font-size: 26px; line-height: 36px; color: var(--foreground); }
+.check { width: 36px; height: 36px; color: var(--green); }
+
+/* 5 Extras */
+.s-extra .grid { grid-template-columns: repeat(2, 1fr); margin-top: 72px; gap: 0 96px; border-top: 2px solid var(--foreground); }
+.s-extra .item { padding: 44px 40px 44px 0; border-bottom: 1.5px solid var(--border); }
+.s-extra .item + .item { }
+.s-extra .item h3 { font-family: var(--font-display); font-size: 52px; font-weight: 600; line-height: 1.1; margin-bottom: 14px; }
+.s-extra .item.star h3 { color: var(--accent); }
+
+/* 6 Live demo */
+.s-demo .inner { justify-content: center; }
+.s-demo .big { font-family: var(--font-display); font-size: 200px; line-height: 0.95; font-weight: 600; }
+
+/* 7 Approach */
+.s-app .pipe { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; margin-top: 72px; }
+.s-app .step { border: 1.5px solid var(--border-strong); padding: 32px 28px; min-height: 340px; position: relative; background: var(--background); }
+.s-app .step + .step { margin-left: -1.5px; }
+.s-app .step .nr { font-family: var(--font-display); font-size: 26px; color: var(--muted); margin-bottom: 18px; }
+.s-app .step h3 { font-family: var(--font-display); font-size: 36px; line-height: 1.1; font-weight: 600; margin-bottom: 16px; }
+.s-app .step.ai { background: var(--accent-tint); border-color: var(--accent); }
+.s-app .note { margin-top: 48px; display: flex; gap: 24px; align-items: center; font-size: 30px; color: var(--text-2); }
+
+/* 8 Market */
+.s-mkt .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 64px; margin-top: 72px; }
+.s-mkt .col { border-top: 2px solid var(--foreground); padding-top: 28px; }
+.s-mkt .num { font-size: 112px; margin: 20px 0 16px; }
+
+/* 9 Business case */
+.s-biz .row { display: grid; grid-template-columns: 1fr 120px 1fr 1fr; gap: 48px; align-items: end; margin-top: 72px; }
+.s-biz .num.big { font-size: 140px; }
+.s-biz .arrow { font-family: var(--font-display); font-size: 96px; color: var(--faint); text-align: center; line-height: 1; padding-bottom: 12px; }
+.s-biz .foot { display: flex; gap: 96px; margin-top: 72px; border-top: 1.5px solid var(--border); padding-top: 32px; }
+.s-biz .foot .num { font-size: 72px; }
+
+/* 10 Team */
+.s-team .grid { grid-template-columns: repeat(4, 1fr); margin-top: 56px; gap: 28px; }
+.s-team .person { border-top: 2px solid var(--foreground); padding-top: 24px; display: flex; flex-direction: column; gap: 10px; }
+.s-team .avatar { width: 168px; height: 168px; background: var(--surface-2); border: 1.5px solid var(--border-strong); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 56px; color: var(--muted); margin-bottom: 14px; }
+.s-team .name { font-family: var(--font-display); font-size: 40px; line-height: 1.1; font-weight: 600; }
+.s-team .role { font-size: 26px; color: var(--accent); font-weight: 500; margin-bottom: 8px; }
+.s-team ul { list-style: none; font-size: 22px; line-height: 30px; color: var(--text-2); display: flex; flex-direction: column; gap: 8px; }
+.s-team .logos { margin-top: auto; padding-top: 20px; display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; min-height: 64px; }
+.s-team .logos img { height: 34px; width: auto; max-width: 150px; object-fit: contain; filter: grayscale(1) contrast(1.1); opacity: .9; }
+.s-team .logos img.ink { filter: brightness(0); }
+.s-team .logos .txt { font-size: 20px; font-weight: 600; color: var(--text-2); border: 1.5px solid var(--border-strong); padding: 4px 10px; }
+
+
+/* Decision flow slide */
+.s-flow .flows { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 56px; }
+.s-flow .fcol { border: 1.5px solid var(--border); box-shadow: var(--shadow-card); padding: 0 32px 32px; background: var(--background); }
+.s-flow .fcol .bar { height: 12px; margin: 0 -32px 28px; }
+.s-flow .fcol.red .bar { background: var(--red); } .s-flow .fcol.yellow .bar { background: var(--yellow); } .s-flow .fcol.green .bar { background: var(--green); }
+.s-flow .fcol h3 { font-family: var(--font-display); font-size: 44px; line-height: 1.1; font-weight: 600; margin-bottom: 20px; }
+.s-flow .lab { font-size: 22px; line-height: 28px; color: var(--muted); margin-top: 18px; }
+.s-flow .lab.help { color: var(--accent); font-weight: 600; }
+.s-flow .fcol p { font-size: 27px; line-height: 38px; color: var(--foreground); margin-top: 4px; }
+
+/* Team photos and logos */
+.s-team .photo { width: 200px; height: 200px; object-fit: cover; filter: grayscale(1) contrast(1.05); border: 1.5px solid var(--border-strong); margin-bottom: 14px; max-width: none; max-height: none; }
+.s-team .logos img { height: 40px; }
+.s-team .logos img.lg-wide { height: 46px; }
+.s-team .logos img.lg-thinc { height: 80px; }
+.s-team .logos img.lg-sq { height: 56px; }
+.s-team .logos img.lg-bount { height: 44px; }
+.s-team .logos img.lg-velth { height: 52px; }
+
+/* Backup slides */
+.backup-label { position: absolute; right: var(--pad); top: 56px; }
+.table { width: 100%; border-collapse: collapse; margin-top: 40px; font-size: 26px; }
+.table th { text-align: left; font-weight: 500; color: var(--muted); font-size: 22px; padding: 0 0 12px; border-bottom: 2px solid var(--foreground); }
+.table td { padding: 16px 24px 16px 0; border-bottom: 1.5px solid var(--border); color: var(--text-2); vertical-align: top; }
+.table td:first-child { color: var(--foreground); }
+
+/* Deck UI (outside the stage) */
+.progress { position: fixed; left: 0; bottom: 0; height: 4px; background: var(--accent); width: 0; z-index: 1000; transition: width .3s var(--ease-out); }
+</style>
+</head>
+<body>
+<div class="deck-viewport">
+<main class="deck-stage" id="deckStage">
+
+<!-- Reusable logo as an inline SVG symbol (paths copied from src/components/AegisLogo.tsx) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="aegis-mark" viewBox="284 284 484 426">
+      <path d="M526 284 619 448H432Z"/><path d="M410 487H641L685 565H366Z"/><path d="M344 603H506L446 710H284Z"/><path d="M545 603H707L768 710H606Z"/>
+    </symbol>
+    <symbol id="aegis-logo" viewBox="284 284 1832 426">
+      <path d="M526 284 619 448H432Z"/><path d="M410 487H641L685 565H366Z"/><path d="M344 603H506L446 710H284Z"/><path d="M545 603H707L768 710H606Z"/>
+      <path d="M981 600 1096 394 1212 600H1178L1096 453 1014 600Z"/>
+      <path d="M1264 394H1437V423H1292V483H1412V511H1292V571H1437V600H1264Z"/>
+      <path d="M1533 394H1733V423H1539V571H1704V511H1635V483H1733V577A23 23 0 0 1 1710 600H1533A23 23 0 0 1 1510 577V417A23 23 0 0 1 1533 394Z"/>
+      <path d="M1807 394H1836V600H1807Z"/>
+      <path d="M1933 394H2116V423H1939V483H2093A23 23 0 0 1 2116 506V577A23 23 0 0 1 2093 600H1910V571H2087V511H1933A23 23 0 0 1 1910 488V417A23 23 0 0 1 1933 394Z"/>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"/></symbol>
+  </defs>
+</svg>
+
+<!-- =====================================================================
+     SLIDE 1 · TITLE  (live, 0:00)
+     ===================================================================== -->
+<section class="slide s-title active" data-title="Title">
+  <div class="inner" style="justify-content:center;align-items:flex-start">
+    <svg class="logo-big reveal" style="width:auto;height:150px;aspect-ratio:1832/426" fill="currentColor" role="img" aria-label="Aegis"><use href="#aegis-logo"/></svg>
+    <div class="tagline reveal d1">Truth in triage.</div>
+    <div class="sub reveal d2">Claims decisions that stay right as the rules change.</div>
+  </div>
+  <div class="flowbar reveal d3"><i class="r" style="width:22%"></i><i class="y" style="width:18%"></i><i class="g" style="width:60%"></i></div>
+  <div class="chrome-meta"><span>Taktile × thinc! Munich Hackathon · 7–8 November 2026</span><span></span></div>
+  <aside class="notes">TIME 0:00 to 0:10. One breath: who we are, what the product is. Do not read the subtitle.</aside>
+</section>
+
+<!-- =====================================================================
+     SLIDE 2 · PROBLEM  (live)
+     Narrative: slow, expensive, manual. Sharpened with the policy-change fear.
+     ===================================================================== -->
+<section class="slide s-problem" data-title="Problem">
+  <svg class="chrome-logo" style="width:auto;aspect-ratio:1832/426" fill="currentColor"><use href="#aegis-logo"/></svg>
+  <div class="inner">
+    <div class="eyebrow reveal">The problem</div>
+    <h2 class="reveal d1">Claims handling is slow, manual and expensive. And every rule change makes it riskier.</h2>
+    <div class="cols">
+      <div>
+        <p class="lead reveal d2" style="margin-top:0">People wait longer for their money, and errors creep in, because almost every claim still passes through a human first. When policy changes, nobody can see in advance which decisions flip.</p>
+      </div>
+      <div>
+        <div class="stat reveal d3"><div class="num">12 min</div><div class="caption" style="margin-top:12px">manual triage per claim <span class="tag">ASSUMED</span></div></div>
+        <div class="stat reveal d4"><div class="num">EUR 180k</div><div class="caption" style="margin-top:12px">triage cost per year at 20,000 claims <span class="tag">ASSUMED</span></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="chrome-meta"><span>Aegis · Truth in triage</span><span class="pn"></span></div>
+  <aside class="notes">TIME about 0:10 to 0:30. [OPEN] Replace the abstract line with the one concrete scene or number that hurts. Say the policy-change fear out loud; it is what separates us from every other triage pitch.</aside>
+</section>
+
+<!-- =====================================================================
+     SLIDE 4 · MINIMUM REQUIREMENTS, SOLVED  (live, compact)
+     Maps 1:1 to the four deliverables of the case. Each card carries one proof.
+     ===================================================================== -->
+<section class="slide s-min" data-title="Requirements">
+  <svg class="chrome-logo" style="width:auto;aspect-ratio:1832/426" fill="currentColor"><use href="#aegis-logo"/></svg>
+  <div class="inner">
+    <div class="eyebrow reveal">The brief, delivered</div>
+    <h2 class="reveal d1">All four deliverables, built and tested.</h2>
+    <div class="grid">
+      <div class="card reveal d2"><div class="nr">1</div><h3>Intake and decision</h3><p class="body">One of three next steps, with rule, facts and policy version.</p><div class="proof">14 of 14 labelled cases match <span class="tag">MEASURED</span></div></div>
+      <div class="card reveal d3"><div class="nr">2</div><h3>Review and change control</h3><p class="body">Reviewer overrides with reason. Policy owner sees what a change touches.</p><div class="proof">Override logged with reviewer and policy version</div></div>
+      <div class="card reveal d4"><div class="nr">3</div><h3>Quality measurement</h3><p class="body">Before and after per policy version. Wrong routine decisions shown first.</p><div class="proof">0 open claims worse after v2 <span class="tag">PRACTICE SET</span></div></div>
+      <div class="card reveal d5"><div class="nr">4</div><h3>Business case</h3><p class="body">Annual cost, error cost and cost of a policy change, with assumptions.</p><div class="proof">Every figure tagged, every input editable</div></div>
+    </div>
+  </div>
+  <div class="chrome-meta"><span>Aegis · Truth in triage</span><span class="pn"></span></div>
+  <aside class="notes">TIME about 0:50 to 1:10. Fast. The point is "minimum requirements are done, perfectly", then move on. Verify each proof line against the repo before submission (README evidence table).</aside>
+</section>
+
+<!-- =====================================================================
+     SLIDE · DECISION FLOW (live)
+     The three outcomes, what must happen in each, and where the software helps.
+     Names follow the app: Human review / Missing information / Routine processing.
+     ===================================================================== -->
+<section class="slide s-flow" data-title="Decision flow">
+  <svg class="chrome-logo" style="width:auto;aspect-ratio:1832/426" fill="currentColor"><use href="#aegis-logo"/></svg>
+  <div class="inner">
+    <div class="eyebrow reveal">How a claim is decided</div>
+    <h2 class="reveal d1">Three outcomes, one next step.</h2>
+    <div class="flows">
+      <div class="fcol red reveal d2">
+        <div class="bar"></div>
+        <h3>Human review</h3>
+        <div class="lab">When</div><p>A known review trigger fires.</p>
+        <div class="lab">What must happen</div><p>A person checks the evidence, decides and records why.</p>
+        <div class="lab help">How Aegis helps</div><p>Rule, facts and policy version in one view. One-step override, logged with reviewer.</p>
+      </div>
+      <div class="fcol yellow reveal d3">
+        <div class="bar"></div>
+        <h3>Missing information</h3>
+        <div class="lab">When</div><p>A deciding fact is missing, unreadable or conflicting.</p>
+        <div class="lab">What must happen</div><p>Ask the claimant for exactly the missing item.</p>
+        <div class="lab help">How Aegis helps</div><p>Names the document to request. A blank stays blank, never guessed.</p>
+      </div>
+      <div class="fcol green reveal d4">
+        <div class="bar"></div>
+        <h3>Routine processing</h3>
+        <div class="lab">When</div><p>Every deciding fact is known and in range, no trigger.</p>
+        <div class="lab">What must happen</div><p>A handler confirms. Routine is not a payment approval.</p>
+        <div class="lab help">How Aegis helps</div><p>Routine opens only after sampled audits pass. Any error closes it again.</p>
+      </div>
+    </div>
+  </div>
+  <div class="chrome-meta"><span>Aegis · Truth in triage</span><span class="pn"></span></div>
+  <aside class="notes">TIME about 1:10 to 1:30. Rules run in this order, first match wins: review trigger, then missing information, then routine. VERIFY the release-gate line against README (closed until clean audits).</aside>
+</section>
+
+<!-- =====================================================================
+     SLIDE · EXTRA FEATURES (live) = the actual pitch. Four items, by decision.
+     ===================================================================== -->
+<section class="slide s-extra" data-title="Extras">
+  <svg class="chrome-logo" style="width:auto;aspect-ratio:1832/426" fill="currentColor"><use href="#aegis-logo"/></svg>
+  <div class="inner">
+    <div class="eyebrow reveal">Beyond the brief</div>
+    <h2 class="reveal d1">What turns a prototype into a product.</h2>
+    <div class="grid">
+      <div class="item star reveal d2"><h3>Replay before release</h3><p class="body">See which open claims flip before a rule goes live. Closed claims never move.</p></div>
+      <div class="item reveal d3"><h3>Voice agent</h3><p class="body">Navigates the entire platform by voice.</p></div>
+      <div class="item reveal d4"><h3>Four-eyes release</h3><p class="body">The person who proposes a policy change cannot approve it.</p></div>
+      <div class="item reveal d5"><h3>Documents propose</h3><p class="body">Extracted facts are suggestions. The written policy decides.</p></div>
+    </div>
+  </div>
+  <div class="chrome-meta"><span>Aegis · Truth in triage</span><span class="pn"></span></div>
+  <aside class="notes">TIME about 1:30 to 1:50. Order and wording still open. Tamper-evident log and the monotone guard were cut from this slide on purpose (they stay in the approach slide and the repo).</aside>
+</section>
+
+<!-- =====================================================================
+     SLIDE · LIVE DEMO (no text on purpose). Switch to the live product here.
+     ===================================================================== -->
+<section class="slide s-demo" data-title="Live demo">
+  <div class="inner" style="align-items:center;justify-content:center">
+    <svg class="reveal" style="width:auto;height:260px;aspect-ratio:484/426;color:var(--foreground)" fill="currentColor" role="img" aria-label="Aegis"><use href="#aegis-mark"/></svg>
+  </div>
+  <aside class="notes">TIME about 1:50 to 3:50 (demo, about 2 min). The voice agent navigates the whole platform live. Fallback if it fails: recorded video. This slide carries no text; it can also be skipped entirely by switching windows.</aside>
+</section>
+
+<!-- =====================================================================
+     SLIDE 7 · APPROACH  (live)
+     ===================================================================== -->
+<section class="slide s-app" data-title="Approach">
+  <svg class="chrome-logo" style="width:auto;aspect-ratio:1832/426" fill="currentColor"><use href="#aegis-logo"/></svg>
+  <div class="inner">
+    <div class="eyebrow reveal">Our approach</div>
+    <h2 class="reveal d1">Rules decide. AI only proposes.</h2>
+    <div class="pipe">
+      <div class="step ai reveal d2"><div class="nr">1</div><h3>Read facts</h3><p class="caption">Documents and claim forms are turned into facts. Blank stays blank.</p></div>
+      <div class="step reveal d3"><div class="nr">2</div><h3>Apply policy</h3><p class="caption">Written policy, stored as versioned data. First matching rule wins.</p></div>
+      <div class="step reveal d4"><div class="nr">3</div><h3>Check</h3><p class="caption">A guard can send a claim to a person. It can never clear one.</p></div>
+      <div class="step reveal d5"><div class="nr">4</div><h3>Explain</h3><p class="caption">Rule, facts and policy version, on every recommendation.</p></div>
+      <div class="step reveal d6"><div class="nr">5</div><h3>Remember</h3><p class="caption">Overrides and releases go into a log nobody can quietly rewrite.</p></div>
+    </div>
+    <div class="note reveal d6"><span class="tag">KEY TRADE-OFF</span><span>We trade a little automation for a lot of trust. [confirm wording with Finn]</span></div>
+  </div>
+  <div class="chrome-meta"><span>Aegis · Truth in triage</span><span class="pn"></span></div>
+  <aside class="notes">TIME about 3:50 to 4:00 if shown live; otherwise submission only. Highlighted step is where a language model may help; it never decides.</aside>
+</section>
+
+<!-- =====================================================================
+     SLIDE 8 · MARKET  (live)
+     No figure until the research is in. Placeholders are visible on purpose.
+     ===================================================================== -->
+<section class="slide s-mkt" data-title="Market">
+  <svg class="chrome-logo" style="width:auto;aspect-ratio:1832/426" fill="currentColor"><use href="#aegis-logo"/></svg>
+  <div class="inner">
+    <div class="eyebrow reveal">The market</div>
+    <h2 class="reveal d1">[Headline with the market size, from research]</h2>
+    <div class="cols">
+      <div class="col reveal d2"><div class="caption">Motor claims, Europe</div><div class="num">[ € ]</div><span class="tag todo">SOURCE NEEDED</span></div>
+      <div class="col reveal d3"><div class="caption">Claims triage, all lines</div><div class="num">[ € ]</div><span class="tag todo">SOURCE NEEDED</span></div>
+      <div class="col reveal d4"><div class="caption">Policy governance, regulated industries</div><div class="num">[ € ]</div><span class="tag todo">SOURCE NEEDED</span></div>
+    </div>
+  </div>
+  <div class="chrome-meta"><span>Aegis · Truth in triage</span><span class="pn"></span></div>
+  <aside class="notes">Decision pending: use the narrow, the broad, or both. Every number needs a link in the sources list.</aside>
+</section>
+
+<!-- =====================================================================
+     SLIDE 9 · BUSINESS CASE  (live or backup, decide)
+     Figures are from BUSINESS_CASE.md on origin/main (470e51f). All inputs ASSUMED.
+     ===================================================================== -->
+<section class="slide s-biz" data-title="Business case">
+  <svg class="chrome-logo" style="width:auto;aspect-ratio:1832/426" fill="currentColor"><use href="#aegis-logo"/></svg>
+  <div class="inner">
+    <div class="eyebrow reveal">Business case, per mid-sized motor insurer</div>
+    <h2 class="reveal d1">A policy change costs 6 times less.</h2>
+    <div class="row">
+      <div class="reveal d2"><div class="caption">Today, re-review all open claims</div><div class="num big" style="color:var(--muted)">€78.8k</div></div>
+      <div class="arrow reveal d3">→</div>
+      <div class="reveal d3"><div class="caption">With Aegis, re-review only flips</div><div class="num big">€12.4k</div></div>
+      <div class="reveal d4"><div class="caption">Saved per policy change</div><div class="num big" style="color:var(--accent)">€66.3k</div></div>
+    </div>
+    <div class="foot reveal d5">
+      <div><div class="num">€56k</div><div class="caption">net benefit, year 1</div></div>
+      <div><div class="num">6.2 mo</div><div class="caption">payback</div></div>
+      <div style="margin-left:auto;align-self:end;display:flex;gap:12px"><span class="tag">ASSUMED INPUTS</span><span class="tag">SYNTHETIC FLIP SHARE</span></div>
+    </div>
+  </div>
+  <div class="chrome-meta"><span>Aegis · Truth in triage</span><span class="pn"></span></div>
+  <aside class="notes">Be honest: inputs are assumptions on synthetic data; the model recomputes with the insurer's own figures. "6 times" = 78,750 / 12,423 = 6.3. Verify before submission.</aside>
+</section>
+
+<!-- =====================================================================
+     SLIDE · MEET THE TEAM (last = thank you + questions)
+     Photos shown in greyscale so four different photo styles read as one set.
+     ===================================================================== -->
+<section class="slide s-team" data-title="Team">
+  <svg class="chrome-logo" style="width:auto;aspect-ratio:1832/426" fill="currentColor"><use href="#aegis-logo"/></svg>
+  <div class="inner">
+    <div class="eyebrow reveal">Questions? We are here.</div>
+    <h2 class="reveal d1">Thank you. Meet the team.</h2>
+    <div class="grid">
+      <div class="person reveal d2">
+        <img class="photo" src="assets/people/finn.jpg" alt="Finn Ehlers" style="object-position:50% 25%">
+        <div class="name">Finn Ehlers</div><div class="role">Head of GTM</div>
+        <div class="logos"><img class="lg-wide" src="assets/logos/unimannheim.png" alt="Universität Mannheim"><img class="ink" src="assets/logos/emidat.png" alt="Emidat"><img class="lg-thinc" src="assets/logos/thinc.svg" alt="thinc!"></div>
+      </div>
+      <div class="person reveal d3">
+        <img class="photo" src="assets/people/elias.jpg" alt="Elias Nothnagel" style="object-position:50% 30%">
+        <div class="name">Elias Nothnagel</div><div class="role">Head of Product</div>
+        <div class="logos"><img class="lg-wide" src="assets/logos/unimannheim.png" alt="Universität Mannheim"><img src="assets/logos/finmid.svg" alt="Finmid"><img class="lg-thinc" src="assets/logos/thinc.svg" alt="thinc!"></div>
+      </div>
+      <div class="person reveal d4">
+        <img class="photo" src="assets/people/akshaiyan.jpg" alt="Akshaiyan Suthaharan">
+        <div class="name">Akshaiyan Suthaharan</div><div class="role">Head of AI</div>
+        <ul><li>Contract Developer, Contra</li><li>Full Stack Developer, bount.</li><li>Reading School</li></ul>
+        <div class="logos"><img class="lg-sq" src="assets/logos/contra.png" alt="Contra"><img class="lg-bount" src="assets/logos/bount.png" alt="bount."><img class="lg-sq" src="assets/logos/reading.png" alt="Reading School"></div>
+      </div>
+      <div class="person reveal d5">
+        <img class="photo" src="assets/people/anshu.jpg" alt="Anshu Raj" style="object-position:50% 20%">
+        <div class="name">Anshu Raj</div><div class="role">Lead Developer</div>
+        <ul><li>TUM.ai × Anthropic, Max Planck Challenge winner</li><li>8x hackathon winner</li><li>Co-founder, velth</li></ul>
+        <div class="logos"><img src="assets/logos/tumai.svg" alt="TUM.ai"><img class="lg-velth" src="assets/logos/velth.png" alt="velth"></div>
+      </div>
+    </div>
+  </div>
+  <div class="chrome-meta"><span>Aegis · Truth in triage</span><span class="pn"></span></div>
+  <aside class="notes">Last slide stays up during Q&amp;A. Photos are greyscaled by CSS.</aside>
+</section>
+
+<!-- =====================================================================
+     BACKUP A · COST OF ERRORS AND THE THRESHOLD  (submission PDF only)
+     ===================================================================== -->
+<section class="slide s-backup" data-title="Backup: cost of errors">
+  <svg class="chrome-logo" style="width:auto;aspect-ratio:1832/426" fill="currentColor"><use href="#aegis-logo"/></svg>
+  <span class="tag backup-label">BACKUP</span>
+  <div class="inner">
+    <div class="eyebrow reveal">Cost of errors</div>
+    <h2 class="reveal d1">A wrong routine decision costs about 240 times a needless escalation.</h2>
+    <div class="grid reveal d2" style="grid-template-columns:1fr 1fr;gap:96px;margin-top:64px">
+      <div><div class="num" style="font-size:120px">0.41%</div><p class="body" style="margin-top:16px">Above this chance of being wrong, a person is cheaper than routine. So a claim reaches routine only when every deciding fact is known and in range.</p></div>
+      <div><div class="num" style="font-size:120px">0.24%</div><p class="body" style="margin-top:16px">If more routine decisions than this are wrong, the year-1 net benefit is gone. The case rests on a very low wrong-routine rate, not on speed.</p><div style="margin-top:20px"><span class="tag">ASSUMED: EUR 2,000 PER WRONG ROUTINE</span></div></div>
+    </div>
+  </div>
+  <div class="chrome-meta"><span>Aegis · Truth in triage</span><span class="pn"></span></div>
+</section>
+
+<!-- =====================================================================
+     BACKUP B · ASSUMPTIONS REGISTER  (submission PDF only)
+     ===================================================================== -->
+<section class="slide s-backup" data-title="Backup: assumptions">
+  <svg class="chrome-logo" style="width:auto;aspect-ratio:1832/426" fill="currentColor"><use href="#aegis-logo"/></svg>
+  <span class="tag backup-label">BACKUP</span>
+  <div class="inner">
+    <div class="eyebrow reveal">Assumptions register</div>
+    <h2 class="reveal d1">Every input is labelled, and editable.</h2>
+    <table class="table reveal d2">
+      <tr><th>Input</th><th>Value</th><th>Status</th></tr>
+      <tr><td>Claims per year</td><td>20,000</td><td><span class="tag">ASSUMED</span></td></tr>
+      <tr><td>Manual triage time</td><td>12 min per claim</td><td><span class="tag">ASSUMED</span></td></tr>
+      <tr><td>Handler cost</td><td>EUR 45 per hour, fully loaded</td><td><span class="tag">ASSUMED</span></td></tr>
+      <tr><td>System running cost</td><td>EUR 60,000 per year</td><td><span class="tag">ASSUMED</span></td></tr>
+      <tr><td>Flip share at v2</td><td>15.8%</td><td><span class="tag">MEASURED-PROXY</span></td></tr>
+    </table>
+    <p class="caption" style="margin-top:32px">Full register: BUSINESS_CASE.md and assumptions.json in the repository.</p>
+  </div>
+  <div class="chrome-meta"><span>Aegis · Truth in triage</span><span class="pn"></span></div>
+</section>
+
+</main>
+</div>
+<div class="progress" id="progress"></div>
+
+<script>
+/* ===========================================================
+   SLIDE CONTROLLER
+   Arrows / Space / PageUp / PageDown / Home / End / wheel / swipe. F = fullscreen.
+   URL hash (#3) keeps your place on reload. Stage scales as one block.
+   =========================================================== */
+class SlidePresentation {
+  constructor() {
+    this.slides = [...document.querySelectorAll('.slide')];
+    this.stage = document.getElementById('deckStage');
+    this.bar = document.getElementById('progress');
+    this.i = 0;
+    this.scale(); window.addEventListener('resize', () => this.scale());
+    window.addEventListener('keydown', (e) => this.key(e));
+    window.addEventListener('wheel', (e) => { if (this.lock) return; this.lock = true; setTimeout(() => this.lock = false, 600); this.go(this.i + (e.deltaY > 0 ? 1 : -1)); }, { passive: true });
+    let x0 = null;
+    window.addEventListener('touchstart', (e) => x0 = e.touches[0].clientX, { passive: true });
+    window.addEventListener('touchend', (e) => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 50) this.go(this.i + (dx < 0 ? 1 : -1)); x0 = null; }, { passive: true });
+    window.addEventListener('hashchange', () => this.fromHash());
+    this.numberSlides();
+    this.fromHash();
+  }
+  numberSlides() {
+    let n = 0, b = 0;
+    this.slides.forEach((sl) => {
+      const label = sl.classList.contains('s-backup') ? 'B' + (++b) : String(++n);
+      const el = sl.querySelector('.pn'); if (el) el.textContent = label;
+    });
+  }
+  scale() {
+    const f = Math.min(innerWidth / 1920, innerHeight / 1080);
+    this.stage.style.transform = `translate(${(innerWidth - 1920 * f) / 2}px, ${(innerHeight - 1080 * f) / 2}px) scale(${f})`;
+  }
+  key(e) {
+    const k = e.key;
+    if (['ArrowRight', 'ArrowDown', ' ', 'PageDown', 'Enter'].includes(k)) { e.preventDefault(); this.go(this.i + 1); }
+    else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(k)) { e.preventDefault(); this.go(this.i - 1); }
+    else if (k === 'Home') this.go(0);
+    else if (k === 'End') this.go(this.slides.length - 1);
+    else if (k === 'f' || k === 'F') { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.(); }
+  }
+  fromHash() { const n = parseInt(location.hash.slice(1), 10); this.show(Number.isFinite(n) ? n - 1 : 0); }
+  go(n) { this.show(n); history.replaceState(null, '', '#' + (this.i + 1)); }
+  show(n) {
+    this.i = Math.max(0, Math.min(n, this.slides.length - 1));
+    this.slides.forEach((s, k) => { s.classList.toggle('active', k === this.i); s.classList.toggle('visible', k === this.i); });
+    this.bar.style.width = ((this.i + 1) / this.slides.length * 100) + '%';
+  }
+}
+new SlidePresentation();
+</script>
+</body>
+</html>
