@@ -22,6 +22,7 @@ import {
 } from "./diagrams";
 import { changedRuleCount } from "@/lib/policy-view";
 import { createPageTools } from "./page-tools";
+import { createTourTool } from "./tour";
 
 export type AppPath = "/" | "/claims" | "/policy" | "/business" | "/log" | "/voice";
 
@@ -47,6 +48,11 @@ export interface VoiceEnv {
   navigate: (to: AppPath, flow?: Flow) => void;
   openClaim: (caseId: string, draft?: OverrideDraft) => void;
   showDiagram: (spec: DiagramSpec | null) => void;
+  closeClaim: () => void;
+  /** Where the guided tour is: the index of the current stop, or -1 before it starts. Mutated by tour_step. */
+  tour: { index: number };
+  /** Whether the decision log hash chain checked out when it was loaded; null when unknown. */
+  logIntact: boolean | null;
   /** Cost impact inputs, and whether v2 has been released this session. */
   assumptions: SavingsAssumptions;
   gateOpen: boolean;
@@ -130,6 +136,7 @@ const str = (v: unknown) => (typeof v === "string" ? v : v == null ? "" : String
 export function createVoiceTools(getEnv: () => VoiceEnv) {
   const tools: Record<string, (p?: Params) => string> = {
     ...createPageTools(getEnv),
+    ...createTourTool(getEnv),
     get_app_context: () => describeApp(getEnv()),
 
     navigate_to_page: (p = {}) => {

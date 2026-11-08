@@ -40,6 +40,9 @@ function makeEnv(over: Partial<VoiceEnv> = {}): VoiceEnv {
     setDraftRules: vi.fn(),
     resetDraft: vi.fn(),
     setAssumption: vi.fn(),
+    closeClaim: vi.fn(),
+    tour: { index: -1 },
+    logIntact: true,
     ...over,
   };
 }
@@ -434,5 +437,70 @@ describe("blank values are never zero", () => {
     );
     expect(run(env, "set_cost_assumption", { name: "claimsPerMonth" })).toMatch(/must be a number/);
     expect(env.setAssumption).not.toHaveBeenCalled();
+  });
+});
+
+describe("guided tour", () => {
+  it("walks an operations lead through every page, in a fixed order", async () => {
+    const { buildTour } = await import("@/voice/tour");
+    const stops = buildTour(makeEnv());
+    expect(stops.map((s) => s.path)).toEqual([
+      "/",
+      "/claims",
+      "/claims",
+      "/claims",
+      "/log",
+      "/policy",
+      "/business",
+      "/voice",
+    ]);
+    expect(stops[2]!.claimId).toBeTruthy();
+    expect(stops[2]!.diagram?.kind).toBe("claim_path");
+  });
+  it("leaves out the pages a claimer cannot open, and says why", async () => {
+    const { buildTour } = await import("@/voice/tour");
+    const stops = buildTour(makeEnv({ user: claimer }));
+    expect(stops.some((s) => s.path === "/policy" || s.path === "/business")).toBe(false);
+    expect(stops[0]!.points.join(" ")).toMatch(/skips them/);
+  });
+  it("starts, moves on, goes back, repeats and stops, showing each stop", () => {
+    const env = makeEnv();
+    const first = run(env, "tour_step", { action: "start" });
+    expect(first).toMatch(/^Tour stop 1 of 8: The dashboard/);
+    expect(first).toMatch(/say next, back, repeat or stop/);
+    expect(env.navigate).toHaveBeenLastCalledWith("/", undefined);
+    expect(run(env, "tour_step", { action: "next" })).toMatch(/stop 2 of 8/);
+    expect(run(env, "tour_step", { action: "next" })).toMatch(/stop 3 of 8: A human review claim/);
+    expect(env.openClaim).toHaveBeenLastCalledWith(expect.stringMatching(/^PRA-/));
+    expect(env.showDiagram).toHaveBeenLastCalledWith(
+      expect.objectContaining({ kind: "claim_path" }),
+    );
+    expect(run(env, "tour_step", { action: "back" })).toMatch(/stop 2 of 8/);
+    expect(run(env, "tour_step", { action: "repeat" })).toMatch(/stop 2 of 8/);
+    expect(run(env, "tour_step", { action: "stop" })).toMatch(/stopped/);
+    expect(env.tour.index).toBe(-1);
+    expect(env.showDiagram).toHaveBeenLastCalledWith(null);
+  });
+  it("clamps at both ends and treats next before start as start", () => {
+    const env = makeEnv();
+    expect(run(env, "tour_step", { action: "next" })).toMatch(/stop 1 of 8/);
+    expect(run(env, "tour_step", { action: "back" })).toMatch(/stop 1 of 8/);
+    for (let i = 0; i < 7; i++) run(env, "tour_step", { action: "next" });
+    expect(run(env, "tour_step", { action: "next" })).toMatch(/already the last stop/);
+    expect(run(env, "tour_step", { action: "dance" })).toMatch(/isn't a tour action/);
+  });
+  it("narrates only from live facts", () => {
+    const env = makeEnv();
+    const stop3 =
+      (run(env, "tour_step", { action: "start" }),
+      run(env, "tour_step", { action: "next" }),
+      run(env, "tour_step", { action: "next" }));
+    const red = claims
+      .filter((c) => c.case_status === "open")
+      .find((c) => c.recommendation_v1 === "human_review")!;
+    expect(stop3).toContain(red.case_id);
+    expect(stop3).toMatch(/never that it is approved/);
+    const lastStops = run(makeEnv(), "tour_step", { action: "start" });
+    expect(lastStops).toMatch(/\d+ claims are open/);
   });
 });

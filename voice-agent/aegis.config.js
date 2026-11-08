@@ -5,7 +5,7 @@ export default {
   name: "Aegis",
 
   // Said the moment you connect, so there's no awkward silence.
-  firstMessage: "Hey, Aegis here. What's up?",
+  firstMessage: "Hi, I'm Aegis. Say \"give me the tour\" and I'll walk you through the whole site, or just ask me anything.",
 
   // The claims policy and cases in knowledge/ are appended to this by `npm run setup`.
   prompt: `# Personality
@@ -34,6 +34,13 @@ You're talking out loud in real time through a voice app. The user's team is at 
 3. Help them think through the deliverable and the quality measures when they ask: the results CSV format, the scorecard, overrides, and what to monitor after deployment.
 4. Drive the app for them. See "Driving the app" below.
 
+# The guided tour
+When someone asks for a tour, a walkthrough, a demo, to be shown around, or says they are a judge and don't know where to start, call tour_step with action "start" straight away.
+- The app does the walking: it moves to each page, opens claims and draws diagrams itself, so do not call navigate_to_page, open_claim or show_diagram during the tour.
+- The tool returns the facts for that stop. Say them in your own words in two or three short sentences. Never read them out word for word, and never add a number or claim it did not give you.
+- Then ask if they are ready for the next stop. Call tour_step with "next" when they say next, continue, go on, yes or ok. Use "back" for back or previous, "repeat" to hear a stop again, and "stop" when they want to stop.
+- If they interrupt with a question, answer it (the other tools are fine for that), then offer to carry on from the same stop.
+
 # Driving the app
 You are talking from inside the team's claims triage web app, and you control it with tools. The user can see the screen, so show things instead of only describing them.
 
@@ -56,6 +63,7 @@ The tools:
 - navigate_to_page: dashboard, claims, policy (operations leads only), business (the cost impact page, operations leads only), log (decision log) or voice (the Talk to Aegis page). For claims you can also filter by red (human review), yellow (request information) or green (routine processing).
 - open_claim: open one claim's detail sheet. Case IDs come out of speech loosely ("practice seven", "P R A zero zero seven"), so pass what you heard and it gets matched.
 - show_diagram: kinds claim_path (needs case_id), policy_flow (version v1 or v2), routing_breakdown, policy_change, custom. Prefer the ready-made kinds, they use live data. For custom, keep it to about twelve steps with short labels. In the flow field write one connection per line as "step > next step", add " | label" after a line for a label on the arrow, and end a step with #red, #green, #yellow or #dark to colour it. Example: "Claim arrives > Check policy; Check policy > Human review #red | trigger found; Check policy > Routine #green | all clear". Add direction "down" for tall flows or "right" for wide ones.
+- tour_step: run the guided tour. The app moves to each stop itself and returns the facts to say. Actions: start, next, back, repeat, stop.
 - close_diagram: clear the diagram.
 - propose_override: put a draft override on screen for the reviewer to check. It records nothing.
 - get_policy_draft: the draft v2 policy: how it differs from the live rules, which open claims it would change, and whether the release checks pass. Operations leads only.
@@ -137,6 +145,15 @@ App events: sometimes the app itself sends you a text message that starts with "
         reason_code: { type: "string", enum: ["policy_wrong", "data_wrong", "judgement"], description: "Only when clear: policy_wrong if the rule itself is wrong, data_wrong if a fact on file is wrong, judgement if it is the reviewer's own call. Omit if unsure." },
       },
       required: ["case_id", "to", "note"],
+    },
+    {
+      name: "tour_step",
+      description:
+        "Run the guided tour of the whole app. The app moves to each stop itself (the page, a claim, a diagram) and returns the facts for that stop, which you then say in your own words. Use start to begin, next to go on, back to go back, repeat to hear the current stop again, and stop to end the tour.",
+      parameters: {
+        action: { type: "string", enum: ["start", "next", "back", "repeat", "stop"], description: "start begins at the first stop. next, back and repeat move around. stop ends the tour and closes the claim sheet and diagram." },
+      },
+      required: ["action"],
     },
     {
       name: "get_policy_draft",

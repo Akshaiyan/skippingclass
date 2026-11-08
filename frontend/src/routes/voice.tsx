@@ -24,6 +24,7 @@ export const Route = createFileRoute("/voice")({
 });
 
 const TRY = [
+  "Give me the full tour of the site.",
   "Which claims need human review, and why?",
   "Open practice three.",
   "Draw how practice three was decided.",

@@ -34,7 +34,7 @@ function blocked(env: VoiceEnv, path: keyof typeof PAGE_NAME): string | null {
 }
 
 /** Which open claims the given rules would move, in a sentence. */
-function flipsSentence(claims: Claim[], rules: PolicyRule[]): string {
+export function flipsSentence(claims: Claim[], rules: PolicyRule[]): string {
   const flips = flipList(deriveClaims(claims, rules)).filter((f) => f.status === "recheck");
   if (!flips.length) return "No open claim would change.";
   const list = flips.map((f) => `${f.claim.case_id} ${rec(f.from)} to ${rec(f.to)}`).join("; ");
@@ -68,7 +68,7 @@ const ASSUMPTION_ALIASES: Record<string, keyof SavingsAssumptions> = {
 };
 
 /** The cost page's key figures in words, for a given set of assumptions. */
-function costSummary(claims: VoiceEnv["claims"], a: SavingsAssumptions): string {
+export function costSummary(claims: VoiceEnv["claims"], a: SavingsAssumptions): string {
   const d = getCostImpact(claims, a);
   if (!d.figures)
     return "No claim is open, so there's no share to project from and no figures are shown.";

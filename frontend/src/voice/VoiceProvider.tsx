@@ -69,6 +69,7 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
   const starting = useRef(false);
   const generation = useRef(0);
   const nonce = useRef(0);
+  const tour = useRef({ index: -1 });
   const lastPath = useRef<string | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const statusRef = useRef<VoiceStatus>("idle");
@@ -140,6 +141,9 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
         void go({ to, ...(to === "/claims" ? { search: flow ? { flow } : {} } : {}) });
       },
       openClaim: (id, draft) => setSheet({ id, nonce: ++nonce.current, draft }),
+      closeClaim: () => setSheet(null),
+      tour: tour.current,
+      logIntact: state.integrity?.intact ?? null,
       showDiagram: setDiagram,
       assumptions: state.assumptions,
       gateOpen: state.gateOpen,
