@@ -12,7 +12,7 @@ import re
 
 LABEL_PATTERNS = {
     # label -> (structured field, pattern, parser)
-    "quote_total": ("quote_eur", re.compile(r"^\s*(?:Gesamtbetrag|Total)\s*:\s*(?:EUR|€)?\s*([0-9][0-9.,]*)\s*$", re.I)),
+    "quote_total": ("quote_eur", re.compile(r"^\s*(?:Gesamtbetrag|Total)\s*:\s*(?:EUR|€)?\s*([0-9][0-9.,]*)\s*(?:EUR|€)?\s*$", re.I)),
     "incident_date": ("incident_date", re.compile(r"^\s*(?:Schadendatum|Incident date)\s*:\s*([0-9]{2}\.[0-9]{2}\.[0-9]{4})\s*$", re.I)),
 }
 

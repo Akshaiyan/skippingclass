@@ -97,7 +97,7 @@ No code copied from any other repository. No organiser data beyond the 14 dev ca
 | Four-eyes release (approver must differ from proposer) | BUILT + TESTED | Log refuses same-person approval |
 | Hash-chained decision log, tamper detection, policy diff | BUILT + TESTED | `test_history.py` pinpoints an edited line |
 | JSON API for the UI (`server.py`, contract in `API.md`) | BUILT + TESTED | Real-socket tests in `test_server.py`; malformed input returns 400 |
-| Document fact check (documents propose, never decide) | DEMONSTRATION | Constructed cases in `test_doc_facts.py`; no accuracy claim |
+| Document check (documents propose, never decide) | BUILT + TESTED, narrow | Paste a document's text on a claim: it proposes the labelled quote total with the exact source line and flags a disagreement with the claim form for a person. Read-only: no field, decision or log record changes. `test_doc_facts.py`, `test_documents_api.py`. It reads labelled lines only, so no accuracy claim on real documents |
 | Business saving per policy change (`business_model.py --policy`) | BUILT (inputs ASSUMED) | EUR 69,722 for the EUR 1,200 test change, from the seeded generator (seed 1); synthetic data is regenerated, not shipped |
 | Policy v2 from the change notice (limit EUR 1,200, EV battery trigger) | BUILT + TESTED | `test_v2.py`: 118,098 field combinations against a separate oracle, boundary cases, closed claims kept |
 | Before-and-after quality report for the change | BUILT + TESTED | `quality_report.py`: fixed, worsened and still-wrong counts for open claims; agreement is with the notice, not with hidden labels |
