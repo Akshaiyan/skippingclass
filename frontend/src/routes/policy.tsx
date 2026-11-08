@@ -180,6 +180,8 @@ function PolicyPage() {
   const [hoverClaimRules, setHoverClaimRules] = useState<string[] | null>(null);
   const reasonRef = useRef<HTMLInputElement>(null);
 
+  // The engine records the hash of its own policy file; in live mode that is the hash this draft is matched by.
+  const decisionHash = state.source === "live" && state.engineV2Hash ? state.engineV2Hash : draftHash;
   // The decision for this exact draft comes from the session audit log, so it survives navigation.
   const decision = useMemo(
     () =>
@@ -189,9 +191,9 @@ function PolicyPage() {
           (e): e is PolicyDecision & { seq: number } =>
             (e.type === "policy_approved" || e.type === "policy_rejected") &&
             "policy_hash" in e &&
-            e.policy_hash === draftHash,
+            e.policy_hash === decisionHash,
         ) ?? null,
-    [state.log, draftHash],
+    [state.log, decisionHash],
   );
 
   const flips = useMemo(
@@ -290,7 +292,13 @@ function PolicyPage() {
     if (type === "policy_approved" ? !canRelease : !canHold) return;
     setConfirmOpen(false);
     if (state.source === "live") {
-      // The engine records the decision. It approves only the policy version the reviewer saw (policy_hash),
+      // The engine can only release the v2 policy it has on file. An edited draft cannot be released from here.
+      const pristine = state.engineV2 !== null && JSON.stringify(state.draftRules) === state.engineV2;
+      if (!pristine || !state.engineV2Hash) {
+        toast.error("This draft differs from the v2 policy the engine has on file. Reset the draft to release it.");
+        return;
+      }
+      // The engine records the decision. It approves only the policy file the reviewer saw (policy_hash),
       // and the claims that move into routine are passed as the named sign-off it requires.
       fetchChange()
         .then((change) =>
@@ -299,8 +307,8 @@ function PolicyPage() {
             actor: approver.trim(),
             reason: reason.trim(),
             policy_version: "v2",
-            policy_hash: draftHash,
-            proposed_by: "",
+            policy_hash: state.engineV2Hash ?? draftHash,
+            proposed_by: state.reviewer,
             signoff_for: change.into_routine,
           }),
         )
