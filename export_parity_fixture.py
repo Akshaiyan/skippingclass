@@ -24,8 +24,13 @@ def main(out_path):
     for name in ("labelled_development_cases.csv", "unlabelled_practice_cases.csv", "adversarial_claims.csv"):
         data, _ = io_csv.read_claims(HERE / name)
         rows += data
+    # Every claim that has a quote is also checked with a quote that cannot be read as an amount. The app's evaluator
+    # once cleared such claims as routine while the engine asked for information; these variants keep both in step.
+    UNREADABLE = ("not-a-number", "-5", "1e3", "NaN", "12,5")
+    variants = [({**r, "case_id": f"{r['case_id']}~quote={bad}", "quote_eur": bad})
+                for r in rows if (r.get("quote_eur") or "").strip() for bad in UNREADABLE]
     cases = []
-    for r in rows:
+    for r in rows + variants:
         open_ = triage.status_of(r) == "open"
         cases.append({
             "case_id": r["case_id"],
