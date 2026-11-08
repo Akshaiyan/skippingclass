@@ -59,8 +59,97 @@ function CopyJson({ text }: { text: string }) {
   );
 }
 
+/** The log as a story: when, who, what changed, why. Same records as the table, read top to bottom. */
+function Timeline({ rows }: { rows: LogEntry[] }) {
+  const [open, setOpen] = useState<number | null>(null);
+  return (
+    <ol className="relative space-y-4 border-l border-border pl-6" aria-label="Decision timeline">
+      {rows.map((e) => {
+        const note = "reason" in e ? e.reason : "note" in e ? e.note : undefined;
+        const hash = (e as { hash?: string }).hash;
+        const isOpen = open === e.seq;
+        return (
+          <li key={e.seq} className="relative">
+            <span
+              aria-hidden
+              className="absolute -left-[1.85rem] top-4 size-2.5 rounded-full border-2 border-background bg-foreground"
+            />
+            <div className="card-panel space-y-2 p-4">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <Chip
+                  tone={
+                    e.type === "reviewer_override" ||
+                    e.type.startsWith("policy_a") ||
+                    e.type === "policy_rejected"
+                      ? "solid"
+                      : "neutral"
+                  }
+                >
+                  {LOG_TYPE_LABEL[e.type]}
+                </Chip>
+                <span className="text-sm font-medium">{e.actor}</span>
+                {"case_id" in e && e.case_id && (
+                  <span className="font-mono text-xs">{e.case_id}</span>
+                )}
+                <time className="tnum ml-auto font-mono text-xs text-text-2">
+                  {e.timestamp.replace("T", " ").slice(0, 19)} UTC
+                </time>
+              </div>
+              {"to_rec" in e && e.to_rec && (
+                <span className="inline-flex flex-wrap items-center gap-1">
+                  {"from_rec" in e && e.from_rec && (
+                    <>
+                      <FlowBadge rec={e.from_rec} size="sm" />
+                      <ArrowRight className="size-3 text-muted-foreground" aria-label="to" />
+                    </>
+                  )}
+                  <FlowBadge rec={e.to_rec} size="sm" />
+                </span>
+              )}
+              {note && (
+                <p className="text-sm">
+                  <span className="font-medium">Reason:</span> {note}
+                </p>
+              )}
+              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                <PolicyStamp version={e.policy_version} hash={e.policy_hash} />
+                {hash && (
+                  <span className="font-mono" title="Record fingerprint">
+                    #{hash.slice(0, 12)}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  aria-expanded={isOpen}
+                  onClick={() => setOpen(isOpen ? null : e.seq)}
+                  className="inline-flex items-center gap-1 text-text-2 underline-offset-2 hover:underline"
+                >
+                  <ChevronRight
+                    className={cn("size-3 transition-transform", isOpen && "rotate-90")}
+                    aria-hidden
+                  />
+                  Inspect record
+                </button>
+              </div>
+              {isOpen && (
+                <div className="flex items-start justify-between gap-4 rounded-md bg-surface p-3">
+                  <pre className="overflow-x-auto font-mono text-xs leading-5 text-text-2">
+                    {JSON.stringify(e, null, 2)}
+                  </pre>
+                  <CopyJson text={JSON.stringify(e, null, 2)} />
+                </div>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 function LogPage() {
   const { state, v1Rules } = useStore();
+  const [view, setView] = useState<"timeline" | "table">("timeline");
   const [type, setType] = useState<"all" | LogEntry["type"]>("all");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<number | null>(null);
@@ -151,6 +240,22 @@ function LogPage() {
           {rows.length} of {state.log.length} records
         </span>
         <span className="text-xs text-muted-foreground">{SORT_RECENT}</span>
+        <div className="ml-auto inline-flex rounded-md border border-border p-0.5" role="group" aria-label="View">
+          {(["timeline", "table"] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={view === v}
+              onClick={() => setView(v)}
+              className={cn(
+                "h-7 rounded px-3 text-xs font-medium capitalize",
+                view === v ? "bg-foreground text-background" : "text-text-2 hover:bg-surface",
+              )}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
       </div>
 
       {state.source === "connecting" && state.log.length === 0 ? (
@@ -179,6 +284,8 @@ function LogPage() {
             </Button>
           )}
         </div>
+      ) : view === "timeline" ? (
+        <Timeline rows={rows} />
       ) : (
         <div className="card-panel overflow-x-auto">
           <table className="w-full min-w-[1100px] text-sm">

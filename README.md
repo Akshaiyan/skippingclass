@@ -13,6 +13,10 @@ The results file has the columns the policy document names: `case_id, recommenda
 
 The runtime makes no web calls. It needs Python 3.10 or newer and the standard library only.
 
+## Walkthrough
+
+`docs/walkthrough/index.html` shows four captioned screenshots of the running app: the claims queue, a claim with its decision memory, the decision log, and the policy change screen. It works without the hosted app. The app itself is in `frontend/`, and the engine contract is in `API.md`.
+
 ## Criteria map
 
 | Judged criterion | Where the evidence is | What it shows | What it does not show |
