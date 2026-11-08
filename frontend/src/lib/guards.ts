@@ -14,7 +14,8 @@ export function validateOverride(i: OverrideInput): OverrideErrors {
   const e: OverrideErrors = {};
   if (!i.to || !REC_ORDER.includes(i.to as Rec)) e.to = REFUSAL.unknownRec;
   else if (i.to === i.from) e.to = REFUSAL.same;
-  if (!i.reason) e.reason = "Choose a reason code.";
+  if (!i.reason || !["policy_wrong", "data_wrong", "judgement"].includes(i.reason))
+    e.reason = "Choose a reason code.";
   if (!i.note.trim()) e.note = REFUSAL.note;
   if (!i.actor.trim()) e.actor = REFUSAL.actor;
   return e;

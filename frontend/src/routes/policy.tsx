@@ -1,47 +1,76 @@
-import { fetchChange, postPolicyDecision, type EngineChange as ChangeSummary } from "@/data/live";
-import { EngineChange } from "@/components/EngineChange";
-import { createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, Check, Pause, Pencil, Plus, RotateCcw, Rocket, Trash2, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from "recharts";
+// Policy change: rules on the left, their expected effect on open claims on the right, release at the bottom.
+// Frontend only: everything is derived from the session's mock rules and claims; nothing is sent to a backend.
+import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { Check, ChevronRight, Pause, Pencil, Plus, RotateCcw, Rocket, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Condition, PolicyDecision, PolicyRule, Rec } from "@/types";
-import { ADD_RULE, HOLD_V2, REC_LABEL, REC_ORDER, RELEASE_V2, RULE_BASED } from "@/copy";
+import {
+  ADD_RULE,
+  FLOW_OF,
+  HOLD_V2,
+  IMPACT_COPY,
+  POLICY_COPY,
+  REC_LABEL,
+  REC_ORDER,
+  RELEASE_V2,
+} from "@/copy";
+import { PolicyImpact } from "@/components/PolicyImpact";
 import { useStore } from "@/store";
-import { exhaustiveChecks, flipList, ruleStatus } from "@/lib/report";
+import { canOpen } from "@/lib/roles";
+import { conditionText, exhaustiveChecks, flipList, removedRules, ruleStatus } from "@/lib/report";
+import { changedRuleCount, ruleChangeNote } from "@/lib/policy-view";
 import { validateGate } from "@/lib/guards";
+import { getAccounts } from "@/data/api";
+import { FLOW_DOT } from "@/lib/flow-styles";
 import { cn } from "@/lib/utils";
-import { Chip, FlowBadge, PageHeader, PolicyStamp, Refusal, WhyDisabled } from "@/components/status";
-import { ConditionBuilder, emptyLeaf } from "@/components/ConditionBuilder";
+import { Chip, FlowBadge, PolicyStamp, Refusal, WhyDisabled } from "@/components/status";
+import { ConditionBuilder } from "@/components/ConditionBuilder";
+import { emptyLeaf } from "@/lib/conditions";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/policy")({
   head: () => ({
     meta: [
-      { title: "Policy overview · Motor claims triage" },
-      { name: "description", content: "Edit and activate draft rules while expected claim volume updates live." },
-      { property: "og:title", content: "Policy overview · Motor claims triage" },
-      { property: "og:description", content: "A clear rule overview with live claim-volume impact and named sign-off." },
+      { title: "Policy change · Motor claims triage" },
+      { name: "description", content: "Edit triage rules and preview their expected impact." },
+      { property: "og:title", content: "Policy change · Motor claims triage" },
+      {
+        property: "og:description",
+        content: "Edit triage rules and preview their expected impact.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: PolicyPage,
+  component: PolicyRoute,
 });
 
-const AUTHOR = "Lena Vogt";
-const CHART_LABEL: Record<Rec, string> = {
-  human_review: "Human review",
-  request_information: "Request info",
-  routine_processing: "Routine",
-};
-
-function RuleDialog({ rule, open, onClose, onSave, existingIds }: { rule: PolicyRule | null; open: boolean; onClose: () => void; onSave: (r: PolicyRule, prevId?: string) => void; existingIds: string[] }) {
+function RuleDialog({
+  rule,
+  open,
+  onClose,
+  onSave,
+  existingIds,
+}: {
+  rule: PolicyRule | null;
+  open: boolean;
+  onClose: () => void;
+  onSave: (r: PolicyRule, prevId?: string) => void;
+  existingIds: string[];
+}) {
   const [draft, setDraft] = useState<PolicyRule | null>(rule);
   const [prevId] = useState(rule?.id);
   if (!draft) return null;
@@ -56,38 +85,67 @@ function RuleDialog({ rule, open, onClose, onSave, existingIds }: { rule: Policy
         <div className="space-y-4">
           <div>
             <Label htmlFor="r-desc">Rule name</Label>
-            <Input id="r-desc" className="mt-1.5" value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
+            <Input
+              id="r-desc"
+              className="mt-2"
+              value={draft.description}
+              onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+            />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label htmlFor="r-id">Rule id</Label>
-              <Input id="r-id" className="mt-1.5 font-mono" value={draft.id} disabled={fixed} onChange={(e) => setDraft({ ...draft, id: e.target.value })} />
+              <Input
+                id="r-id"
+                className="mt-2 font-mono"
+                value={draft.id}
+                disabled={fixed}
+                onChange={(e) => setDraft({ ...draft, id: e.target.value })}
+              />
               {idErr && <Refusal>{idErr}</Refusal>}
             </div>
             <div>
               <Label htmlFor="r-out">Outcome</Label>
-              <select id="r-out" disabled={fixed} className="mt-1.5 h-9 w-full rounded-md border border-border bg-background px-2 text-sm" value={draft.outcome} onChange={(e) => setDraft({ ...draft, outcome: e.target.value as Rec })}>
+              <select
+                id="r-out"
+                disabled={fixed}
+                className="mt-2 h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
+                value={draft.outcome}
+                onChange={(e) => setDraft({ ...draft, outcome: e.target.value as Rec })}
+              >
                 {REC_ORDER.map((r) => (
-                  <option key={r} value={r}>{REC_LABEL[r]}</option>
+                  <option key={r} value={r}>
+                    {REC_LABEL[r]}
+                  </option>
                 ))}
               </select>
             </div>
           </div>
           <div>
             <Label>Condition</Label>
-            <div className="mt-1.5">
+            <div className="mt-2">
               {fixed ? (
-                <p className="rounded-md bg-surface p-3 text-sm text-muted-foreground">Applies when no other rule decides the claim.</p>
+                <p className="rounded-md bg-surface p-3 text-sm text-muted-foreground">
+                  Applies when no other rule decides the claim.
+                </p>
               ) : (
-                <ConditionBuilder value={draft.condition ?? emptyLeaf()} onChange={(c: Condition) => setDraft({ ...draft, condition: c })} />
+                <ConditionBuilder
+                  value={draft.condition ?? emptyLeaf()}
+                  onChange={(c: Condition) => setDraft({ ...draft, condition: c })}
+                />
               )}
             </div>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
           <WhyDisabled disabled={!!idErr} reason={idErr ?? undefined}>
-            <Button disabled={!!idErr} onClick={() => onSave({ ...draft, id: draft.id.trim() }, prevId)}>
+            <Button
+              disabled={!!idErr}
+              onClick={() => onSave({ ...draft, id: draft.id.trim() }, prevId)}
+            >
               <Check aria-hidden /> Save to draft
             </Button>
           </WhyDisabled>
@@ -97,96 +155,80 @@ function RuleDialog({ rule, open, onClose, onSave, existingIds }: { rule: Policy
   );
 }
 
-function VolumeTip({ active, payload }: { active?: boolean; payload?: { name: string; value: number }[] }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="card-panel px-3 py-2 text-xs">
-      {payload.map((p) => (
-        <div key={p.name} className="tnum flex justify-between gap-5 text-text-2">
-          <span>{p.name}</span>
-          <span className="font-medium text-foreground">{p.value} claims</span>
-        </div>
-      ))}
-    </div>
-  );
+/** Policy change is limited to operations leads; anyone else is sent to the dashboard. */
+function PolicyRoute() {
+  const { state } = useStore();
+  if (!canOpen(state.user?.role, "/policy")) return <Navigate to="/" replace />;
+  return <PolicyPage />;
 }
 
+const selectClass =
+  "h-9 w-full rounded-md border border-border bg-background px-2 text-sm hover:border-border-strong focus:border-border-strong focus:outline-none";
+
 function PolicyPage() {
-  const { state, dispatch, derived, v1Rules, v1Hash, draftHash } = useStore();
+  const { state, dispatch, derived, v1Rules, draftHash } = useStore();
   const rules = state.draftRules;
   const [editing, setEditing] = useState<{ rule: PolicyRule; key: number } | null>(null);
   const [approver, setApprover] = useState("");
   const [reason, setReason] = useState("");
-  const [touched, setTouched] = useState(false);
-  const [decision, setDecision] = useState<PolicyDecision | null>(null);
-  const [signed, setSigned] = useState(false);
-  const [sendError, setSendError] = useState<string | null>(null);
-  const [change, setChange] = useState<ChangeSummary | null>(null);
-  // In live mode the engine checks only the released v2 file. A browser draft that differs cannot be released.
-  const draftIsEngineV2 = state.source !== "live" || JSON.stringify(rules) === state.engineV2;
-  const needsSignoff = !!change?.requires_signoff;
-  const signoffOk = !needsSignoff || signed;
-  const canRelease = gate.canRelease && signoffOk && draftIsEngineV2;
-  useEffect(() => {
-    if (state.source !== "live") return;
-    fetchChange().then(setChange).catch(() => setChange(null));
-  }, [state.source, state.log.length]);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  // Cross-highlight: a rule card under the pointer lights its claims; a claim row lights its rules.
+  const [hoverRule, setHoverRule] = useState<string | null>(null);
+  const [hoverClaimRules, setHoverClaimRules] = useState<string[] | null>(null);
+  const reasonRef = useRef<HTMLInputElement>(null);
 
-  const flips = useMemo(() => flipList(derived), [derived]);
-  const checks = useMemo(() => exhaustiveChecks(state.claims, v1Rules, rules), [state.claims, v1Rules, rules]);
-  const allPass = checks.every((c) => c.pass);
-  const towardRoutine = flips.some((f) => f.towardRoutine);
-  const gate = validateGate({ author: AUTHOR, approver, reason, checksPass: allPass });
-  const openFlips = flips.filter((f) => f.status === "recheck");
+  // The decision for this exact draft comes from the session audit log, so it survives navigation.
+  const decision = useMemo(
+    () =>
+      [...state.log]
+        .reverse()
+        .find(
+          (e): e is PolicyDecision & { seq: number } =>
+            (e.type === "policy_approved" || e.type === "policy_rejected") &&
+            "policy_hash" in e &&
+            e.policy_hash === draftHash,
+        ) ?? null,
+    [state.log, draftHash],
+  );
+
+  const flips = useMemo(
+    () => flipList(derived).filter((f) => f.claim.case_status === "open"),
+    [derived],
+  );
+  const checks = useMemo(
+    () => exhaustiveChecks(state.claims, v1Rules, rules),
+    [state.claims, v1Rules, rules],
+  );
+  const failingCheck = checks.find((c) => !c.pass);
+  const changed = changedRuleCount(v1Rules, rules);
+  const intoRoutine = flips.filter((f) => f.towardRoutine).length;
+  const released = decision?.type === "policy_approved";
+  const showTags = !released;
+  // A released draft is the live policy: it can no longer be edited here.
+  const locked = released;
+
+  const approvers = getAccounts().filter(
+    (a) => a.name.trim().toLowerCase() !== state.reviewer.trim().toLowerCase(),
+  );
+  const gate = validateGate({
+    author: state.reviewer,
+    approver,
+    reason,
+    checksPass: !failingCheck,
+  });
+  const canRelease = changed > 0 && gate.canRelease;
+  const canHold = changed > 0 && gate.canHold && !decision;
+  const releaseHelp =
+    changed === 0
+      ? POLICY_COPY.needChange
+      : gate.approverErr || gate.reasonErr
+        ? POLICY_COPY.needReasonApprover
+        : failingCheck
+          ? `${failingCheck.label}: ${failingCheck.message ?? "failing"}`
+          : null;
+
   const visibleRules = rules.filter((r) => r.id !== "R3.routine");
-  const activeCount = visibleRules.filter((r) => r.active !== false).length;
-
-  const chartData = useMemo(() => REC_ORDER.map((rec) => ({
-    name: CHART_LABEL[rec],
-    current: derived.filter((c) => c.case_status === "open" && c.recommendation_v1 === rec).length,
-    draft: derived.filter((c) => c.case_status === "open" && c.recommendation_v2 === rec).length,
-  })), [derived]);
-  const chartMax = Math.max(1, ...chartData.flatMap((d) => [d.current, d.draft])) + 1;
-  const chartTicks = Array.from({ length: chartMax + 1 }, (_, i) => i);
-
-  const save = (r: PolicyRule, prevId?: string) => {
-    const next = prevId ? rules.map((x) => (x.id === prevId ? r : x)) : [...rules.filter((x) => x.id !== "R3.routine"), r, ...rules.filter((x) => x.id === "R3.routine")];
-    dispatch({ type: "setRules", rules: next });
-    setEditing(null);
-  };
-
-  const toggleRule = (id: string) => {
-    dispatch({ type: "setRules", rules: rules.map((r) => r.id === id ? { ...r, active: r.active === false } : r) });
-  };
-
-  const decide = (type: PolicyDecision["type"]) => {
-    setTouched(true);
-    if (type === "policy_approved" ? !canRelease : !gate.canHold) return;
-    const hash = state.engineV2Hash ?? draftHash;
-    const record: PolicyDecision = { type, actor: approver.trim(), reason: reason.trim(), policy_version: "v2", policy_hash: hash, timestamp: new Date().toISOString() };
-    if (state.source !== "live") {
-      dispatch({ type: "policyDecision", record });
-      setDecision(record);
-      return;
-    }
-    // Live: the engine records the decision and enforces the sign-off. The screen changes only after it is recorded.
-    setSendError(null);
-    postPolicyDecision({
-      decision: type === "policy_approved" ? "approved" : "rejected",
-      actor: approver.trim(),
-      reason: reason.trim(),
-      policy_version: "v2",
-      policy_hash: hash,
-      proposed_by: AUTHOR,
-      signoff_for: needsSignoff && signed && change ? change.into_routine : [],
-    })
-      .then(() => {
-        dispatch({ type: "policyDecision", record });
-        setDecision(record);
-      })
-      .catch((e: unknown) => setSendError(e instanceof Error ? e.message : "The decision was not recorded."));
-  };
-
+  const removed = removedRules(v1Rules, rules);
   const quoteRule = rules.find((r) => r.id === "R1.quote_over_limit");
   const [limitText, setLimitText] = useState(String(state.quoteLimit));
   useEffect(() => {
@@ -195,211 +237,435 @@ function PolicyPage() {
   const commitLimit = (v: string) => {
     setLimitText(v);
     const n = Number(v);
-    if (v.trim() !== "" && Number.isFinite(n) && n >= 0) dispatch({ type: "setQuoteLimit", limit: Math.round(n) });
+    if (v.trim() !== "" && Number.isFinite(n) && n >= 0)
+      dispatch({ type: "setQuoteLimit", limit: Math.round(n) });
   };
-  const releaseReason = !allPass ? "All exhaustive checks must pass" : gate.approverErr ?? gate.reasonErr ?? undefined;
+
+  // Hovering a claim row scrolls its first rule card into view.
+  useEffect(() => {
+    const id = hoverClaimRules?.[0];
+    if (!id) return;
+    document.getElementById(`rule-${id}`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [hoverClaimRules]);
+
+  const save = (r: PolicyRule, prevId?: string) => {
+    const next = prevId
+      ? rules.map((x) => (x.id === prevId ? r : x))
+      : [
+          ...rules.filter((x) => x.id !== "R3.routine"),
+          r,
+          ...rules.filter((x) => x.id === "R3.routine"),
+        ];
+    dispatch({ type: "setRules", rules: next });
+    setEditing(null);
+  };
+  const toggleRule = (id: string) =>
+    dispatch({
+      type: "setRules",
+      // Switching back on removes the flag instead of writing active: true, so the rule matches live again.
+      rules: rules.map((r) => {
+        if (r.id !== id) return r;
+        if (r.active !== false) return { ...r, active: false };
+        const { active: _off, ...on } = r;
+        return on;
+      }),
+    });
+  const addRule = () =>
+    setEditing({
+      rule: {
+        id: "R1.custom",
+        outcome: "human_review",
+        description: "",
+        condition: emptyLeaf(),
+        active: true,
+      },
+      key: Date.now(),
+    });
+
+  // Mock decision: recorded in the session's audit log only. Nothing leaves the browser.
+  const decide = (type: PolicyDecision["type"]) => {
+    if (type === "policy_approved" ? !canRelease : !canHold) return;
+    setConfirmOpen(false);
+    const record: PolicyDecision = {
+      type,
+      actor: approver.trim(),
+      reason: reason.trim(),
+      policy_version: "v2",
+      policy_hash: draftHash,
+      timestamp: new Date().toISOString(),
+    };
+    dispatch({ type: "policyDecision", record });
+    // A later draft needs its own reason and approver.
+    setReason("");
+    setApprover("");
+    if (type === "policy_approved") toast.success(POLICY_COPY.releasedToast);
+    else toast(POLICY_COPY.heldToast);
+  };
+
+  const status = released
+    ? POLICY_COPY.released
+    : changed === 0
+      ? POLICY_COPY.noChanges
+      : `${POLICY_COPY.rulesChanged(changed)} · ${decision ? POLICY_COPY.statusHeld.toLowerCase() : POLICY_COPY.notReleased}`;
 
   return (
-    <div className="space-y-6">
-      <EngineChange />
-      <PageHeader
-        title="Policy overview"
-        description={
-          <span className="flex flex-wrap items-center gap-2">
-            <PolicyStamp version="v1" hash={v1Hash} /> <ArrowRight className="size-3.5" aria-hidden /> <PolicyStamp version="v2" hash={draftHash} />
-            <span className="text-xs">Session only</span>
-          </span>
-        }
-      />
+    <div className="space-y-8">
+      <header className="flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-end md:justify-between">
+        <div className="min-w-0">
+          <h1 className="page-title">{POLICY_COPY.title}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{POLICY_COPY.subtitle}</p>
+        </div>
+        <div className="flex flex-col gap-2 md:items-end">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={changed === 0 || locked}
+              onClick={() => dispatch({ type: "resetDraft" })}
+            >
+              <RotateCcw aria-hidden /> {POLICY_COPY.discard}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={changed === 0 || released}
+              onClick={() => {
+                document
+                  .getElementById("release-bar")
+                  ?.scrollIntoView({ block: "end", behavior: "smooth" });
+                reasonRef.current?.focus({ preventScroll: true });
+              }}
+            >
+              {POLICY_COPY.reviewChanges} <ChevronRight aria-hidden />
+            </Button>
+          </div>
+          <p className="tnum text-xs text-muted-foreground" aria-live="polite">
+            {status}
+          </p>
+        </div>
+      </header>
 
-      <div className="grid gap-6 lg:grid-cols-12">
-        <section className="space-y-4 lg:col-span-5" aria-labelledby="rules-title">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="grid gap-8 lg:grid-cols-5">
+        {/* LEFT: rules */}
+        <section className="space-y-4 lg:col-span-2" aria-labelledby="rules-title">
+          <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 id="rules-title" className="section-title">Rules, in order</h2>
-              <p className="tnum text-xs text-muted-foreground">{activeCount} of {visibleRules.length} active</p>
+              <h2 id="rules-title" className="section-title">
+                {POLICY_COPY.rules}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">{POLICY_COPY.rulesHelp}</p>
             </div>
-            <div className="flex gap-1.5">
-              <Button variant="ghost" size="sm" onClick={() => dispatch({ type: "resetDraft" })}>
-                <RotateCcw aria-hidden /> Reset
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setEditing({ rule: { id: "R1.custom", outcome: "human_review", description: "", condition: emptyLeaf(), active: true }, key: Date.now() })}>
-                <Plus aria-hidden /> {ADD_RULE}
-              </Button>
-            </div>
+            <Button variant="outline" size="sm" disabled={locked} onClick={addRule}>
+              <Plus aria-hidden /> {ADD_RULE}
+            </Button>
           </div>
 
-          <div className="card-panel flex flex-wrap items-center justify-between gap-3 p-4">
-            <label htmlFor="quote-limit" className="text-sm font-medium">Quote limit</label>
+          <div className="flex items-center justify-between gap-3 border border-border bg-surface px-3 py-2">
+            <label htmlFor="quote-limit" className="text-sm font-medium">
+              {POLICY_COPY.quoteLimit}
+            </label>
             <span className="relative inline-flex items-center">
-              <span className="pointer-events-none absolute left-2.5 font-mono text-xs text-muted-foreground">EUR</span>
+              <span className="pointer-events-none absolute left-2 text-xs text-muted-foreground">
+                €
+              </span>
               <input
                 id="quote-limit"
                 type="number"
                 inputMode="numeric"
                 min={0}
                 step={50}
-                disabled={!quoteRule}
+                disabled={!quoteRule || locked}
                 value={limitText}
                 onChange={(e) => commitLimit(e.target.value)}
-                className="tnum h-8 w-32 rounded-md border border-border bg-background pl-11 pr-2 font-mono text-xs hover:border-border-strong focus:border-border-strong focus:outline-none"
+                className="tnum h-8 w-28 border border-border bg-background pl-6 pr-2 text-right text-sm hover:border-border-strong focus:border-border-strong focus:outline-none"
               />
             </span>
           </div>
 
           <ol className="space-y-2">
-            {visibleRules.map((r, index) => {
+            {visibleRules.map((r, i) => {
               const st = ruleStatus(v1Rules, r);
               const active = r.active !== false;
+              const note = st === "changed" ? ruleChangeNote(v1Rules, r) : null;
+              const lit = !!hoverClaimRules?.includes(r.id);
               return (
-                <li key={r.id} className={cn("card-panel p-4 transition-colors hover:border-border-strong", !active && "bg-surface")}>
+                <li
+                  key={r.id}
+                  id={`rule-${r.id}`}
+                  onMouseEnter={() => setHoverRule(r.id)}
+                  onMouseLeave={() => setHoverRule(null)}
+                  className={cn(
+                    "border border-border bg-card px-3 py-3 transition-colors",
+                    !active && "bg-surface",
+                    active && "hover:bg-surface",
+                    (lit || hoverRule === r.id) && "border-border-strong",
+                    lit && "bg-surface-2",
+                  )}
+                >
                   <div className="flex items-start gap-3">
-                    <span className="tnum mt-0.5 w-5 shrink-0 font-mono text-xs text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>
+                    <span className="tnum w-4 shrink-0 text-right text-xs text-muted-foreground">
+                      {i + 1}
+                    </span>
                     <div className="min-w-0 flex-1">
-                      <h3 className={cn("text-sm font-medium leading-5", !active && "text-muted-foreground")}>{r.description || "Untitled rule"}</h3>
-                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                        <FlowBadge rec={r.outcome} size="sm" />
-                        {st === "changed" && <Chip tone="solid">Changed</Chip>}
-                        {st === "added" && <Chip tone="solid">Added</Chip>}
-                      </div>
+                      <p
+                        className={cn(
+                          "text-sm font-medium leading-5",
+                          !active && "text-muted-foreground",
+                        )}
+                      >
+                        {r.description || "Untitled rule"}
+                      </p>
+                      <p className="mt-1 flex items-center gap-2 text-sm font-medium text-foreground">
+                        <span
+                          className={cn("size-2 rounded-none", FLOW_DOT[FLOW_OF[r.outcome]])}
+                          aria-hidden
+                        />
+                        {REC_LABEL[r.outcome]}
+                      </p>
+                      <p className="mt-2 truncate text-xs text-muted-foreground">
+                        {conditionText(r.condition ?? null)}
+                      </p>
+                      {showTags && (st !== "same" || !active) && (
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          {st === "changed" && <Chip tone="solid">{POLICY_COPY.tagChanged}</Chip>}
+                          {st === "added" && <Chip tone="solid">{POLICY_COPY.tagAdded}</Chip>}
+                          {!active && <Chip tone="outline">{POLICY_COPY.tagInactive}</Chip>}
+                          {note && <span className="tnum text-xs text-text-2">{note}</span>}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <Label htmlFor={`active-${r.id}`} className="text-xs text-muted-foreground">{active ? "Active" : "Inactive"}</Label>
+                    <div className="flex shrink-0 items-center gap-1">
                       <Switch
                         id={`active-${r.id}`}
                         checked={active}
+                        disabled={locked}
                         aria-label={`${active ? "Deactivate" : "Activate"} ${r.description}`}
                         onCheckedChange={() => toggleRule(r.id)}
                       />
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="ml-1 size-8"
+                            disabled={locked}
+                            onClick={() => setEditing({ rule: r, key: Date.now() })}
+                          >
+                            <Pencil aria-hidden />
+                            <span className="sr-only">Edit {r.description}</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit</TooltipContent>
+                      </Tooltip>
+                      <Popover>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-8"
+                                disabled={locked}
+                              >
+                                <Trash2 aria-hidden />
+                                <span className="sr-only">Delete {r.description}</span>
+                              </Button>
+                            </PopoverTrigger>
+                          </TooltipTrigger>
+                          <TooltipContent>Delete</TooltipContent>
+                        </Tooltip>
+                        <PopoverContent className="w-64 space-y-3 text-sm">
+                          <p>Remove this rule from the draft?</p>
+                          <p className="text-xs text-muted-foreground">
+                            {POLICY_COPY.discard} restores the live rules.
+                          </p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              dispatch({
+                                type: "setRules",
+                                rules: rules.filter((x) => x.id !== r.id),
+                              })
+                            }
+                          >
+                            <Trash2 aria-hidden /> Delete rule
+                          </Button>
+                        </PopoverContent>
+                      </Popover>
                     </div>
-                  </div>
-                  <div className="mt-3 flex justify-end gap-1.5 border-t border-border pt-3">
-                    <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setEditing({ rule: r, key: Date.now() })}>
-                      <Pencil aria-hidden /> Edit
-                    </Button>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-7 text-xs">
-                          <Trash2 aria-hidden /> Delete
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-64 space-y-3 text-sm">
-                        <p>Remove this rule from the draft?</p>
-                        <Button size="sm" variant="destructive" onClick={() => dispatch({ type: "setRules", rules: rules.filter((x) => x.id !== r.id) })}>
-                          <Trash2 aria-hidden /> Delete rule
-                        </Button>
-                      </PopoverContent>
-                    </Popover>
                   </div>
                 </li>
               );
             })}
           </ol>
+
+          {showTags && removed.length > 0 && (
+            <ul className="space-y-1 text-xs text-muted-foreground">
+              {removed.map((r) => (
+                <li key={r.id} className="line-through">
+                  {POLICY_COPY.removed}: {r.description}
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
-        <section className="space-y-4 lg:sticky lg:top-6 lg:col-span-7 lg:self-start" aria-labelledby="impact-title">
-          <div className="card-panel p-5">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <h2 id="impact-title" className="section-title">Expected claim volume</h2>
-                <p className="mt-0.5 text-xs text-muted-foreground">Open stored claims · {RULE_BASED.toLowerCase()}</p>
-              </div>
-              <div className="text-right" aria-live="polite" aria-atomic="true">
-                <div className="tnum text-2xl font-medium">{openFlips.length}</div>
-                <div className="text-xs text-muted-foreground">open claims change</div>
-              </div>
-            </div>
-
-            <div className="mt-5 flex items-center justify-end gap-4 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-sm bg-chart-2" aria-hidden />Current</span>
-              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-sm bg-chart-1" aria-hidden />Draft</span>
-            </div>
-            <div className="mt-1 h-[420px] w-full" role="img" aria-label={chartData.map((d) => `${d.name}: current ${d.current}, draft ${d.draft}`).join(". ")}>
-              <ResponsiveContainer>
-                <BarChart data={chartData} barGap={5} margin={{ top: 12, right: 4, left: -6, bottom: 0 }}>
-                  <CartesianGrid vertical={false} stroke="var(--border)" />
-                  <XAxis dataKey="name" interval={0} tickLine={false} axisLine={{ stroke: "var(--border)" }} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                  <YAxis domain={[0, chartMax]} ticks={chartTicks} allowDecimals={false} tickLine={false} axisLine={false} width={30} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                  <ChartTooltip cursor={{ fill: "var(--surface)" }} content={<VolumeTip />} />
-                  <Bar isAnimationActive={false} dataKey="current" name="Current" fill="var(--chart-2)" radius={[3, 3, 0, 0]} maxBarSize={42} />
-                  <Bar isAnimationActive={false} dataKey="draft" name="Draft" fill="var(--chart-1)" radius={[3, 3, 0, 0]} maxBarSize={42} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+        {/* RIGHT: expectations */}
+        <section
+          className="border-t border-border pt-8 lg:col-span-3 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0"
+          aria-labelledby="impact-title"
+        >
+          <div className="lg:sticky lg:top-6">
+            <PolicyImpact
+              released={released}
+              highlightRule={hoverRule}
+              onHoverRules={setHoverClaimRules}
+            />
           </div>
-
         </section>
       </div>
 
-      <section className="card-panel p-5" aria-labelledby="release-title">
-        {decision ? (
-          <div className="flex flex-wrap items-center justify-between gap-4" role="status" aria-live="polite">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <span className="grid size-5 place-items-center rounded-full bg-primary text-primary-foreground"><Check className="size-3" aria-hidden /></span>
-              {decision.type === "policy_approved" ? "Policy released" : "Policy held"}
-            </div>
-            <Button variant="outline" size="sm" onClick={() => setDecision(null)}>Done</Button>
-          </div>
+      {/* BOTTOM: review & release, always in reach */}
+      <section
+        id="release-bar"
+        className="-mx-4 border-t border-border bg-background/95 px-4 py-3 md:sticky md:bottom-0 md:z-10 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:-mx-8 md:px-8"
+        aria-labelledby="release-title"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="release-title" className="section-title">
+            {POLICY_COPY.reviewRelease}
+          </h2>
+          <span className="inline-flex items-center gap-2 text-xs text-text-2" role="status">
+            <span
+              className={cn("size-2 rounded-none", released ? "bg-flow-green" : "bg-border-strong")}
+              aria-hidden
+            />
+            {released
+              ? POLICY_COPY.statusReleased
+              : decision
+                ? POLICY_COPY.statusHeld
+                : POLICY_COPY.statusNotReleased}
+          </span>
+        </div>
+
+        {released ? (
+          <p className="mt-3 flex items-center gap-2 text-sm">
+            <Check className="size-4" aria-hidden /> {POLICY_COPY.releasedToast}
+          </p>
         ) : (
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 id="release-title" className="section-title">Review and release</h2>
-              <details className="text-xs">
-                <summary className="tnum cursor-pointer font-medium text-text-2">{checks.filter((c) => c.pass).length}/5 checks passing</summary>
-                <ul className="mt-3 space-y-2 rounded-lg bg-surface p-3">
-                  {checks.map((c) => (
-                    <li key={c.id} className="flex items-start gap-2">
-                      {c.pass ? <Check className="mt-0.5 size-3.5 shrink-0 text-flow-green" aria-hidden /> : <X className="mt-0.5 size-3.5 shrink-0 text-destructive" aria-hidden />}
-                      <span>{c.label} <span className={cn("ml-1", c.pass ? "text-muted-foreground" : "text-destructive")}>{c.pass ? "Passing" : c.message ?? "Failing"}</span></span>
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              <div>
-                <Label htmlFor="g-author">Author</Label>
-                <Input id="g-author" className="mt-1.5" value={AUTHOR} readOnly disabled />
-              </div>
-              <div>
-                <Label htmlFor="g-appr">Approver</Label>
-                <Input id="g-appr" className="mt-1.5" value={approver} onChange={(e) => setApprover(e.target.value)} placeholder="A different person" />
-                {(touched || approver) && gate.approverErr && <Refusal>{gate.approverErr}</Refusal>}
-                {needsSignoff && (
-                  <label className="mt-3 flex items-start gap-2 text-sm">
-                    <input type="checkbox" className="mt-1" checked={signed} onChange={(e) => setSigned(e.target.checked)} />
-                    <span>I have checked these claims that move into routine: <strong>{change?.into_routine.join(", ")}</strong>. Releasing them needs a named sign-off.</span>
-                  </label>
-                )}
-                {!draftIsEngineV2 && (
-                  <Refusal>The engine can only check the released v2 file. This draft differs, so it cannot be released from here.</Refusal>
-                )}
-                {sendError && <Refusal>{sendError}</Refusal>}
-              </div>
+          <div className="mt-3 grid gap-4 md:grid-cols-[1fr_16rem_auto] md:items-end">
+            <div>
+              <Label htmlFor="g-reason">
+                {POLICY_COPY.reasonLabel}{" "}
+                <span className="font-normal text-muted-foreground">(required)</span>
+              </Label>
+              <Input
+                id="g-reason"
+                ref={reasonRef}
+                className="mt-2"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder={POLICY_COPY.reasonPlaceholder}
+              />
             </div>
             <div>
-              <Label htmlFor="g-reason">{towardRoutine ? "Named sign-off for flips toward routine" : "Sign-off reason"}</Label>
-              <Textarea id="g-reason" className="mt-1.5" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why this draft should or should not go live" />
-              {touched && gate.reasonErr && <Refusal>{gate.reasonErr}</Refusal>}
+              <Label htmlFor="g-appr">{POLICY_COPY.approverLabel}</Label>
+              <select
+                id="g-appr"
+                className={cn(selectClass, "mt-2", !approver && "text-muted-foreground")}
+                value={approver}
+                onChange={(e) => setApprover(e.target.value)}
+              >
+                <option value="">{POLICY_COPY.approverPlaceholder}</option>
+                {approvers.map((a) => (
+                  <option key={a.id} value={a.name}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <WhyDisabled disabled={!gate.canRelease} reason={releaseReason}>
-                <Button disabled={!canRelease} onClick={() => decide("policy_approved")}>
-                  <Rocket aria-hidden /> {RELEASE_V2}
-                </Button>
-              </WhyDisabled>
-              <WhyDisabled disabled={!gate.canHold} reason={gate.approverErr ?? gate.reasonErr ?? undefined}>
-                <Button variant="outline" disabled={!gate.canHold} onClick={() => decide("policy_rejected")}>
+            <div className="flex items-center gap-2 md:justify-end">
+              <WhyDisabled
+                disabled={!canHold}
+                reason={
+                  !canHold
+                    ? changed === 0
+                      ? POLICY_COPY.needChange
+                      : decision
+                        ? POLICY_COPY.statusHeld
+                        : POLICY_COPY.needReasonApprover
+                    : undefined
+                }
+              >
+                <Button
+                  variant="outline"
+                  disabled={!canHold}
+                  onClick={() => decide("policy_rejected")}
+                >
                   <Pause aria-hidden /> {HOLD_V2}
                 </Button>
               </WhyDisabled>
+              <WhyDisabled disabled={!canRelease} reason={releaseHelp ?? undefined}>
+                <Button disabled={!canRelease} onClick={() => setConfirmOpen(true)}>
+                  <Rocket aria-hidden /> {RELEASE_V2}
+                </Button>
+              </WhyDisabled>
+            </div>
+            <div className="text-xs text-muted-foreground md:col-span-3" aria-live="polite">
+              <span className="tnum">{POLICY_COPY.routedDifferently(flips.length)}</span>
+              {intoRoutine > 0 && <span> {POLICY_COPY.intoRoutine(intoRoutine)}</span>}
+              {releaseHelp && <span className="ml-1 text-text-2">· {releaseHelp}</span>}
             </div>
           </div>
         )}
       </section>
 
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogTitle>{POLICY_COPY.confirmTitle}</DialogTitle>
+          <DialogDescription>
+            {POLICY_COPY.routedDifferently(flips.length)} {IMPACT_COPY.locked}
+          </DialogDescription>
+          <ul className="space-y-2 text-sm">
+            {REC_ORDER.map((rec: Rec) => (
+              <li key={rec} className="flex items-center justify-between gap-3">
+                <FlowBadge rec={rec} />
+                <span className="tnum text-muted-foreground">
+                  {flips.filter((f) => f.to === rec).length} moving in
+                </span>
+              </li>
+            ))}
+          </ul>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+            <dt className="text-muted-foreground">Author</dt>
+            <dd>{state.reviewer}</dd>
+            <dt className="text-muted-foreground">Second approver</dt>
+            <dd>{approver.trim()}</dd>
+            <dt className="text-muted-foreground">Reason</dt>
+            <dd className="break-words">{reason.trim()}</dd>
+          </dl>
+          <PolicyStamp version="v2" hash={draftHash} />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
+              Back
+            </Button>
+            <Button disabled={!canRelease} onClick={() => decide("policy_approved")}>
+              <Rocket aria-hidden /> {RELEASE_V2}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {editing && (
-        <RuleDialog key={editing.key} rule={editing.rule} open onClose={() => setEditing(null)} onSave={save} existingIds={rules.map((r) => r.id)} />
+        <RuleDialog
+          key={editing.key}
+          rule={editing.rule}
+          open
+          onClose={() => setEditing(null)}
+          onSave={save}
+          existingIds={rules.map((r) => r.id)}
+        />
       )}
     </div>
   );

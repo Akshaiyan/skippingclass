@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BusinessRouteImport } from './routes/business'
 import { Route as ClaimsRouteImport } from './routes/claims'
 import { Route as LogRouteImport } from './routes/log'
 import { Route as PolicyRouteImport } from './routes/policy'
@@ -17,6 +18,11 @@ import { Route as PolicyRouteImport } from './routes/policy'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BusinessRoute = BusinessRouteImport.update({
+  id: '/business',
+  path: '/business',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClaimsRoute = ClaimsRouteImport.update({
@@ -37,12 +43,14 @@ const PolicyRoute = PolicyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/business': typeof BusinessRoute
   '/claims': typeof ClaimsRoute
   '/log': typeof LogRoute
   '/policy': typeof PolicyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/business': typeof BusinessRoute
   '/claims': typeof ClaimsRoute
   '/log': typeof LogRoute
   '/policy': typeof PolicyRoute
@@ -50,20 +58,22 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/business': typeof BusinessRoute
   '/claims': typeof ClaimsRoute
   '/log': typeof LogRoute
   '/policy': typeof PolicyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/claims' | '/log' | '/policy'
+  fullPaths: '/' | '/business' | '/claims' | '/log' | '/policy'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/claims' | '/log' | '/policy'
-  id: '__root__' | '/' | '/claims' | '/log' | '/policy'
+  to: '/' | '/business' | '/claims' | '/log' | '/policy'
+  id: '__root__' | '/' | '/business' | '/claims' | '/log' | '/policy'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BusinessRoute: typeof BusinessRoute
   ClaimsRoute: typeof ClaimsRoute
   LogRoute: typeof LogRoute
   PolicyRoute: typeof PolicyRoute
@@ -76,6 +86,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/business': {
+      id: '/business'
+      path: '/business'
+      fullPath: '/business'
+      preLoaderRoute: typeof BusinessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/claims': {
@@ -104,6 +121,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BusinessRoute: BusinessRoute,
   ClaimsRoute: ClaimsRoute,
   LogRoute: LogRoute,
   PolicyRoute: PolicyRoute,

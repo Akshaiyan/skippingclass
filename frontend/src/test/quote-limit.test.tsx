@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
 
 import { useStore } from "@/store";
@@ -11,7 +12,9 @@ function Probe() {
   return (
     <div>
       <span data-testid="limit">{state.quoteLimit}</span>
-      <span data-testid="value">{(rule.condition as { right: { value: number } }).right.value}</span>
+      <span data-testid="value">
+        {(rule.condition as { right: { value: number } }).right.value}
+      </span>
       <span data-testid="desc">{rule.description}</span>
       <button onClick={() => dispatch({ type: "setQuoteLimit", limit: 900 })}>set 900</button>
       <button onClick={() => dispatch({ type: "setQuoteLimit", limit: 2500 })}>set 2500</button>
@@ -23,9 +26,9 @@ function Probe() {
 describe("Quote limit", () => {
   it("starts at the draft policy's 1200", () => {
     render(
-      <StoreProvider>
+      <QueryClientProvider client={new QueryClient()}><StoreProvider>
         <Probe />
-      </StoreProvider>,
+      </StoreProvider></QueryClientProvider>,
     );
     expect(screen.getByTestId("limit").textContent).toBe("1200");
     expect(screen.getByTestId("value").textContent).toBe("1200");
@@ -33,9 +36,9 @@ describe("Quote limit", () => {
 
   it("applies a typed amount that was never a preset choice", () => {
     render(
-      <StoreProvider>
+      <QueryClientProvider client={new QueryClient()}><StoreProvider>
         <Probe />
-      </StoreProvider>,
+      </StoreProvider></QueryClientProvider>,
     );
     fireEvent.click(screen.getByText("set 900"));
     expect(screen.getByTestId("limit").textContent).toBe("900");
@@ -45,9 +48,9 @@ describe("Quote limit", () => {
 
   it("applies an amount above the old presets", () => {
     render(
-      <StoreProvider>
+      <QueryClientProvider client={new QueryClient()}><StoreProvider>
         <Probe />
-      </StoreProvider>,
+      </StoreProvider></QueryClientProvider>,
     );
     fireEvent.click(screen.getByText("set 2500"));
     expect(screen.getByTestId("value").textContent).toBe("2500");

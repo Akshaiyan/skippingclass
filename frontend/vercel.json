@@ -1,0 +1,6 @@
+{
+  "installCommand": "npm install",
+  "buildCommand": "npm run build:static",
+  "outputDirectory": "dist/client",
+  "rewrites": [{ "source": "/((?!api/|assets/).*)", "destination": "/index.html" }]
+}

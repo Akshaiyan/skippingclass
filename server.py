@@ -12,6 +12,7 @@ Endpoints (see API.md):
 Errors are JSON: 400 for refused input, 404 for unknown route or case.
 """
 import json
+import os
 import triage
 import re
 import sys
@@ -20,6 +21,24 @@ from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
 HERE = Path(__file__).parent
+# Who may call the engine from a browser: local origins by default; set ALLOWED_ORIGIN and ALLOWED_HOST before hosting (see API.md).
+ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "").strip()  # empty: local origins only
+ALLOWED_HOST = os.environ.get("ALLOWED_HOST", "").strip()      # empty: 127.0.0.1 / localhost only
+_LOCAL = re.compile(r"^(localhost|127\.0\.0\.1)(:\d+)?$")
+_LOCAL_ORIGIN = re.compile(r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$")
+
+
+def origin_allowed(origin):
+    """No Origin header means a non-browser client (curl, the judges' scripts). A browser page must match."""
+    if not origin:
+        return True
+    return origin == ALLOWED_ORIGIN if ALLOWED_ORIGIN else bool(_LOCAL_ORIGIN.match(origin))
+
+
+def host_allowed(host):
+    if ALLOWED_HOST:
+        return host == ALLOWED_HOST
+    return bool(_LOCAL.match(host or ""))
 sys.path.insert(0, str(HERE))
 import engine  # noqa: E402
 import io_csv  # noqa: E402
@@ -64,6 +83,10 @@ def _case_view(cid):
             "timeline": history.timeline(cid, LOG_PATH)}
 
 
+def _bad_fields(body, names):
+    return [k for k in names if k in body and not isinstance(body[k], str)]
+
+
 def _memory(case_id):
     """A claim's decision memory: its own corrections newest first, the policy changes that moved it, and whether the
     log is intact. Read-only. A damaged log raises LogDamaged, which the outer handler answers with 503."""
@@ -102,6 +125,9 @@ def _handle(method, path, query, body):
         view = _case_view(path.rsplit("/", 1)[1])
         return (200, view) if view else (404, {"error": "unknown case"})
     if method == "POST" and path == "/api/override":
+        bad = _bad_fields(body, ["case_id", "actor", "note", "reason", "reason_code", "to_rec", "corrected_recommendation", "policy_version", "policy_hash"])
+        if bad:
+            return 400, {"error": "fields must be text: " + ", ".join(bad)}
         cid = str(body.get("case_id", ""))
         row = _cases().get(cid)
         if row is None:
@@ -143,6 +169,11 @@ def _handle(method, path, query, body):
         return 200, {"policy": new["name"], "open_flips": flips, "into_routine": into,
                      "closed_kept_as_v1": True}
     if method == "POST" and path == "/api/policy-decision":
+        bad = _bad_fields(body, ["decision", "actor", "proposed_by", "reason", "policy_version"])
+        if bad or not isinstance(body.get("signoff_for", []), list) or not all(isinstance(x, str) for x in body.get("signoff_for", [])):
+            return 400, {"error": "fields must be text; signoff_for must be a list of case ids"}
+        if body.get("policy_version") not in ("v1", "v2"):
+            return 400, {"error": "policy_version must be v1 or v2"}
         # Why this gate exists (decision record):
         # Source: vendor and practitioner write-ups on champion-challenger and rule change (secondary, WebSearch 2026-11-07):
         #   a policy change that looks reasonable can cause a portfolio spike; review before release, not after.
@@ -164,7 +195,8 @@ def _handle(method, path, query, body):
                 return 400, {"error": "claims moving into routine need a named sign-off: " + ", ".join(missing)}
         record = {"type": "policy_decision", "actor": body.get("actor", ""), "reason": body.get("reason", ""),
                   "policy_version": body.get("policy_version", ""), "decision": body.get("decision", ""),
-                  "proposed_by": body.get("proposed_by", ""), "signoff_for": named, "affected": affected}
+                  "proposed_by": body.get("proposed_by", ""), "signoff_for": named, "affected": affected,
+                  "policy_hash": ui_view.policy_hash(ui_view.V2_PATH) if body.get("policy_version") == "v2" else ui_view.policy_hash(ui_view.V1_PATH)}
         log = DecisionLog(LOG_PATH)
         try:
             entry = log.append(record)
@@ -220,30 +252,39 @@ def handle(method, path, query, body):
 
 
 class Handler(BaseHTTPRequestHandler):
+    def _cors_origin(self):
+        origin = self.headers.get("Origin", "")
+        return origin if origin and origin_allowed(origin) else "null"
+
     def _send(self, status, payload):
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Origin", self._cors_origin())
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
         self.wfile.write(data)
 
     def _body(self):
         n = int(self.headers.get("Content-Length") or 0)
-        if n > 65536:
-            raise ValueError("body too large")
+        if n < 0 or n > 65536:
+            raise ValueError("body too large or malformed length")
         return json.loads(self.rfile.read(n).decode("utf-8") or "{}") if n else {}
 
     def do_OPTIONS(self):
         self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Origin", self._cors_origin())
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
 
     def _dispatch(self, method):
         u = urlparse(self.path)
+        origin = self.headers.get("Origin", "")
+        if not host_allowed(self.headers.get("Host", "")) or not origin_allowed(origin):
+            return self._send(403, {"error": "origin or host not allowed; see API.md (hosting)"})
+        if method == "POST" and not (self.headers.get("Content-Type") or "").lower().startswith("application/json"):
+            return self._send(415, {"error": "writes must be sent as application/json"})
         try:
             body = self._body() if method == "POST" else {}
         except (ValueError, json.JSONDecodeError):

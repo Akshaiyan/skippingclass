@@ -9,13 +9,28 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+// `npm run build:static` sets STATIC_BUILD=1: no server at all, just dist/client (an index.html shell plus
+// assets) that any static host can serve (Vercel, Netlify, GitHub Pages, S3, nginx). The app is client-rendered
+// anyway: all data comes from the JSON API in the browser. The default `npm run build` keeps the original
+// Lovable/Cloudflare SSR output so Lovable's own publishing still works.
+const isStatic = process.env["STATIC_BUILD"] === "1";
+
+// Where `npm run dev` forwards /api/* so the browser never needs CORS or a hard-coded backend URL.
+const proxyTarget = process.env["VITE_PROXY_TARGET"] ?? "http://127.0.0.1:8000";
+
 export default defineConfig({
-  tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
-    server: { entry: "server" },
-  },
+  ...(isStatic
+    ? { nitro: false as const, tanstackStart: { spa: { enabled: true } } }
+    : {
+        tanstackStart: {
+          // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
+          // nitro/vite builds from this
+          server: { entry: "server" },
+        },
+      }),
   vite: {
+    server: { proxy: { "/api": { target: proxyTarget, changeOrigin: true } } },
+    ...(isStatic ? { build: { outDir: "dist" } } : {}),
     // Pre-bundle UI deps up front so a mid-session re-optimization can't load a second React copy.
     optimizeDeps: {
       include: [
