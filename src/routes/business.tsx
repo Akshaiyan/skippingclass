@@ -14,7 +14,8 @@ export const Route = createFileRoute("/business")({
       { title: "Cost impact · Motor claims triage" },
       {
         name: "description",
-        content: "What the current policy draft does to Human review cost, and how it develops with volume.",
+        content:
+          "What the current policy draft does to Human review cost, and how it develops with volume.",
       },
     ],
   }),
@@ -22,7 +23,11 @@ export const Route = createFileRoute("/business")({
 });
 
 const euro = (v: number) =>
-  new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v);
+  new Intl.NumberFormat("en-IE", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0,
+  }).format(v);
 const signed = (v: number) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${euro(Math.abs(v))}`;
 
 function BusinessPage() {
@@ -49,12 +54,19 @@ function BusinessPage() {
           <AssumptionField name="reviewMinutes" label="One Human review" unit="minutes" />
           <AssumptionField name="claimsPerMonth" label="Claims per month" unit="claims" />
           <AssumptionField name="growthPercent" label="Volume growth" unit="% per year" />
-          <AssumptionField name="unnecessaryReviewShare" label="Unnecessary Human reviews" unit="%" percent />
+          <AssumptionField
+            name="unnecessaryReviewShare"
+            label="Unnecessary Human reviews"
+            unit="%"
+            percent
+          />
           <AssumptionField name="wrongRoutineCost" label="One wrong routine decision" unit="EUR" />
         </div>
         <div className="mt-4">
           <label htmlFor="volume-slider" className="text-sm">
-            What if volume changes: <span className="tnum font-mono">{a.claimsPerMonth.toLocaleString("en-IE")}</span> claims per month
+            What if volume changes:{" "}
+            <span className="tnum font-mono">{a.claimsPerMonth.toLocaleString("en-IE")}</span>{" "}
+            claims per month
           </label>
           <input
             id="volume-slider"
@@ -63,7 +75,13 @@ function BusinessPage() {
             max={50000}
             step={100}
             value={Math.min(Math.max(a.claimsPerMonth, 100), 50000)}
-            onChange={(e) => dispatch({ type: "setAssumption", key: "claimsPerMonth", value: Number(e.target.value) })}
+            onChange={(e) =>
+              dispatch({
+                type: "setAssumption",
+                key: "claimsPerMonth",
+                value: Number(e.target.value),
+              })
+            }
             className="mt-2 block w-full accent-[var(--chart-gray-1)]"
           />
         </div>
@@ -97,7 +115,8 @@ function BusinessPage() {
         <details className="mt-1 text-xs text-muted-foreground">
           <summary className="cursor-pointer">Formula</summary>
           <p className="mt-1 font-mono">
-            ({s.newlyEscalated} − {s.released}) ÷ {s.openClaims} open claims × {a.claimsPerMonth.toLocaleString("en-IE")} claims × {euro(reviewCost(a))} per review
+            ({s.newlyEscalated} − {s.released}) ÷ {s.openClaims} open claims ×{" "}
+            {a.claimsPerMonth.toLocaleString("en-IE")} claims × {euro(reviewCost(a))} per review
           </p>
         </details>
         <div className="mt-3 flex items-baseline justify-between gap-3 text-xs text-muted-foreground">
@@ -107,7 +126,10 @@ function BusinessPage() {
         <details className="mt-1 text-xs text-muted-foreground">
           <summary className="cursor-pointer">Formula</summary>
           <p className="mt-1 font-mono">
-            {s.movedToRoutine} claims start routine ÷ {s.openClaims} open × {a.claimsPerMonth.toLocaleString("en-IE")} claims × {Math.round((1 - a.unnecessaryReviewShare) * 100)}% rightly escalated × {euro(a.wrongRoutineCost)}
+            {s.movedToRoutine} claims start routine ÷ {s.openClaims} open ×{" "}
+            {a.claimsPerMonth.toLocaleString("en-IE")} claims ×{" "}
+            {Math.round((1 - a.unnecessaryReviewShare) * 100)}% rightly escalated ×{" "}
+            {euro(a.wrongRoutineCost)}
           </p>
         </details>
       </section>

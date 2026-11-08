@@ -56,9 +56,9 @@ describe("Claims page", () => {
   it("filters by flow tab and reports the result count", () => {
     const { container } = page();
     fireEvent.click(screen.getByRole("radio", { name: /^Routine processing/ }));
-    const headings = [...container.querySelectorAll("span.font-display")].map((n) => n.textContent);
+    const headings = [...container.querySelectorAll('h2[id^="group-"]')].map((n) => n.textContent ?? "");
     expect(headings.length).toBeGreaterThan(0);
-    expect(headings.every((h) => h === "Routine processing")).toBe(true);
+    expect(headings.every((h) => h.startsWith("Routine processing"))).toBe(true);
     expect(screen.getByText(/ of \d+ claims$/)).toBeInTheDocument();
   });
 });

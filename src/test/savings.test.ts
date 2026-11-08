@@ -43,7 +43,9 @@ describe("Monthly total", () => {
     const live = flowShares(claims, "live");
     const draft = flowShares(claims, "draft");
     const s = policySavings(claims, A);
-    expect(monthlyReviewCost(draft.red, A) - monthlyReviewCost(live.red, A)).toBeCloseTo(s.extraReviewCostPerMonth);
+    expect(monthlyReviewCost(draft.red, A) - monthlyReviewCost(live.red, A)).toBeCloseTo(
+      s.extraReviewCostPerMonth,
+    );
   });
   it("projects 12 months and grows with the growth input", () => {
     const live = flowShares(claims, "live");
@@ -75,7 +77,8 @@ describe("Quote limit sweep", () => {
     const limits = [300, 600, 900, 1200, 1500, 2000, 3000, 5000];
     const rules = getDraftPolicy().rules;
     const sweep = sweepQuoteLimit(claims, rules, limits, A, withLimit);
-    for (let i = 1; i < sweep.length; i++) expect(sweep[i]!.cost).toBeLessThanOrEqual(sweep[i - 1]!.cost);
+    for (let i = 1; i < sweep.length; i++)
+      expect(sweep[i]!.cost).toBeLessThanOrEqual(sweep[i - 1]!.cost);
   });
 });
 

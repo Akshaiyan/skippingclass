@@ -52,7 +52,11 @@ export function sanitizeAssumption(key: keyof SavingsAssumptions, value: number)
 export const reviewCost = (a: SavingsAssumptions) => a.reviewMinutes * a.eurPerMinute;
 
 /** Cost effect of one changed claim: +cost when it newly needs Human review, -cost when it leaves it, else 0. */
-export function claimCostEffect(from: DerivedClaim["recommendation_v1"], to: DerivedClaim["recommendation_v2"], a: SavingsAssumptions): number {
+export function claimCostEffect(
+  from: DerivedClaim["recommendation_v1"],
+  to: DerivedClaim["recommendation_v2"],
+  a: SavingsAssumptions,
+): number {
   const wasRed = FLOW_OF[from] === "red";
   const isRed = FLOW_OF[to] === "red";
   if (!wasRed && isRed) return reviewCost(a);
@@ -80,10 +84,18 @@ export function policySavings(claims: DerivedClaim[], a: SavingsAssumptions): Po
   const open = claims.filter((c) => c.case_status === "open");
   const n = open.length;
   const flow = (rec: DerivedClaim["recommendation_v1"]): Flow => FLOW_OF[rec];
-  const newlyEscalated = open.filter((c) => flow(c.recommendation_v1) !== "red" && flow(c.recommendation_v2) === "red").length;
-  const released = open.filter((c) => flow(c.recommendation_v1) === "red" && flow(c.recommendation_v2) !== "red").length;
-  const movedToRoutine = open.filter((c) => flow(c.recommendation_v1) !== "green" && flow(c.recommendation_v2) === "green").length;
-  const movedToInfo = open.filter((c) => flow(c.recommendation_v1) !== "yellow" && flow(c.recommendation_v2) === "yellow").length;
+  const newlyEscalated = open.filter(
+    (c) => flow(c.recommendation_v1) !== "red" && flow(c.recommendation_v2) === "red",
+  ).length;
+  const released = open.filter(
+    (c) => flow(c.recommendation_v1) === "red" && flow(c.recommendation_v2) !== "red",
+  ).length;
+  const movedToRoutine = open.filter(
+    (c) => flow(c.recommendation_v1) !== "green" && flow(c.recommendation_v2) === "green",
+  ).length;
+  const movedToInfo = open.filter(
+    (c) => flow(c.recommendation_v1) !== "yellow" && flow(c.recommendation_v2) === "yellow",
+  ).length;
   const redLive = open.filter((c) => flow(c.recommendation_v1) === "red").length;
   const redDraft = open.filter((c) => flow(c.recommendation_v2) === "red").length;
   const netShare = n ? (newlyEscalated - released) / n : 0;
@@ -97,7 +109,10 @@ export function policySavings(claims: DerivedClaim[], a: SavingsAssumptions): Po
     redDraft,
     extraReviewCostPerMonth: netShare * a.claimsPerMonth * reviewCost(a),
     wrongRoutineCostPerMonth: n
-      ? (movedToRoutine / n) * a.claimsPerMonth * (1 - a.unnecessaryReviewShare) * a.wrongRoutineCost
+      ? (movedToRoutine / n) *
+        a.claimsPerMonth *
+        (1 - a.unnecessaryReviewShare) *
+        a.wrongRoutineCost
       : 0,
   };
 }
@@ -117,8 +132,13 @@ export function flowShares(claims: DerivedClaim[], version: "live" | "draft"): F
   const open = claims.filter((c) => c.case_status === "open");
   const out: FlowShares = { green: 0, yellow: 0, red: 0 };
   if (!open.length) return out;
-  for (const c of open) out[FLOW_OF[version === "live" ? c.recommendation_v1 : c.recommendation_v2]] += 1;
-  return { green: out.green / open.length, yellow: out.yellow / open.length, red: out.red / open.length };
+  for (const c of open)
+    out[FLOW_OF[version === "live" ? c.recommendation_v1 : c.recommendation_v2]] += 1;
+  return {
+    green: out.green / open.length,
+    yellow: out.yellow / open.length,
+    red: out.red / open.length,
+  };
 }
 
 export interface MonthPoint {
@@ -128,11 +148,19 @@ export interface MonthPoint {
 }
 
 /** Human review cost for the next 12 months, volume growing by growthPercent per year, shares held constant. */
-export function projectTwelveMonths(live: FlowShares, draft: FlowShares, a: SavingsAssumptions): MonthPoint[] {
+export function projectTwelveMonths(
+  live: FlowShares,
+  draft: FlowShares,
+  a: SavingsAssumptions,
+): MonthPoint[] {
   const monthly = Math.pow(1 + a.growthPercent / 100, 1 / 12);
   return Array.from({ length: 12 }, (_, i) => {
     const scaled = { ...a, claimsPerMonth: a.claimsPerMonth * Math.pow(monthly, i) };
-    return { month: i + 1, live: monthlyReviewCost(live.red, scaled), draft: monthlyReviewCost(draft.red, scaled) };
+    return {
+      month: i + 1,
+      live: monthlyReviewCost(live.red, scaled),
+      draft: monthlyReviewCost(draft.red, scaled),
+    };
   });
 }
 
@@ -152,7 +180,9 @@ export function sweepQuoteLimit(
   const open = claims.filter((c) => c.case_status === "open");
   return limits.map((limit) => {
     const rules = applyLimit(draftRules, limit);
-    const red = open.filter((c) => FLOW_OF[evaluate(rules, c.facts).recommendation] === "red").length;
+    const red = open.filter(
+      (c) => FLOW_OF[evaluate(rules, c.facts).recommendation] === "red",
+    ).length;
     return { limit, cost: open.length ? monthlyReviewCost(red / open.length, a) : 0 };
   });
 }
