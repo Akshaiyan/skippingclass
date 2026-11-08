@@ -219,7 +219,11 @@ export function CaseSheet({
       return;
     }
     const ok = await copyDraft();
-    toast(ok ? "Draft is too long for a mail link. Copied instead." : "Draft is too long for a mail link. Copy it from the draft below.");
+    toast(
+      ok
+        ? "Draft is too long for a mail link. Copied instead."
+        : "Draft is too long for a mail link. Copy it from the draft below.",
+    );
   };
   const markSent = () => {
     if (locked || sent) return;
@@ -357,7 +361,11 @@ export function CaseSheet({
                             </Button>
                           </WhyDisabled>
                         )}
-                        <CopyButton text={draftAsText(draft)} label="Copy email" onCopy={prepareInfo} />
+                        <CopyButton
+                          text={draftAsText(draft)}
+                          label="Copy email"
+                          onCopy={prepareInfo}
+                        />
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {claim.contact?.email
@@ -429,7 +437,12 @@ export function CaseSheet({
               </section>
             ) : (
               <>
-                <Accordion type="multiple" className="w-full" value={openItems} onValueChange={setOpenItems}>
+                <Accordion
+                  type="multiple"
+                  className="w-full"
+                  value={openItems}
+                  onValueChange={setOpenItems}
+                >
                   <AccordionItem value="why" className={SECTION}>
                     <AccordionTrigger className={TRIGGER}>{REVIEW_COPY.why}</AccordionTrigger>
                     <AccordionContent className="space-y-4">

@@ -229,7 +229,8 @@ export function storeReducer(s: State, a: Action): State {
       const latest = [...s.log]
         .reverse()
         .find((e) => "case_id" in e && e.case_id === a.case_id && e.type !== "system_decision");
-      if (!claim || claim.case_status === "closed" || latest?.type === "info_request_sent") return s;
+      if (!claim || claim.case_status === "closed" || latest?.type === "info_request_sent")
+        return s;
       return {
         ...s,
         log: appendLog(s.log, {

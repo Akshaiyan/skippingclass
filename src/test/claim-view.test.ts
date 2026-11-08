@@ -57,7 +57,11 @@ describe("information request steps", () => {
   it("ignores closed claims", () => {
     const s = initialStoreState();
     const closed = s.claims.find((c) => c.case_status === "closed")!;
-    const next = storeReducer(s, { type: "markInfoSent", case_id: closed.case_id, timestamp: at(1) });
+    const next = storeReducer(s, {
+      type: "markInfoSent",
+      case_id: closed.case_id,
+      timestamp: at(1),
+    });
     expect(next.log).toEqual(s.log);
   });
 });
