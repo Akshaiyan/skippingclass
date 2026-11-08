@@ -4,17 +4,24 @@ The engine is a stdlib JSON server: `python server.py --port 8000`. It serves th
 
 ## Hosting: set the origin first
 
-CORS is open (`*`) by default so the demo runs locally. Before anyone hosts the engine, set the app's origin:
+The engine always binds to 127.0.0.1. It has no authentication. To serve it to others, put a reverse proxy with authentication in front of it; the proxy must forward the original `Host` and `Origin` headers.
+
+Browser access is limited by two headers, checked on every request:
+
+- **Origin.** Without one (curl, the judges' scripts) the request is allowed. With one, only local origins (`http://localhost:*`, `http://127.0.0.1:*`) are allowed by default. Set `ALLOWED_ORIGIN` to the app's exact origin when you host the app.
+- **Host.** Must be `localhost` or `127.0.0.1` by default. Set `ALLOWED_HOST` to the public host name when hosting.
+
+A refused request gets `403`. CORS headers only let a browser *read* a response; they do not stop a page from sending a write. The origin and host checks are what stop a page on another site from recording decisions or approving policy changes.
+
+Writes must be sent as `application/json` (otherwise `415`).
 
 ```
-ALLOWED_ORIGIN=https://your-app.example python server.py --port 8000
+ALLOWED_ORIGIN=https://your-app.example ALLOWED_HOST=engine.your-app.example python server.py --port 8000
 ```
-
-The engine has no authentication. Run it only on a network you trust.
 
 ## Conventions
 
-- Bodies are JSON objects. Bodies over 64 KB, and bodies that are not JSON objects, get `400`.
+- Bodies are JSON objects. Bodies over 64 KB, malformed bodies and fields of the wrong type get `400`. `policy_version` must be `v1` or `v2`.
 - Unknown claims get `404 {"error": "unknown case"}`.
 - A damaged decision log gets `503` with the line that broke and the repair command. Nothing is repaired silently.
 - Every write appends one hash-chained record to `decision_log.ndjson`. Records are never edited.
@@ -23,7 +30,7 @@ The engine has no authentication. Run it only on a network you trust.
 
 | Method and path | Returns |
 |---|---|
-| `GET /api/cases` | All claims with the v1 and v2 recommendation and the policy hashes |
+| `GET /api/cases` | All claims with the v1 recommendation and the v1 policy hash |
 | `GET /api/case/<id>` | One claim: facts, blanks, v1 explanation, next-best-information suggestion, timeline |
 | `GET /api/cases/<id>/memory` | The claim's reviewer decisions (newest first), the approved policy changes that moved it, and log integrity |
 | `GET /api/log` | Every log entry in readable form, plus integrity |

@@ -25,13 +25,16 @@ export function DecisionMemory({ caseId }: { caseId: string }) {
       if (hit) items.push({ kind: "policy", key: `p${e.seq}-${i}`, timestamp: e.timestamp, actor: e.actor, proposedBy: p.proposed_by ?? "", policy: p.policy_version ?? "", from: hit.from, to: hit.to, hash: p.hash ?? "" });
     }
   });
-  items.sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1));
+  // Server timestamps carry microseconds; Date parses milliseconds, so trim before comparing.
+  const ts = (s: string) => Date.parse(s.replace(/(\.\d{3})\d+/, "$1")) || 0;
+  items.sort((a, b) => ts(b.timestamp) - ts(a.timestamp) || (a.key < b.key ? 1 : -1));
+  // A policy change is "awaiting a reviewer" only until a reviewer decides this claim after it.
+  const reviewedAfter = (p: PolicyItem) => items.some((o) => o.kind === "override" && ts(o.timestamp) > ts(p.timestamp));
   const integrity = state.source === "live" ? state.integrity : null;
 
   return (
-    <section aria-labelledby="memory-title" className="space-y-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 id="memory-title" className="section-title">Decision memory</h3>
+    <section aria-label="Decision memory" className="space-y-3">
+      <div className="flex flex-wrap items-baseline justify-end gap-2">
         <span className="tnum text-sm text-muted-foreground">
           {items.length} {items.length === 1 ? "entry" : "entries"}
         </span>
@@ -61,7 +64,9 @@ export function DecisionMemory({ caseId }: { caseId: string }) {
               {it.kind === "policy" ? (
                 <>
                   <p className="flex flex-wrap items-center gap-2 text-sm">
-                    <Chip tone="amber">Policy {it.policy} moves this claim, awaiting reviewer</Chip>
+                    <Chip tone="amber">
+                      Policy {it.policy} moves this claim, {reviewedAfter(it) ? "reviewed since" : "awaiting reviewer"}
+                    </Chip>
                     <span className="inline-flex items-center gap-2 whitespace-nowrap">
                       <FlowBadge rec={it.from} size="sm" />
                       <span aria-hidden className="text-muted-foreground">→</span>
