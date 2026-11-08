@@ -27,7 +27,11 @@ describe("Claims filters", () => {
   });
   it("searches case ids without caring about case or spaces", () => {
     const id = claims[0]!.case_id;
-    const hit = applyBaseFilters(claims, { ...DEFAULT_FILTERS, status: "all", q: `  ${id.toLowerCase()} ` });
+    const hit = applyBaseFilters(claims, {
+      ...DEFAULT_FILTERS,
+      status: "all",
+      q: `  ${id.toLowerCase()} `,
+    });
     expect(hit.map((c) => c.case_id)).toEqual([id]);
   });
   it("returns nothing when nothing matches", () => {

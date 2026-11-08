@@ -303,7 +303,11 @@ const ACTIVITY: Record<string, { label: string; daysAgo: number }[]> = {
 
 // Demo contacts so the email and call actions can be shown. Real sources will supply their own, or none.
 const DEMO_CONTACTS: Record<string, NonNullable<Claim["contact"]>> = {
-  "PRA-005": { name: "Demo customer", email: "demo.customer@example.com", phone: "+49 89 0000 0005" },
+  "PRA-005": {
+    name: "Demo customer",
+    email: "demo.customer@example.com",
+    phone: "+49 89 0000 0005",
+  },
   "PRA-003": { name: "Demo customer", email: "demo.customer@example.com" },
   "PRA-002": { name: "Demo customer", phone: "+49 89 0000 0002" },
 };

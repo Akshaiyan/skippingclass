@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useStore } from "@/store";
-import { ASSUMPTION_STATUS, type SavingsAssumptions } from "@/lib/savings";
+import type { SavingsAssumptions } from "@/lib/savings";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-/** One editable input of the savings view, always labelled ASSUMED or SOURCED. Shares are typed as percent. */
+/** One editable input of the cost view. The section it sits in carries the ASSUMED tag. Shares are typed as percent. */
 export function AssumptionField({
   name,
   label,
@@ -24,17 +24,12 @@ export function AssumptionField({
   const id = `assumption-${name}`;
   return (
     <div>
-      <Label htmlFor={id} className="flex items-baseline justify-between gap-2">
-        <span>{label}</span>
-        <span className="font-mono text-xs font-normal text-muted-foreground">
-          {ASSUMPTION_STATUS[name]}
-        </span>
-      </Label>
+      <Label htmlFor={id}>{label}</Label>
       <div className="mt-2 flex items-center gap-2">
         <Input
           id={id}
           inputMode="decimal"
-          className="tnum font-mono"
+          className="tnum"
           value={text}
           onChange={(e) => {
             setText(e.target.value);

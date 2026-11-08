@@ -30,8 +30,12 @@ describe("Claims page", () => {
 
   it("offers the two other flows as visible actions, never a dropdown", () => {
     page();
-    expect(screen.getAllByRole("button", { name: "Move PRA-005 to Human review" }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("button", { name: "Move PRA-005 to Routine processing" }).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole("button", { name: "Move PRA-005 to Human review" }).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole("button", { name: "Move PRA-005 to Routine processing" }).length,
+    ).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: /Change recommendation for/ })).toBeNull();
   });
 
@@ -56,7 +60,9 @@ describe("Claims page", () => {
   it("filters by flow tab and reports the result count", () => {
     const { container } = page();
     fireEvent.click(screen.getByRole("radio", { name: /^Routine processing/ }));
-    const headings = [...container.querySelectorAll('h2[id^="group-"]')].map((n) => n.textContent ?? "");
+    const headings = [...container.querySelectorAll('h2[id^="group-"]')].map(
+      (n) => n.textContent ?? "",
+    );
     expect(headings.length).toBeGreaterThan(0);
     expect(headings.every((h) => h.startsWith("Routine processing"))).toBe(true);
     expect(screen.getByText(/ of \d+ claims$/)).toBeInTheDocument();

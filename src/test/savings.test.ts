@@ -1,18 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { getClaims, getDraftPolicy } from "@/data/api";
-import { deriveClaims, flipList } from "@/lib/report";
+import { deriveClaims } from "@/lib/report";
 import {
   DEFAULT_ASSUMPTIONS,
   claimCostEffect,
+  costFigures,
   flowShares,
   monthlyReviewCost,
   policySavings,
   projectTwelveMonths,
-  ruleEffects,
   sanitizeAssumption,
-  sweepQuoteLimit,
 } from "@/lib/savings";
-import { withLimit } from "@/store";
 
 const claims = deriveClaims(getClaims(), getDraftPolicy().rules);
 const A = DEFAULT_ASSUMPTIONS;
@@ -50,7 +48,7 @@ describe("Monthly total", () => {
   it("projects 12 months and grows with the growth input", () => {
     const live = flowShares(claims, "live");
     const draft = flowShares(claims, "draft");
-    const flat = projectTwelveMonths(live, draft, A);
+    const flat = projectTwelveMonths(live, draft, { ...A, growthPercent: 0 });
     expect(flat).toHaveLength(12);
     expect(flat[11]!.live).toBeCloseTo(flat[0]!.live);
     const grown = projectTwelveMonths(live, draft, { ...A, growthPercent: 12 });
@@ -64,7 +62,6 @@ describe("Zero change case", () => {
     const s = policySavings(same, A);
     expect(s.extraReviewCostPerMonth).toBe(0);
     expect(s.newlyEscalated + s.released + s.movedToRoutine + s.movedToInfo).toBe(0);
-    expect(ruleEffects(flipList(same))).toEqual([]);
   });
   it("handles no open claims", () => {
     expect(policySavings([], A).extraReviewCostPerMonth).toBe(0);
@@ -72,13 +69,24 @@ describe("Zero change case", () => {
   });
 });
 
-describe("Quote limit sweep", () => {
-  it("never costs more as the limit rises, because a higher limit escalates fewer quotes", () => {
-    const limits = [300, 600, 900, 1200, 1500, 2000, 3000, 5000];
-    const rules = getDraftPolicy().rules;
-    const sweep = sweepQuoteLimit(claims, rules, limits, A, withLimit);
-    for (let i = 1; i < sweep.length; i++)
-      expect(sweep[i]!.cost).toBeLessThanOrEqual(sweep[i - 1]!.cost);
+describe("Key figures", () => {
+  const live = flowShares(claims, "live");
+  const draft = flowShares(claims, "draft");
+  const months = projectTwelveMonths(live, draft, A);
+  const open = claims.filter((c) => c.case_status === "open").length;
+  const f = costFigures(live, draft, months, open, A)!;
+  it("cost per claim is the monthly Human review cost divided by claims per month", () => {
+    expect(f.draft.perClaim).toBeCloseTo(monthlyReviewCost(draft.red, A) / A.claimsPerMonth);
+    expect(f.live.perClaim).toBeCloseTo(monthlyReviewCost(live.red, A) / A.claimsPerMonth);
+  });
+  it("flow shares add up to 100% for both versions", () => {
+    for (const s of [live, draft]) expect(s.red + s.yellow + s.green).toBeCloseTo(1);
+  });
+  it("12-month cost is the sum of the monthly projection", () => {
+    expect(f.draft.twelveMonths).toBeCloseTo(months.reduce((t, m) => t + m.draft, 0));
+  });
+  it("is not provided when no claim is open, never divided by zero", () => {
+    expect(costFigures(live, draft, months, 0, A)).toBeNull();
   });
 });
 

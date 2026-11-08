@@ -111,6 +111,42 @@ export const POLICY_COPY = {
   confirmTitle: "Release v2?",
 };
 
+// Cost impact page. Every figure wears its tier: inputs are ASSUMED, projections DERIVED, nothing MEASURED.
+export const COST_COPY = {
+  title: "Cost impact",
+  subtitle: "What the draft does to Human review cost at your volume.",
+  honesty: "Inputs are ASSUMED. Nothing here is MEASURED on real claims.",
+  reset: "Reset",
+  settings: "Settings",
+  settingsHelp: "The assumptions that drive every number below.",
+  volume: "What-if volume",
+  volumeUnit: "claims per month",
+  keyFigures: "Key figures",
+  derived: "DERIVED",
+  assumed: "ASSUMED",
+  perClaim: "Cost per claim",
+  perClaimHelp: "Human review cost ÷ claims per month",
+  inReview: "Claims in review",
+  inReviewHelp: "Share of claims sent to Human review",
+  twelveMonths: "12-month cost",
+  twelveMonthsHelp: "Human review cost, next 12 months",
+  growthTag: (pct: number) => `growth ${pct}%/yr ASSUMED`,
+  vsLive: (v: string) => `vs live ${v}`,
+  sample: (n: number) => `Projected from ${n} sample ${n === 1 ? "claim" : "claims"}`,
+  showMath: "Show the math",
+  mixTitle: "Where the claims go",
+  mixHelp: "Share of open claims per flow, live rules against the draft.",
+  mixCaption: (pp: number) =>
+    pp === 0
+      ? "The draft keeps the same share in Human review."
+      : `The draft moves ${Math.abs(pp)} pp ${pp > 0 ? "into" : "out of"} Human review.`,
+  lineTitle: "Human review cost, next 12 months",
+  lineHelp: "Live rules (solid) against the draft (dashed), volume growing as set above.",
+  lineTier: "DERIVED · growth ASSUMED",
+  live: "Live",
+  draft: "Draft",
+};
+
 export const CONFIRM_REC = "Confirm recommendation";
 export const OVERRIDE_REC = "Override recommendation";
 export const CHANGE_REC = "Change recommendation";
