@@ -21,7 +21,7 @@ const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : "
 
 function Dot({ rec }: { rec: Rec }) {
   return (
-    <span className={cn("size-2 shrink-0 rounded-full", FLOW_DOT[FLOW_OF[rec]])} aria-hidden />
+    <span className={cn("size-2 shrink-0 rounded-none", FLOW_DOT[FLOW_OF[rec]])} aria-hidden />
   );
 }
 

@@ -435,7 +435,7 @@ export function ClaimsList({
                           className="section-title inline-flex items-center gap-2 text-lg leading-7"
                         >
                           <span
-                            className={cn("size-2.5 shrink-0 rounded-full", FLOW_DOT[g.flow])}
+                            className={cn("size-2.5 shrink-0 rounded-none", FLOW_DOT[g.flow])}
                             aria-hidden
                           />
                           {groupLabel(g.flow)}

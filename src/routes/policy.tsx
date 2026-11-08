@@ -417,7 +417,7 @@ function PolicyPage() {
                       </p>
                       <p className="mt-1 flex items-center gap-2 text-sm font-medium text-foreground">
                         <span
-                          className={cn("size-2 rounded-full", FLOW_DOT[FLOW_OF[r.outcome]])}
+                          className={cn("size-2 rounded-none", FLOW_DOT[FLOW_OF[r.outcome]])}
                           aria-hidden
                         />
                         {REC_LABEL[r.outcome]}
@@ -538,7 +538,7 @@ function PolicyPage() {
           </h2>
           <span className="inline-flex items-center gap-2 text-xs text-text-2" role="status">
             <span
-              className={cn("size-2 rounded-full", released ? "bg-flow-green" : "bg-border-strong")}
+              className={cn("size-2 rounded-none", released ? "bg-flow-green" : "bg-border-strong")}
               aria-hidden
             />
             {released
