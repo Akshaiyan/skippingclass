@@ -11,6 +11,7 @@ Endpoints (see API.md):
   GET  /api/business              latest business_results.json
 Errors are JSON: 400 for refused input, 404 for unknown route or case.
 """
+import doc_facts
 import json
 import mimetypes
 import os
@@ -157,6 +158,34 @@ def _handle(method, path, query, body):
                      "reason": entry["reason"], "reviewer": entry["actor"],
                      "policy_version": entry["policy_version"], "timestamp": entry["timestamp"],
                      "hash": entry["hash"]}
+    if method == "POST" and path == "/api/documents/check":
+        # Documents PROPOSE facts; they never decide. Read-only: no field is changed and nothing is logged.
+        # A proposal that disagrees with the claim form is flagged for a human; a blank field is not filled.
+        text = body.get("text")
+        if _bad_fields(body, ["case_id"]) or not isinstance(text, str) or not text.strip():
+            return 400, {"error": "case_id and the document text are required, as text"}
+        if len(text) > 20000:
+            return 400, {"error": "the document text is too long (20,000 characters at most)"}
+        cid = str(body.get("case_id", ""))
+        row = _cases().get(cid)
+        if row is None:
+            return 404, {"error": "unknown case"}
+        pages = text.split("")
+        facts = doc_facts.extract(pages)
+        mismatched = {c["fact"] for c in doc_facts.conflicts(row, pages)}
+        proposals = []
+        for name, (field, _pattern) in doc_facts.LABEL_PATTERNS.items():
+            found = facts[name]
+            if found["value"] is None or field not in row:
+                continue  # absent in the document, or not a field of the claim form: nothing to compare
+            claim_value = (row.get(field) or "").strip()
+            status = "conflicts" if name in mismatched else ("proposes_blank" if not claim_value else "agrees")
+            proposals.append({"fact": name, "field": field, "document_value": found["value"],
+                              "claim_value": claim_value or None, "status": status,
+                              "source_text": found["source_text"], "page": found["page"],
+                              "confidence": found["confidence"]})
+        return 200, {"case_id": cid, "proposals": proposals, "nothing_changed": True,
+                     "note": "Proposals only. No field and no decision was changed; a reviewer confirms a fact by recording a decision with a reason."}
     if method == "POST" and path == "/api/replay":
         try:
             new = _policy(str(body.get("policy", "")))
