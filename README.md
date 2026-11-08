@@ -11,7 +11,7 @@ python run.py <claims.csv> results.csv --policy policies/v2.json   # your file, 
 
 The results file has the columns the policy document names: `case_id, recommendation_v1, recommendation_v2, needs_recheck, rule_v1, rule_v2, explanation`. Rows that could not be read are listed as QUARANTINED with their line and field, and decided as request information, never guessed.
 
-The runtime makes no web calls. It needs Python 3.10 or newer and the standard library only.
+The batch runtime (`run.py`) and the checks make no web calls. The one exception is the optional voice token endpoint in `server.py`, which contacts ElevenLabs only when the Talk to Aegis button is used and a key is configured (`voice.py`). It needs Python 3.10 or newer and the standard library only.
 
 ## Walkthrough
 

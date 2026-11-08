@@ -1,0 +1,16 @@
+{
+  "name": "aegis-voice-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Creates and updates the Aegis voice agent on ElevenLabs. The app and its token endpoint live in the rest of the repo.",
+  "scripts": {
+    "setup": "node --env-file=.env setup.js"
+  },
+  "dependencies": {
+    "@elevenlabs/elevenlabs-js": "^2.77.0"
+  },
+  "engines": {
+    "node": ">=20.6"
+  }
+}

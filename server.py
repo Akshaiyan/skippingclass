@@ -9,6 +9,7 @@ Endpoints (see API.md):
   GET  /api/policy/diff?a=&b=     rules added, removed, changed between two named policies
   GET  /api/history/verify        hash-chain check of the decision log
   GET  /api/business              latest business_results.json
+  GET  /api/voice/token           short-lived ElevenLabs token for the Talk to Aegis button (voice.py)
 Errors are JSON: 400 for refused input, 404 for unknown route or case.
 """
 import json
@@ -228,6 +229,9 @@ def _handle(method, path, query, body):
         bad = verify_chain(LOG_PATH)
         return 200, {"intact": bad is None, "broken_at": None if bad is None else bad[0],
                      "reason": None if bad is None else bad[1]}
+    if method == "GET" and path == "/api/voice/token":
+        import voice  # imported here so the engine itself never touches the network unless voice is used
+        return voice.token()
     if method == "GET" and path == "/api/business":
         p = HERE / "business_results.json"
         if not p.exists():

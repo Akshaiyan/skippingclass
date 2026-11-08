@@ -47,15 +47,16 @@ Lockfiles: `package-lock.json` (npm, used by hosts) and `bun.lock` (Lovable). Ke
 
 ## Voice assistant (Aegis)
 
-A **Talk to Aegis** button sits bottom-right on every page once you are signed in. The voice agent itself lives in
-the separate `elevenlabstest` folder; this app only connects the microphone and gives the agent tools.
+A **Talk to Aegis** page and a floating call button, on every page once you are signed in. The browser only
+connects the microphone and gives the agent tools; the agent itself lives on ElevenLabs and is defined in
+`../voice-agent/`.
 
-- Run it: in `elevenlabstest`, `npm start` (set `NO_OPEN=1` in its `.env` so it doesn't open its own tab), then
-  `npm run dev` here. Vite forwards `/voice-api/token` to `http://127.0.0.1:3001/api/token`
-  (`VITE_VOICE_PROXY_TARGET` to change). Hosted: build with `VITE_VOICE_API_BASE=https://your-voice-server/api`
-  and add that origin to `ALLOWED_ORIGINS` in the voice server's `.env`.
-- Tools (`src/voice/tools.ts`) must match `tools` in `elevenlabstest/aegis.config.js` by name and parameters:
-  `get_app_context`, `navigate_to_page`, `open_claim`, `show_diagram`, `close_diagram`, `propose_override`.
+- Run it: `python server.py` in the repo root (it also hands out the voice token at `/api/voice/token`) and
+  `npm run dev` here. Put `ELEVENLABS_API_KEY` and `AGENT_ID` in `../voice-agent/.env` (see `../voice-agent/README.md`);
+  the engine reads them from there locally and from its environment when hosted (`../DEPLOY.md`).
+- Tools (`src/voice/tools.ts`, `src/voice/page-tools.ts`) must match `tools` in `../voice-agent/aegis.config.js` by name
+  and parameters, then run `npm run setup` in `voice-agent/` to push the change to ElevenLabs.
 - Diagrams (`src/voice/diagrams.ts`, drawn by `DiagramPanel.tsx`) are built from the live claims and rules.
-- The assistant can look, navigate, open claims and **draft** an override into the normal form. It cannot record
-  anything: the reviewer presses Record override. Page access follows the signed-in role (`src/lib/roles.ts`).
+- The assistant can look, navigate, open claims, draw, **draft** an override, and try what-ifs on the draft policy
+  and the cost assumptions (session only). It cannot record, release, approve or sign off anything: a named person
+  does that. Page access follows the signed-in role (`src/lib/roles.ts`).

@@ -5,6 +5,7 @@
 // The handlers are plain functions over an `env` snapshot, so they can be tested without a browser or a
 // microphone. Nothing here can record a decision: propose_override only puts a draft on screen.
 import type { Account, Flow, LogEntry, PolicyRule, Rec, ReasonCode } from "@/types";
+import type { SavingsAssumptions } from "@/lib/savings";
 import { REC_LABEL, REC_ORDER } from "@/copy";
 import { shortReason, quoteOf } from "@/lib/claim-view";
 import { flipList, type DerivedClaim } from "@/lib/report";
@@ -20,6 +21,7 @@ import {
   type DiagramSpec,
 } from "./diagrams";
 import { changedRuleCount } from "@/lib/policy-view";
+import { createPageTools } from "./page-tools";
 
 export type AppPath = "/" | "/claims" | "/policy" | "/business" | "/log" | "/voice";
 
@@ -45,6 +47,14 @@ export interface VoiceEnv {
   navigate: (to: AppPath, flow?: Flow) => void;
   openClaim: (caseId: string, draft?: OverrideDraft) => void;
   showDiagram: (spec: DiagramSpec | null) => void;
+  /** Cost impact inputs, and whether v2 has been released this session. */
+  assumptions: SavingsAssumptions;
+  gateOpen: boolean;
+  /** What-if edits, the same ones the Policy change and Cost impact pages make. All session only. */
+  setQuoteLimit: (limit: number) => void;
+  setDraftRules: (rules: PolicyRule[]) => void;
+  resetDraft: () => void;
+  setAssumption: (key: keyof SavingsAssumptions, value: number) => void;
 }
 
 const PAGES: Record<string, { path: AppPath; name: string }> = {
@@ -119,6 +129,7 @@ const str = (v: unknown) => (typeof v === "string" ? v : v == null ? "" : String
 
 export function createVoiceTools(getEnv: () => VoiceEnv) {
   const tools: Record<string, (p?: Params) => string> = {
+    ...createPageTools(getEnv),
     get_app_context: () => describeApp(getEnv()),
 
     navigate_to_page: (p = {}) => {

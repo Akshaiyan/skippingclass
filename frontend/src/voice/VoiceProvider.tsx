@@ -9,6 +9,7 @@ import type { DiagramSpec } from "./diagrams";
 import { safeTools, type AppPath, type OverrideDraft, type VoiceEnv } from "./tools";
 import { onAppEvent } from "@/lib/app-events";
 import { APP_EVENT_MARK, overrideFollowUp } from "./follow-up";
+import { stripDeliveryCues } from "./transcript";
 import { VoiceDock } from "./VoiceDock";
 import {
   readVoiceMode,
@@ -52,7 +53,7 @@ const isInteractive = (t: EventTarget | null) =>
  * It can never record a decision: only the reviewer can.
  */
 export function VoiceProvider({ children }: { children: ReactNode }) {
-  const { state, derived, v1Rules, v1Hash, draftHash } = useStore();
+  const { state, derived, v1Rules, v1Hash, draftHash, dispatch } = useStore();
   const router = useRouter();
   const path = useRouterState({ select: (s) => s.location.pathname });
 
@@ -140,6 +141,12 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
       },
       openClaim: (id, draft) => setSheet({ id, nonce: ++nonce.current, draft }),
       showDiagram: setDiagram,
+      assumptions: state.assumptions,
+      gateOpen: state.gateOpen,
+      setQuoteLimit: (limit) => dispatch({ type: "setQuoteLimit", limit }),
+      setDraftRules: (rules) => dispatch({ type: "setRules", rules }),
+      resetDraft: () => dispatch({ type: "resetDraft" }),
+      setAssumption: (key, value) => dispatch({ type: "setAssumption", key, value }),
     };
   });
   const pushLine = (line: VoiceLine) => setLines((l) => [...l, line].slice(-MAX_LINES));
@@ -209,7 +216,9 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
           // The app event we sent to make Aegis speak echoes back as a "user" message; it is not the person talking.
           if (source !== "ai" && message.startsWith(APP_EVENT_MARK)) return;
           const who: VoiceLine["who"] = source === "ai" ? "aegis" : "you";
-          setLines((l) => [...l, { who, text: message }].slice(-MAX_LINES));
+          const text = who === "aegis" ? stripDeliveryCues(message) : message;
+          if (!text) return;
+          setLines((l) => [...l, { who, text }].slice(-MAX_LINES));
         },
         onDisconnect: (details) => {
           if (mine !== generation.current) return;

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { getAccounts, getClaims, getDraftPolicy, getLog, getPolicy } from "@/data/api";
 import { deriveClaims } from "@/lib/report";
+import { DEFAULT_ASSUMPTIONS } from "@/lib/savings";
 import { parseCaseId, resolveCaseId } from "@/voice/case-id";
 import {
   customDiagram,
@@ -33,6 +34,12 @@ function makeEnv(over: Partial<VoiceEnv> = {}): VoiceEnv {
     navigate: vi.fn(),
     openClaim: vi.fn(),
     showDiagram: vi.fn(),
+    assumptions: { ...DEFAULT_ASSUMPTIONS },
+    gateOpen: false,
+    setQuoteLimit: vi.fn(),
+    setDraftRules: vi.fn(),
+    resetDraft: vi.fn(),
+    setAssumption: vi.fn(),
     ...over,
   };
 }
@@ -301,5 +308,131 @@ describe("override follow-up", () => {
     expect(text).toContain(`${red.length - 1} open human review`);
     expect(text).not.toContain(`starting with ${first.case_id}`);
     expect(text).toMatch(/do not call any tool/);
+  });
+});
+
+describe("transcript cleanup", () => {
+  it("drops delivery cues like [excited] and keeps the words", async () => {
+    const { stripDeliveryCues } = await import("@/voice/transcript");
+    expect(stripDeliveryCues("[excited] Oh nice, that one is routine!")).toBe(
+      "Oh nice, that one is routine!",
+    );
+    expect(stripDeliveryCues("Hmm [curious] what's the reason? [laughs]")).toBe(
+      "Hmm what's the reason?",
+    );
+    expect(stripDeliveryCues("[whispers]")).toBe("");
+    expect(stripDeliveryCues("PRA-003 is human review.")).toBe("PRA-003 is human review.");
+  });
+});
+
+describe("policy change tools", () => {
+  it("sets the draft quote limit, shows the page and says what would change", () => {
+    const env = makeEnv();
+    const out = run(env, "set_quote_limit", { limit: 1000 });
+    expect(env.setQuoteLimit).toHaveBeenCalledWith(1000);
+    expect(env.navigate).toHaveBeenCalledWith("/policy");
+    expect(out).toMatch(/Session only, not released/);
+    expect(out).toMatch(/open claim|No open claim/);
+  });
+  it("refuses a bad limit and changes nothing", () => {
+    const env = makeEnv();
+    for (const limit of ["lots", -5, ""])
+      expect(run(env, "set_quote_limit", { limit })).toMatch(/Nothing was changed/);
+    expect(env.setQuoteLimit).not.toHaveBeenCalled();
+  });
+  it("is for operations leads only", () => {
+    const env = makeEnv({ user: claimer });
+    for (const [tool, params] of [
+      ["get_policy_draft", {}],
+      ["set_quote_limit", { limit: 1000 }],
+      ["set_rule_active", { rule: "R1.duplicate", active: false }],
+      ["reset_draft", {}],
+      ["get_cost_impact", {}],
+      ["set_cost_assumption", { name: "claimsPerMonth", value: 5000 }],
+    ] as const)
+      expect(run(env, tool, params)).toMatch(/operations leads/);
+    expect(env.setQuoteLimit).not.toHaveBeenCalled();
+    expect(env.setDraftRules).not.toHaveBeenCalled();
+    expect(env.resetDraft).not.toHaveBeenCalled();
+    expect(env.setAssumption).not.toHaveBeenCalled();
+    expect(env.navigate).not.toHaveBeenCalled();
+  });
+  it("switches a rule off and on by id or by words, and keeps the routine fallback", () => {
+    const env = makeEnv();
+    const out = run(env, "set_rule_active", { rule: "possible duplicate", active: false });
+    expect(out).toMatch(/R1\.duplicate .* is now off/);
+    const rules = (env.setDraftRules as ReturnType<typeof vi.fn>).mock.calls[0]![0] as {
+      id: string;
+      active?: boolean;
+    }[];
+    expect(rules.find((r) => r.id === "R1.duplicate")?.active).toBe(false);
+    expect(run(env, "set_rule_active", { rule: "R3.routine", active: false })).toMatch(/fallback/);
+    expect(run(env, "set_rule_active", { rule: "R1", active: false })).toMatch(/matches \d+ rules/);
+    expect(run(env, "set_rule_active", { rule: "nonsense", active: false })).toMatch(/No rule/);
+    expect(run(env, "set_rule_active", { rule: "R1.duplicate" })).toMatch(/on or off/);
+  });
+  it("reads the draft: differences, flips and release checks, and leaves release to a person", () => {
+    const out = run(makeEnv(), "get_policy_draft");
+    expect(out).toMatch(/not released/);
+    expect(out).toMatch(/Differences from live/);
+    expect(out).toMatch(/release checks/i);
+    expect(out).toMatch(/for a person/);
+  });
+  it("resets the draft", () => {
+    const env = makeEnv();
+    expect(run(env, "reset_draft")).toMatch(/live rules/);
+    expect(env.resetDraft).toHaveBeenCalled();
+  });
+  it("has no tool that releases, approves or signs anything off", () => {
+    const names = Object.keys(createVoiceTools(() => makeEnv()));
+    expect(names.filter((n) => /release|approve|reject|sign|record|confirm/.test(n))).toEqual([]);
+  });
+});
+
+describe("cost impact tools", () => {
+  it("reads the assumptions and the figures", () => {
+    const out = run(makeEnv(), "get_cost_impact");
+    expect(out).toMatch(/claims per month: 2000 \(assumed\)/);
+    expect(out).toMatch(/12 months/);
+    expect(out).toMatch(/not measured costs/);
+  });
+  it("sets an assumption by name or by words and shows the page", () => {
+    const env = makeEnv();
+    expect(run(env, "set_cost_assumption", { name: "claimsPerMonth", value: 5000 })).toMatch(
+      /5,000 claims a month/,
+    );
+    expect(env.setAssumption).toHaveBeenCalledWith("claimsPerMonth", 5000);
+    run(env, "set_cost_assumption", { name: "handler cost", value: 2 });
+    expect(env.setAssumption).toHaveBeenCalledWith("eurPerMinute", 2);
+    expect(env.navigate).toHaveBeenCalledWith("/business");
+  });
+  it("limits the review share to 0..1 and says so", () => {
+    const env = makeEnv();
+    expect(run(env, "set_cost_assumption", { name: "unnecessaryReviewShare", value: 5 })).toMatch(
+      /limited from 5/,
+    );
+    expect(env.setAssumption).toHaveBeenCalledWith("unnecessaryReviewShare", 1);
+  });
+  it("refuses unknown names and unusable values", () => {
+    const env = makeEnv();
+    expect(run(env, "set_cost_assumption", { name: "profit", value: 3 })).toMatch(/isn't one of/);
+    expect(run(env, "set_cost_assumption", { name: "claimsPerMonth", value: -1 })).toMatch(
+      /must be a number/,
+    );
+    expect(run(env, "set_cost_assumption", { name: "claimsPerMonth", value: "many" })).toMatch(
+      /must be a number/,
+    );
+    expect(env.setAssumption).not.toHaveBeenCalled();
+  });
+});
+
+describe("blank values are never zero", () => {
+  it("a blank cost value changes nothing", () => {
+    const env = makeEnv();
+    expect(run(env, "set_cost_assumption", { name: "claimsPerMonth", value: "" })).toMatch(
+      /must be a number/,
+    );
+    expect(run(env, "set_cost_assumption", { name: "claimsPerMonth" })).toMatch(/must be a number/);
+    expect(env.setAssumption).not.toHaveBeenCalled();
   });
 });
