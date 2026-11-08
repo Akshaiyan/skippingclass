@@ -210,15 +210,18 @@ App events: sometimes the app itself sends you a text message that starts with "
   // account doesn't have it yet, setup falls back to the llm + ttsModel below.
   // "eleven_realtime_v1_max" thinks before answering (smarter, slower, pricier).
   // Set to null to always use llm + ttsModel instead.
-  realtimeModel: "eleven_realtime_v1_mini",
+  realtimeModel: null,
+  // NOTE: the Realtime model was tried first and could not be trusted with tools: it said "Calling tour_step" out
+  // loud instead of calling it, so the tour and every other action silently did nothing. A normal LLM + voice
+  // pipeline calls tools properly. To go back, set this to "eleven_realtime_v1_mini" and the llm below is ignored.
 
   // Used when Realtime is off or unavailable. Flash-Lite models answer fastest. Swap for
   // "gemini-2.5-flash", "gpt-4.1-mini" or "claude-haiku-4-5" for smarter but slightly slower.
-  llm: "gemini-2.5-flash-lite",
+  llm: "claude-sonnet-5-5",
   // eleven_v4_turbo is ElevenLabs' recommended real-time voice model (~100ms).
   ttsModel: "eleven_v4_turbo",
 
-  temperature: 0.8,
+  temperature: 0.5,
 
   // null = ElevenLabs' default voice. To pick another, copy a voice ID from
   // https://elevenlabs.io/app/voice-library and paste it here as a string.
