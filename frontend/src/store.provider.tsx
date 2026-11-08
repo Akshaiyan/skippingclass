@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useReducer, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { fetchLive } from "@/data/live";
 import { hashRules } from "@/lib/evaluate";
@@ -7,24 +8,29 @@ import { initialStoreState, StoreCtx, storeReducer } from "@/store";
 
 // Component-only module: keeping the provider separate from the hook and reducer
 // lets edits to either side hot-swap without leaving a stale context behind.
+//
+// The live snapshot is fetched with the query library the project already uses (React and TanStack docs: prefer
+// a framework or query library over fetching in effects). The query handles loading, errors, retries and caching.
+// If the API is unreachable, the app stays on its seed data and says so (see the sourceError action).
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(storeReducer, undefined, initialStoreState);
 
-  // Replace the seed with the live engine output once the API answers. If it does not, the app stays on seed data
-  // and reports that in the header, so a reviewer never mistakes demo data for live decisions.
+  const live = useQuery({
+    queryKey: ["live-snapshot"],
+    queryFn: fetchLive,
+    retry: false,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  });
+
+  // Copy the query result into the reducer, which owns the screen state and the reviewer's own changes.
   useEffect(() => {
-    let cancelled = false;
-    fetchLive()
-      .then((snapshot) => {
-        if (!cancelled) dispatch({ type: "live", snapshot });
-      })
-      .catch((e: unknown) => {
-        if (!cancelled) dispatch({ type: "sourceError", message: e instanceof Error ? e.message : "Unknown error" });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    if (live.data) dispatch({ type: "live", snapshot: live.data });
+  }, [live.data]);
+
+  useEffect(() => {
+    if (live.error) dispatch({ type: "sourceError", message: live.error instanceof Error ? live.error.message : "Unknown error" });
+  }, [live.error]);
 
   const derived = useMemo(() => deriveClaims(state.claims, state.draftRules), [state.claims, state.draftRules]);
   const draftHash = useMemo(() => hashRules(state.draftRules), [state.draftRules]);

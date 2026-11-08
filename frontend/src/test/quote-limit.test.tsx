@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
 
 import { useStore } from "@/store";
@@ -23,9 +24,9 @@ function Probe() {
 describe("Quote limit", () => {
   it("starts at the draft policy's 1200", () => {
     render(
-      <StoreProvider>
+      <QueryClientProvider client={new QueryClient()}><StoreProvider>
         <Probe />
-      </StoreProvider>,
+      </StoreProvider></QueryClientProvider>,
     );
     expect(screen.getByTestId("limit").textContent).toBe("1200");
     expect(screen.getByTestId("value").textContent).toBe("1200");
@@ -33,9 +34,9 @@ describe("Quote limit", () => {
 
   it("applies a typed amount that was never a preset choice", () => {
     render(
-      <StoreProvider>
+      <QueryClientProvider client={new QueryClient()}><StoreProvider>
         <Probe />
-      </StoreProvider>,
+      </StoreProvider></QueryClientProvider>,
     );
     fireEvent.click(screen.getByText("set 900"));
     expect(screen.getByTestId("limit").textContent).toBe("900");
@@ -45,9 +46,9 @@ describe("Quote limit", () => {
 
   it("applies an amount above the old presets", () => {
     render(
-      <StoreProvider>
+      <QueryClientProvider client={new QueryClient()}><StoreProvider>
         <Probe />
-      </StoreProvider>,
+      </StoreProvider></QueryClientProvider>,
     );
     fireEvent.click(screen.getByText("set 2500"));
     expect(screen.getByTestId("value").textContent).toBe("2500");
