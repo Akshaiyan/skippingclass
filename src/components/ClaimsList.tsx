@@ -298,7 +298,9 @@ export function ClaimsList({
           {(() => {
             // The grouped page drops the Recommendation column: the group already says it.
             const shown = compact ? cols : cols.filter((c) => c !== "Recommendation");
-            const w = compact ? width : { ...width, Quote: 8, Status: 9, "Next step": 13, "Move to": 38 };
+            const w = compact
+              ? width
+              : { ...width, Quote: 8, Status: 9, "Next step": 13, "Move to": 38 };
             const rw = 100 - shown.filter((c) => c !== "Reason").reduce((n, c) => n + w[c]!, 0);
             const colgroup = (
               <colgroup>
