@@ -15,7 +15,7 @@ The runtime makes no web calls. It needs Python 3.10 or newer and the standard l
 
 ## Walkthrough
 
-`docs/walkthrough/index.html` shows four captioned screenshots of the running app: the claims queue, a claim with its decision memory, the decision log, and the policy change screen. It works without the hosted app. The app itself is in `frontend/`, the engine contract is in `API.md`, and `DEPLOY.md` shows how to host the app and the engine behind one URL (Railway) with a log that survives redeploys.
+`docs/walkthrough/index.html` shows five captioned screenshots of the running app: the dashboard, the claims queue, a claim with its decision memory, the decision log, and the policy change screen. It works without the hosted app. The app itself is in `frontend/`, the engine contract is in `API.md`, and `DEPLOY.md` shows how to host the app and the engine behind one URL (Railway) with a log that survives redeploys.
 
 ## Criteria map
 

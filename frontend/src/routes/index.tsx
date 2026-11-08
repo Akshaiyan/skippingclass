@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { ClaimsList, type FlowFilter } from "@/components/ClaimsList";
+import { DashboardPanels } from "@/components/DashboardPanels";
 import type { Flow } from "@/types";
 
 export const Route = createFileRoute("/")({
@@ -195,6 +196,7 @@ function Dashboard() {
       ) : (
         <ClaimsOverview flow={flow} setFlow={setFlow} />
       )}
+      {state.claims.length > 0 && <DashboardPanels />}
       <ClaimsList
         compact
         flow={flow}
