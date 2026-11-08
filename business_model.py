@@ -54,6 +54,29 @@ def policy_change_cost(open_claims_affected_share, n_open_total):
     return manual, system
 
 
+def annual_summary(share_routine, share_request, share_review):
+    """Annual triage today and with the system for one case mix, with the net benefit and the payback."""
+    manual, system = annual_triage_cost(share_routine, share_request, share_review)
+    saving = manual - system
+    run = val("system_running_cost_eur_per_year")
+    return {"manual_eur": round(manual), "with_system_eur": round(system), "saving_eur": round(saving),
+            "net_benefit_eur": round(saving - run),
+            "payback_months": round(run / saving * 12, 1) if saving > 0 else None}
+
+
+def break_even_routine_share():
+    """The routine share at which the saving just covers the running cost, if every other claim needs a full manual
+    review. Below this share the system costs more than it saves, whatever the claim volume."""
+    per_claim = (val("minutes_manual_triage_per_claim") - val("minutes_routine_confirm_per_claim")) * val("reviewer_cost_eur_per_hour") / 60
+    return val("system_running_cost_eur_per_year") / (val("claims_per_year") * per_claim)
+
+
+def max_possible_saving():
+    """The ceiling: every claim routine. The saving cannot exceed this, so it cannot be 'twice as good'."""
+    per_claim = (val("minutes_manual_triage_per_claim") - val("minutes_routine_confirm_per_claim")) * val("reviewer_cost_eur_per_hour") / 60
+    return val("claims_per_year") * per_claim
+
+
 def error_costs(share_routine):
     """What wrong routine decisions cost against what an unnecessary escalation costs, and where that sets the threshold.
     The cost of a wrong routine decision is ASSUMED. The error rate is swept, not claimed: the only independent labels
@@ -118,6 +141,14 @@ def main():
             "net_benefit_year1_eur": round(net_benefit),
             "payback_months": round(payback_months, 1) if payback_months else None,
         },
+        # The same annual figures under other case mixes, so the headline is never shown without its range.
+        "sensitivity": {
+            "practice_mix": annual_summary(share_routine, share_request, share_review),
+            "synthetic_10k_mix": annual_summary(*[ [engine.decide(r)[0] for r in syn].count(k) / len(syn)
+                                                  for k in ("routine_processing", "request_information", "human_review")]),
+            "break_even_routine_share": round(break_even_routine_share(), 3),
+            "max_possible_saving_eur": round(max_possible_saving()),
+        },
         "errors": {
             **error_costs(share_routine),
             # The wrong-routine rate at which leakage uses up the whole year-1 net benefit.
@@ -145,6 +176,12 @@ def main():
     print(f"  saving EUR {h['annual_triage_saving_eur']:,}; year-1 net EUR {h['net_benefit_year1_eur']:,}; "
           f"payback {h['payback_months']} months" if h["payback_months"] else
           "  no triage saving at these assumptions: payback not defined")
+    s = out["sensitivity"]
+    print("HEADLINE 2b - how far the annual figure holds")
+    print(f"  practice mix:  net EUR {s['practice_mix']['net_benefit_eur']:,}, payback {s['practice_mix']['payback_months']} months")
+    print(f"  synthetic mix: net EUR {s['synthetic_10k_mix']['net_benefit_eur']:,}, payback {s['synthetic_10k_mix']['payback_months']} months")
+    print(f"  the saving covers the running cost only if more than {s['break_even_routine_share']:.1%} of claims are routine; "
+          f"the most it can ever save is EUR {s['max_possible_saving_eur']:,}")
     e = out["errors"]
     print("HEADLINE 3 - cost of errors (wrong-routine cost ASSUMED; rate swept, not claimed)")
     print(f"  an unnecessary escalation costs EUR {e['extra_cost_unnecessary_escalation_eur']} extra; "

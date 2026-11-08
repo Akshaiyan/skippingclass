@@ -26,6 +26,16 @@ check("annual triage today is EUR 180,000 and with the system EUR 63,750", round
 saving = manual - system
 payback = b.val("system_running_cost_eur_per_year") / saving * 12
 check("year-1 net benefit is EUR 56,250 and payback 6.2 months", round(saving - b.val("system_running_cost_eur_per_year")) == 56250 and round(payback, 1) == 6.2, (saving, payback))
+# How far the annual figure holds: other case mixes, the ceiling, and the break-even routine share.
+s = b.annual_summary(7 / 12, 2 / 12, 3 / 12)
+check("the practice mix gives a net benefit of EUR 56,250 and payback in 6.2 months", s["net_benefit_eur"] == 56250 and s["payback_months"] == 6.2, s)
+s = b.annual_summary(0.4, 0.241, 0.359)
+check("a 40% routine mix gives a net benefit of about EUR 35,000 and payback in 7.6 months",
+      abs(s["net_benefit_eur"] - 34800) < 500 and s["payback_months"] == 7.6, s)
+s = b.annual_summary(0, 0, 1)
+check("with every claim needing a full review nothing is saved and there is no payback", s["saving_eur"] == 0 and s["payback_months"] is None, s)
+check("the saving can never exceed EUR 165,000", b.max_possible_saving() == 165000, b.max_possible_saving())
+check("the saving covers the running cost only above 36.4% routine claims", round(b.break_even_routine_share(), 3) == 0.364, b.break_even_routine_share())
 # Cost of errors and the threshold it sets.
 e = b.error_costs(7 / 12)
 check("an unnecessary escalation costs EUR 8.25 extra", e["extra_cost_unnecessary_escalation_eur"] == 8.25, e)

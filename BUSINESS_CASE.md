@@ -29,7 +29,17 @@ Command: `python business_model.py`. Every input is in the assumptions register 
 | **Net benefit, year 1** | **56,250** |
 | **Payback** | **6.2 months** |
 
-The case mix is the practice mix, 7 routine, 2 request information and 3 human review of 12 claims (MEASURED-PROXY, very small). A real portfolio will have a different mix, so the saving moves with it. These figures are before the cost of errors in section 3, which can use up the saving.
+The case mix is the practice mix, 7 routine, 2 request information and 3 human review of 12 claims (MEASURED-PROXY, very small). These figures are before the cost of errors in section 3, which can use up the saving.
+
+**How far the number holds.** The saving is bounded: it comes from confirming a routine claim in 1 minute instead of triaging it in 12, so the most any mix can save is EUR 165,000 a year (every claim routine). It moves mainly with the routine share, because human review is still costed at the full 12 minutes. The same command gives:
+
+| Case mix | Routine share | Year-1 net benefit | Payback |
+|---|---|---|---|
+| Practice claims (12) | 58% | EUR 56,250 | 6.2 months |
+| Synthetic claims (10,000, assumed distribution) | 40% | EUR 34,801 | 7.6 months |
+| Every claim needs a full review | 0% | EUR -60,000 | none |
+
+The saving covers the EUR 60,000 running cost only if more than **36.4%** of claims are routine, even when the rest all need a full review. Everything above is a model on assumed handler times; it is not a forecast.
 
 ## 3. Cost of errors, and where it sets the threshold
 
