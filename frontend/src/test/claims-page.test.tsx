@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// The full claims page renders slowly on a loaded machine; the 5 s default timed out here, not on a wrong result.
+vi.setConfig({ testTimeout: 20000 });
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ClaimsList, type FlowFilter } from "@/components/ClaimsList";

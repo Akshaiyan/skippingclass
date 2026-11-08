@@ -61,7 +61,7 @@ export function DecisionMemory({ caseId }: { caseId: string }) {
               {it.kind === "policy" ? (
                 <>
                   <p className="flex flex-wrap items-center gap-2 text-sm">
-                    <Chip tone="amber">Policy {it.policy} changed this claim</Chip>
+                    <Chip tone="amber">Policy {it.policy} moves this claim, awaiting reviewer</Chip>
                     <span className="inline-flex items-center gap-2 whitespace-nowrap">
                       <FlowBadge rec={it.from} size="sm" />
                       <span aria-hidden className="text-muted-foreground">→</span>
