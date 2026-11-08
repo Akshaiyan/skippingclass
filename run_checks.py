@@ -29,6 +29,7 @@ STEPS = [
     ("concurrent log writes: chain intact, every record once", ["test_concurrency.py"]),
     ("API abuse: oversized, malformed, wrong types, path tricks, approvals", ["test_api_abuse.py"]),
     ("explanation describes its own recommendation (judge-simulator finding)", ["test_explanation.py"]),
+    ("decision memory API: corrections, policy changes per claim, integrity", ["test_memory_api.py"]),
     ("tampering and restart: edits, torn writes, repair", ["test_tamper_restart.py"]),
     ("monitoring report runs without a decision log", ["monitor_report.py"]),
     ("demo readiness: files, Python, Bun and ports", ["demo_check.py"]),

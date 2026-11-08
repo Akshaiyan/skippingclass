@@ -64,6 +64,35 @@ def _case_view(cid):
             "timeline": history.timeline(cid, LOG_PATH)}
 
 
+def _memory(case_id):
+    """A claim's decision memory: its own corrections newest first, the policy changes that moved it, and whether the
+    log is intact. Read-only. A damaged log raises LogDamaged, which the outer handler answers with 503."""
+    if _cases().get(case_id) is None:
+        return 404, {"error": "unknown case"}
+    entries = DecisionLog(LOG_PATH).read()
+    bad = verify_chain(LOG_PATH)
+    decisions = [
+        {"seq": i + 1, "actor": e.get("actor", ""), "from_rec": e.get("original_recommendation"),
+         "to_rec": e.get("corrected_recommendation"), "reason": e.get("reason", ""), "reason_code": e.get("reason_code", ""),
+         "policy_version": e.get("policy_version", ""), "timestamp": e.get("timestamp", ""), "hash": e.get("hash", "")}
+        for i, e in enumerate(entries) if e.get("type") == "reviewer_override" and e.get("case_id") == case_id
+    ]
+    decisions.reverse()
+    policy_events = []
+    for i, e in enumerate(entries):
+        if e.get("type") != "policy_decision" or e.get("decision") != "approved":
+            continue
+        for item in e.get("affected", []):
+            if item.get("case_id") == case_id:
+                policy_events.append({"seq": i + 1, "policy_version": e.get("policy_version", ""), "actor": e.get("actor", ""),
+                                      "proposed_by": e.get("proposed_by", ""), "timestamp": e.get("timestamp", ""),
+                                      "hash": e.get("hash", ""), "changed": {"from": item["from"], "to": item["to"]}})
+    policy_events.reverse()
+    return 200, {"case_id": case_id, "decisions": decisions, "policy_events": policy_events,
+                 "integrity": {"intact": bad is None, "broken_at": None if bad is None else bad[0],
+                               "reason": None if bad is None else bad[1]}}
+
+
 def _handle(method, path, query, body):
     """Return (status, payload). A pure function of its inputs, so tests can call it without a socket."""
     if method == "GET" and path == "/api/cases":
@@ -125,15 +154,17 @@ def _handle(method, path, query, body):
         # Consequences: a reviewer must name every claim moving into routine before release; rejecting a change never needs
         #   a sign-off; the rule is only as good as the change summary it reads, so the summary's tests guard it.
         named = sorted(set(body.get("signoff_for") or []))
+        affected = []
         if body.get("decision") == "approved":
             v1, v2 = policy.load(ui_view.V1_PATH), policy.load(ui_view.V2_PATH)
             change = ui_view.change_summary(CASES_FILE, v1, v2, ui_view.policy_hash(ui_view.V1_PATH), ui_view.policy_hash(ui_view.V2_PATH))
             missing = [c for c in change["into_routine"] if c not in named]
+            affected = [{"case_id": f["case_id"], "from": f["from"], "to": f["to"]} for f in change["flips"]]
             if missing:
                 return 400, {"error": "claims moving into routine need a named sign-off: " + ", ".join(missing)}
         record = {"type": "policy_decision", "actor": body.get("actor", ""), "reason": body.get("reason", ""),
                   "policy_version": body.get("policy_version", ""), "decision": body.get("decision", ""),
-                  "proposed_by": body.get("proposed_by", ""), "signoff_for": named}
+                  "proposed_by": body.get("proposed_by", ""), "signoff_for": named, "affected": affected}
         log = DecisionLog(LOG_PATH)
         try:
             entry = log.append(record)
@@ -162,6 +193,8 @@ def _handle(method, path, query, body):
     if method == "GET" and path == "/api/policy/change":
         v1, v2 = policy.load(ui_view.V1_PATH), policy.load(ui_view.V2_PATH)
         return 200, ui_view.change_summary(CASES_FILE, v1, v2, ui_view.policy_hash(ui_view.V1_PATH), ui_view.policy_hash(ui_view.V2_PATH))
+    if method == "GET" and path.startswith("/api/cases/") and path.endswith("/memory"):
+        return _memory(path[len("/api/cases/"):-len("/memory")])
     if method == "GET" and path == "/api/policy/ui":
         name = query.get("name", ["v1"])[0]
         if name not in ("v1", "v2"):

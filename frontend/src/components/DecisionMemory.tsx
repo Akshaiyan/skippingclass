@@ -1,74 +1,100 @@
-// Decision memory for one claim: every recorded override, newest first, with the reviewer, the change, the reason,
-// the policy version and a record fingerprint. The integrity line comes from the engine's hash chain.
+// Decision memory for one claim: the reviewer's own corrections and the policy changes that moved this claim,
+// newest first, with the integrity line from the engine's hash chain. Policy changes are labelled in words
+// (EHL's "Recalibrated" marker, adapted: the engine never re-decides, a person approves the change).
 import { REC_LABEL } from "@/copy";
-import { Chip, FlowBadge, PolicyStamp } from "./status";
+import { Chip, FlowBadge } from "./status";
 import { useStore } from "@/store";
-import type { LogEntry, ReviewerOverride } from "@/types";
+import type { Rec } from "@/types";
 
-type Hashed = LogEntry & { hash?: string; prev_hash?: string };
+type Affected = { case_id: string; from: Rec; to: Rec };
+type OverrideItem = { kind: "override"; key: string; timestamp: string; actor: string; from: Rec; to: Rec; note: string; policy: string; hash: string };
+type PolicyItem = { kind: "policy"; key: string; timestamp: string; actor: string; proposedBy: string; policy: string; from: Rec; to: Rec; hash: string };
+type Item = OverrideItem | PolicyItem;
 
 export function DecisionMemory({ caseId }: { caseId: string }) {
   const { state } = useStore();
-  const events = state.log
-    .filter((e): e is ReviewerOverride & Hashed => e.type === "reviewer_override" && e.case_id === caseId)
-    .slice()
-    .reverse();
+  const items: Item[] = [];
+  state.log.forEach((e, i) => {
+    if (e.type === "reviewer_override" && e.case_id === caseId) {
+      const h = e as unknown as { hash?: string };
+      items.push({ kind: "override", key: `o${e.seq}-${i}`, timestamp: e.timestamp, actor: e.actor, from: e.from_rec, to: e.to_rec, note: e.note, policy: e.policy_version, hash: h.hash ?? "" });
+    }
+    if (e.type === "policy_approved") {
+      const p = e as unknown as { affected?: Affected[]; proposed_by?: string; hash?: string; policy_version?: string };
+      const hit = (p.affected ?? []).find((a) => a.case_id === caseId);
+      if (hit) items.push({ kind: "policy", key: `p${e.seq}-${i}`, timestamp: e.timestamp, actor: e.actor, proposedBy: p.proposed_by ?? "", policy: p.policy_version ?? "", from: hit.from, to: hit.to, hash: p.hash ?? "" });
+    }
+  });
+  items.sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1));
+  const integrity = state.source === "live" ? state.integrity : null;
 
   return (
     <section aria-labelledby="memory-title" className="space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 id="memory-title" className="section-title">Decision memory</h3>
         <span className="tnum text-sm text-muted-foreground">
-          {events.length} {events.length === 1 ? "decision" : "decisions"}
+          {items.length} {items.length === 1 ? "entry" : "entries"}
         </span>
       </div>
 
-      <p className="mt-1 text-sm">
-        {state.source === "live" && state.integrity ? (
-          state.integrity.intact ? (
-            <span className="font-medium text-flow-green">
-              ✓ Log intact, checked at {new Date(state.integrity.checkedAt).toLocaleTimeString("en-GB")}
-            </span>
+      <p className="text-sm">
+        {integrity ? (
+          integrity.intact ? (
+            <span className="font-medium text-flow-green">✓ Log intact, checked at {new Date(integrity.checkedAt).toLocaleTimeString("en-GB")}</span>
           ) : (
-            <span className="font-medium text-flow-red">
-              Log broken at entry {state.integrity.broken_at}: {state.integrity.reason}
-            </span>
+            <span className="font-medium text-flow-red">Log broken at entry {integrity.broken_at}: {integrity.reason}</span>
           )
         ) : (
-          <span className="text-muted-foreground">Demo data: decisions here are not written to the engine log.</span>
+          <span className="text-muted-foreground">Demo data: entries here are not written to the engine log.</span>
         )}
       </p>
 
-      {events.length === 0 ? (
-        <p className="mt-4 text-sm text-muted-foreground">
-          No earlier decisions on this claim. A correction recorded here appears at the top.
+      {items.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No earlier decisions or policy changes on this claim. A correction recorded here appears at the top.
         </p>
       ) : (
-        <ol className="mt-4 space-y-4 border-l border-border pl-5">
-          {events.map((e) => (
-            <li key={e.seq} className="relative">
+        <ol className="space-y-4 border-l border-border pl-5">
+          {items.map((it) => (
+            <li key={it.key} className="relative">
               <span aria-hidden className="absolute -left-[26px] top-1.5 block size-2.5 rounded-full border-2 border-accent bg-background" />
-              <p className="flex flex-wrap items-center gap-2 text-sm">
-                <strong>{e.actor}</strong>
-                <span className="text-muted-foreground">changed</span>
-                <span className="inline-flex items-center gap-2 whitespace-nowrap">
-                  <FlowBadge rec={e.from_rec} size="sm" />
-                  <span aria-hidden className="text-muted-foreground">→</span>
-                  <FlowBadge rec={e.to_rec} size="sm" />
-                </span>
-                <span className="sr-only">
-                  from {REC_LABEL[e.from_rec]} to {REC_LABEL[e.to_rec]}
-                </span>
-              </p>
-              <p className="mt-1 text-sm text-text-2">“{e.note}”</p>
+              {it.kind === "policy" ? (
+                <>
+                  <p className="flex flex-wrap items-center gap-2 text-sm">
+                    <Chip tone="amber">Policy {it.policy} changed this claim</Chip>
+                    <span className="inline-flex items-center gap-2 whitespace-nowrap">
+                      <FlowBadge rec={it.from} size="sm" />
+                      <span aria-hidden className="text-muted-foreground">→</span>
+                      <FlowBadge rec={it.to} size="sm" />
+                    </span>
+                  </p>
+                  <p className="mt-1 text-sm text-text-2">
+                    Approved by {it.actor}; proposed by {it.proposedBy || "unknown"}. The claim was not re-decided automatically.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="flex flex-wrap items-center gap-2 text-sm">
+                    <strong>{it.actor}</strong>
+                    <span className="text-muted-foreground">changed</span>
+                    <span className="inline-flex items-center gap-2 whitespace-nowrap">
+                      <FlowBadge rec={it.from} size="sm" />
+                      <span aria-hidden className="text-muted-foreground">→</span>
+                      <FlowBadge rec={it.to} size="sm" />
+                    </span>
+                    <span className="sr-only">from {REC_LABEL[it.from]} to {REC_LABEL[it.to]}</span>
+                  </p>
+                  <p className="mt-1 text-sm text-text-2">“{it.note}”</p>
+                </>
+              )}
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <time dateTime={e.timestamp} className="tnum">
-                  {new Date(e.timestamp).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                <time dateTime={it.timestamp} className="tnum">
+                  {new Date(it.timestamp).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                 </time>
-                <Chip tone="outline">policy {e.policy_version}</Chip>
-                {e.hash && (
-                  <Chip tone="neutral" className="font-mono" >
-                    <span title="Record fingerprint">#{e.hash.slice(0, 12)}</span>
+                {it.kind === "override" && <Chip tone="outline">policy {it.policy}</Chip>}
+                {it.hash && (
+                  <Chip tone="neutral" className="font-mono">
+                    <span title="Record fingerprint">#{it.hash.slice(0, 12)}</span>
                   </Chip>
                 )}
               </div>
