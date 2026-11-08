@@ -18,6 +18,7 @@ import {
 import { useStore } from "@/store";
 import { fieldLabel, FIELD_MAP } from "@/lib/fields";
 import { eur, nextStep, quoteOf, shortDate, shortReason } from "@/lib/claim-view";
+import { quoteMargins } from "@/lib/quote-margin";
 import { draftAsText, draftEmail, mailtoHref, telHref } from "@/lib/outreach";
 import { quoteLimitOf, type DerivedClaim } from "@/lib/report";
 import { cn } from "@/lib/utils";
@@ -170,6 +171,11 @@ export function CaseSheet({
   const sug = yellow ? suggestion(claim, liveLimit) : null;
   const reviewed = claim.ui_status === "reviewed";
   const quote = quoteOf(claim);
+  // How far the quote is from each version's limit, so a claim just over the new limit reads as "EUR 1 over".
+  const margins = quoteMargins(claim.facts.quote_eur, {
+    v1: quoteLimitOf(v1Rules),
+    v2: quoteLimitOf(state.draftRules),
+  });
   const step = nextStep(claim, state.log);
 
   const confirm = () => {
@@ -307,6 +313,9 @@ export function CaseSheet({
                 <dt className="text-xs font-medium text-muted-foreground">Reason</dt>
                 <dd className="text-sm">
                   <p className="font-medium">{shortReason(claim, state.log)}</p>
+                  {margins.length > 0 && (
+                    <p className="mt-1 text-xs text-text-2">Quote: {margins.join("; ")}.</p>
+                  )}
                   {!locked && claim.needs_recheck && (
                     <p className="mt-1 text-xs text-text-2">
                       Under draft v2 this becomes{" "}

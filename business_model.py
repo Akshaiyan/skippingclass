@@ -54,8 +54,29 @@ def policy_change_cost(open_claims_affected_share, n_open_total):
     return manual, system
 
 
+def error_costs(share_routine):
+    """What wrong routine decisions cost against what an unnecessary escalation costs, and where that sets the threshold.
+    The cost of a wrong routine decision is ASSUMED. The error rate is swept, not claimed: the only independent labels
+    are the 14 organiser cases, too few to measure a rate."""
+    n = val("claims_per_year")
+    rate_min = val("reviewer_cost_eur_per_hour") / 60
+    wrong = val("wrong_routine_error_cost_eur")
+    # An unnecessary escalation costs a full manual review instead of a one-minute confirmation.
+    extra_escalation = (val("minutes_manual_triage_per_claim") - val("minutes_routine_confirm_per_claim")) * rate_min
+    routine_claims = n * share_routine
+    sweep = [{"wrong_routine_rate": r, "wrong_routine_claims": round(routine_claims * r),
+              "annual_error_cost_eur": round(routine_claims * r * wrong)} for r in (0.0, 0.005, 0.01, 0.02)]
+    return {
+        "extra_cost_unnecessary_escalation_eur": round(extra_escalation, 2),
+        "cost_wrong_routine_eur": wrong,
+        # Routing to routine costs p * wrong in expectation; escalating costs extra_escalation. Escalate above this p.
+        "escalate_above_error_probability": round(extra_escalation / wrong, 4),
+        "routine_claims_per_year": round(routine_claims),
+        "annual_cost_by_wrong_routine_rate": sweep,
+    }
+
+
 def main():
-    dev = list(csv.DictReader(open(HERE / "practice_results.csv", newline="", encoding="utf-8")))
     practice_claims = list(csv.DictReader(open(HERE / "unlabelled_practice_cases.csv", newline="", encoding="utf-8")))
     syn = list(csv.DictReader(open(HERE / "final_synthetic_10k.csv", newline="", encoding="utf-8")))
 
@@ -97,6 +118,12 @@ def main():
             "net_benefit_year1_eur": round(net_benefit),
             "payback_months": round(payback_months, 1) if payback_months else None,
         },
+        "errors": {
+            **error_costs(share_routine),
+            # The wrong-routine rate at which leakage uses up the whole year-1 net benefit.
+            "wrong_routine_rate_that_erases_year1_net": round(
+                net_benefit / (val("claims_per_year") * share_routine * val("wrong_routine_error_cost_eur")), 5),
+        },
         "assumption_status": {k: v["status"] for k, v in A.items() if not k.startswith("_")},
         "not_measured": [
             "real error rate of routine decisions (needs the audit gate on real claims)",
@@ -118,6 +145,16 @@ def main():
     print(f"  saving EUR {h['annual_triage_saving_eur']:,}; year-1 net EUR {h['net_benefit_year1_eur']:,}; "
           f"payback {h['payback_months']} months" if h["payback_months"] else
           "  no triage saving at these assumptions: payback not defined")
+    e = out["errors"]
+    print("HEADLINE 3 - cost of errors (wrong-routine cost ASSUMED; rate swept, not claimed)")
+    print(f"  an unnecessary escalation costs EUR {e['extra_cost_unnecessary_escalation_eur']} extra; "
+          f"a wrong routine decision EUR {e['cost_wrong_routine_eur']:,}")
+    print(f"  so escalate whenever the chance of a wrong routine decision exceeds {e['escalate_above_error_probability']:.2%}")
+    print(f"  year-1 net benefit is used up if more than {e['wrong_routine_rate_that_erases_year1_net']:.2%} "
+          "of routine decisions are wrong")
+    for row in e["annual_cost_by_wrong_routine_rate"]:
+        print(f"  wrong-routine rate {row['wrong_routine_rate']:.1%}: {row['wrong_routine_claims']:,} claims, "
+              f"EUR {row['annual_error_cost_eur']:,} a year")
     print("\nwrote business_results.json (every figure traces to assumptions.json or a named file)")
 
 

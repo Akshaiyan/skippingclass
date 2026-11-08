@@ -35,6 +35,12 @@ interface LeafOut {
   blanks: string[];
 }
 
+const NUMERIC_OPS = new Set(["gt", "gte", "lt", "lte"]);
+const PLAIN_AMOUNT = /^[0-9]+(\.[0-9]+)?$/;
+/** Same rule as the engine's amount_or_none: a plain, non-negative decimal (surrounding spaces ignored). */
+const readableAmount = (v: unknown) =>
+  typeof v === "number" ? Number.isFinite(v) && v >= 0 : typeof v === "string" && PLAIN_AMOUNT.test(v.trim());
+
 function cmp(op: string, l: unknown, r: unknown): boolean {
   switch (op) {
     case "eq":
@@ -116,6 +122,16 @@ export function evalCondition(c: Condition, facts: Facts): LeafOut {
   const r = resolveRight(c.right, facts);
   if (r.blank)
     return { result: "unknown", evidence: [`${r.blank}: not provided`], blanks: [r.blank] };
+  // The engine reads an amount only as a plain non-negative decimal. NaN, signs, exponents and text are unreadable,
+  // which is unknown, never a pass: Number("not-a-number") > 1500 is false and would wrongly clear the quote rule.
+  if (NUMERIC_OPS.has(c.op)) {
+    const bad = [
+      { field: c.field, value: left },
+      ...(r.blank === undefined && c.right?.kind === "field" ? [{ field: c.right.field, value: r.value }] : []),
+    ].find((x) => !readableAmount(x.value));
+    if (bad)
+      return { result: "unknown", evidence: [`${bad.field}: not readable as an amount`], blanks: [bad.field] };
+  }
   const ok = cmp(c.op, left, r.value);
   return {
     result: ok ? "true" : "false",
