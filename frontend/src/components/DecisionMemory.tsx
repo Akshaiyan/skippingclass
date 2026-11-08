@@ -1,6 +1,6 @@
 // Decision memory for one claim: the reviewer's own corrections and the policy changes that moved this claim,
 // newest first, with the integrity line from the engine's hash chain. Policy changes are labelled in words
-// (EHL's "Recalibrated" marker, adapted: the engine never re-decides, a person approves the change).
+// The engine never re-decides a claim; a person approves each policy change.
 import { REC_LABEL } from "@/copy";
 import { Chip, FlowBadge } from "./status";
 import { useStore } from "@/store";
