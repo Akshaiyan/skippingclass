@@ -10,6 +10,7 @@ Two record types, each with its own required fields:
 """
 import hashlib
 import json
+import os
 from pathlib import Path
 import threading
 
@@ -137,6 +138,9 @@ class DecisionLog:
             entry["hash"] = _digest(entry)
             with open(self.path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(entry, ensure_ascii=False, sort_keys=True) + "\n")
+                # Durable before we answer: a record the reviewer was told is saved must survive a crash or a restart.
+                f.flush()
+                os.fsync(f.fileno())
         return entry
 
     def _last_hash(self):

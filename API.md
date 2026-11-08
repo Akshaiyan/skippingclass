@@ -4,7 +4,7 @@ The engine is a stdlib JSON server: `python server.py --port 8000`. It serves th
 
 ## Hosting: set the origin first
 
-The engine always binds to 127.0.0.1. It has no authentication. To serve it to others, put a reverse proxy with authentication in front of it; the proxy must forward the original `Host` and `Origin` headers.
+By default the engine listens on 127.0.0.1 only. Set `HOST=0.0.0.0` (and `PORT`) to serve others; `DEPLOY.md` shows the Railway setup, where it also serves the built app from one URL (`STATIC_DIR`) and keeps the log on a volume (`DECISION_LOG`). The engine has no authentication: anyone who can reach it can record decisions, so host it only for people you mean to give that access, or put a proxy with authentication in front of it that forwards the original `Host` and `Origin` headers.
 
 Browser access is limited by two headers, checked on every request:
 

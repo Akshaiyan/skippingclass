@@ -28,6 +28,8 @@ STEPS = [
     ("input robustness: refusals, amounts, spellings (red-team findings)", ["test_robustness.py"]),
     ("concurrent log writes: chain intact, every record once", ["test_concurrency.py"]),
     ("API abuse: oversized, malformed, wrong types, path tricks, approvals", ["test_api_abuse.py"]),
+    ("one URL: the engine serves the built app, deep links, no path escape", ["test_static.py"]),
+    ("durable log: each record forced to disk, intact after a restart", ["test_durable.py"]),
     ("explanation describes its own recommendation (judge-simulator finding)", ["test_explanation.py"]),
     ("decision memory API: corrections, policy changes per claim, integrity", ["test_memory_api.py"]),
     ("tampering and restart: edits, torn writes, repair", ["test_tamper_restart.py"]),

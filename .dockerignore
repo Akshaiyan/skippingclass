@@ -1,0 +1,9 @@
+.git
+**/node_modules
+frontend/dist
+frontend/.output
+frontend/.wrangler
+**/__pycache__
+*.ndjson
+*.torn
+docs/walkthrough
