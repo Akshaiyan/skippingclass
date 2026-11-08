@@ -12,6 +12,7 @@ Endpoints (see API.md):
 Errors are JSON: 400 for refused input, 404 for unknown route or case.
 """
 import json
+import mimetypes
 import os
 import triage
 import re
@@ -24,6 +25,8 @@ HERE = Path(__file__).parent
 # Who may call the engine from a browser: local origins by default; set ALLOWED_ORIGIN and ALLOWED_HOST before hosting (see API.md).
 ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "").strip()  # empty: local origins only
 ALLOWED_HOST = os.environ.get("ALLOWED_HOST", "").strip()      # empty: 127.0.0.1 / localhost only
+STATIC_DIR = os.environ.get("STATIC_DIR", "").strip()           # built frontend to serve; empty: API only
+PUBLIC_DOMAIN = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "").strip()  # set by Railway; the app is served from here
 _LOCAL = re.compile(r"^(localhost|127\.0\.0\.1)(:\d+)?$")
 _LOCAL_ORIGIN = re.compile(r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$")
 
@@ -32,12 +35,14 @@ def origin_allowed(origin):
     """No Origin header means a non-browser client (curl, the judges' scripts). A browser page must match."""
     if not origin:
         return True
-    return origin == ALLOWED_ORIGIN if ALLOWED_ORIGIN else bool(_LOCAL_ORIGIN.match(origin))
+    allowed = [o for o in (ALLOWED_ORIGIN, f"https://{PUBLIC_DOMAIN}" if PUBLIC_DOMAIN else "") if o]
+    return origin in allowed if allowed else bool(_LOCAL_ORIGIN.match(origin))
 
 
 def host_allowed(host):
-    if ALLOWED_HOST:
-        return host == ALLOWED_HOST
+    allowed = [h for h in (ALLOWED_HOST, PUBLIC_DOMAIN) if h]
+    if allowed:
+        return host in allowed
     return bool(_LOCAL.match(host or ""))
 sys.path.insert(0, str(HERE))
 import engine  # noqa: E402
@@ -49,7 +54,7 @@ import history  # noqa: E402
 import decision_log  # noqa: E402
 from decision_log import DecisionLog, verify_chain  # noqa: E402
 
-LOG_PATH = HERE / "decision_log.ndjson"
+LOG_PATH = Path(os.environ["DECISION_LOG"]) if os.environ.get("DECISION_LOG") else HERE / "decision_log.ndjson"
 CASES_FILE = HERE / "unlabelled_practice_cases.csv"
 NAME = re.compile(r"^[A-Za-z0-9_\-]{1,40}$")
 FACT_FIELDS = ["policy_active_on_incident", "claim_type", "quote_eur", "incident_report_present",
@@ -300,7 +305,35 @@ class Handler(BaseHTTPRequestHandler):
         status, payload = handle(method, u.path, parse_qs(u.query), body)
         self._send(status, payload)
 
+    def _static(self, path):
+        """Serve the built frontend. Unknown routes get index.html so deep links load; a missing asset is a 404."""
+        root = Path(STATIC_DIR).resolve()
+        rel = path.lstrip("/")
+        try:
+            target = (root / rel).resolve()
+            inside = target == root or root in target.parents
+        except (OSError, ValueError):
+            target, inside = root, False
+        if not inside or not target.is_file():
+            if rel.startswith("assets/"):
+                return self._send(404, {"error": "not found"})
+            target = root / "index.html"
+        if not target.is_file():
+            return self._send(404, {"error": "the frontend has not been built"})
+        data = target.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", mimetypes.guess_type(str(target))[0] or "application/octet-stream")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-cache" if target.suffix == ".html" else "public, max-age=3600")
+        self.end_headers()
+        self.wfile.write(data)
+
     def do_GET(self):
+        path = urlparse(self.path).path
+        if STATIC_DIR and not path.startswith("/api/"):
+            if not host_allowed(self.headers.get("Host", "")):
+                return self._send(403, {"error": "origin or host not allowed; see API.md (hosting)"})
+            return self._static(path)
         self._dispatch("GET")
 
     def do_POST(self):
@@ -315,6 +348,7 @@ def serve(host="127.0.0.1", port=8000):
 
 
 if __name__ == "__main__":
-    port = int(sys.argv[sys.argv.index("--port") + 1]) if "--port" in sys.argv else 8000
-    print(f"serving on http://127.0.0.1:{port}")
-    serve(port=port)
+    port = int(sys.argv[sys.argv.index("--port") + 1]) if "--port" in sys.argv else int(os.environ.get("PORT", 8000))
+    host = os.environ.get("HOST", "127.0.0.1")
+    print(f"serving on http://{host}:{port}" + (f" with the app from {STATIC_DIR}" if STATIC_DIR else ""))
+    serve(host=host, port=port)
