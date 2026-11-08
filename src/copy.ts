@@ -56,6 +56,61 @@ export const IMPACT_COPY = {
   flows: { green: "Routine processing", yellow: "Missing information", red: "Human review" },
 };
 
+// Policy change page. Rule tags say "Added", never "new" (copy rule).
+export const POLICY_COPY = {
+  title: "Policy change",
+  subtitle: "Edit triage rules and preview their expected impact.",
+  rulesChanged: (n: number) => `${n} ${n === 1 ? "rule" : "rules"} changed`,
+  notReleased: "not released",
+  noChanges: "No changes · live rules apply",
+  released: "v2 is live",
+  discard: "Discard",
+  reviewChanges: "Review changes",
+  rules: "Rules",
+  rulesHelp:
+    "What decides each claim's flow. Red flags decide before missing information; otherwise routine.",
+  quoteLimit: "Quote limit",
+  tagChanged: "Changed",
+  tagAdded: "Added",
+  tagInactive: "Inactive",
+  removed: "Removed from draft",
+  expectations: "Expectations",
+  expectationsHelp: "How open claims would flow under the draft. Rule-based, not a prediction.",
+  preview: "Preview · unreleased",
+  nowLiveTag: "Live",
+  distribution: "Case distribution",
+  live: "Live",
+  expected: "Expected",
+  nowLive: "Now live",
+  openClaims: (n: number) => `${n} open claims`,
+  changedClaims: "Claims that changed",
+  changedOf: (n: number, total: number) => `${n} of ${total}`,
+  causedBy: "Caused by",
+  stricter: "Stricter",
+  lessScrutiny: "Less scrutiny",
+  noChangesYet: "No changes yet — edit a rule to preview impact",
+  blankCaption: "Blank fields shown as not provided — never assumed.",
+  handlingCost: "Handling cost / claim",
+  extraReviewCost: "Extra Human review cost / month",
+  missingFacts: (fields: string) => `Missing facts: ${fields}`,
+  reviewRelease: "Review & release",
+  reasonLabel: "Reason for this change",
+  reasonPlaceholder: "Why release v2 now? (visible in the audit log)",
+  approverLabel: "Second approver required",
+  approverPlaceholder: "Select approver",
+  routedDifferently: (n: number) =>
+    `${n} ${n === 1 ? "claim" : "claims"} would be routed differently.`,
+  intoRoutine: (n: number) => `${n} ${n === 1 ? "moves" : "move"} into Routine processing.`,
+  needReasonApprover: "Add a reason and approver to release",
+  needChange: "Edit a rule to enable release — the draft matches the live rules",
+  statusNotReleased: "Not released",
+  statusReleased: "Released",
+  statusHeld: "Held",
+  releasedToast: "v2 is live. Incoming claims use these rules from now.",
+  heldToast: "v2 held. The live rules stay in place.",
+  confirmTitle: "Release v2?",
+};
+
 export const CONFIRM_REC = "Confirm recommendation";
 export const OVERRIDE_REC = "Override recommendation";
 export const CHANGE_REC = "Change recommendation";
