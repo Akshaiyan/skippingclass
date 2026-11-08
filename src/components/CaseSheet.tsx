@@ -1,25 +1,24 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Check, Copy, FileText, GitBranch, Lock, Plug } from "lucide-react";
+import { Check, Copy, GitBranch, Lock, Mail, Phone, Plug } from "lucide-react";
 import type { Rec } from "@/types";
 import {
   REVIEW_COPY,
   confirmAction,
   CONFIRM_TOAST,
   COPY_TEXT,
-  EMAIL_LABEL,
   INFO_FOOTNOTE,
   LOCKED_BANNER,
   LOCKED_TOOLTIP,
   NOT_PROVIDED,
   OVERRIDE_REC,
-  PREPARE_INFO,
   RULE_BASED,
   REC_LABEL,
 } from "@/copy";
 import { useStore } from "@/store";
 import { fieldLabel, FIELD_MAP } from "@/lib/fields";
-import { eur, missingFacts, nextStep, quoteOf, shortDate, shortReason } from "@/lib/claim-view";
+import { eur, nextStep, quoteOf, shortDate, shortReason } from "@/lib/claim-view";
+import { draftAsText, draftEmail, mailtoHref, telHref } from "@/lib/outreach";
 import { quoteLimitOf, type DerivedClaim } from "@/lib/report";
 import { cn } from "@/lib/utils";
 import {
@@ -43,7 +42,15 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 
-function CopyButton({ text }: { text: string }) {
+function CopyButton({
+  text,
+  label = COPY_TEXT,
+  onCopy,
+}: {
+  text: string;
+  label?: string;
+  onCopy?: () => void;
+}) {
   const [copied, setCopied] = useState(false);
   return (
     <Button
@@ -55,12 +62,13 @@ function CopyButton({ text }: { text: string }) {
         } catch {
           /* clipboard can be blocked; the label still confirms intent */
         }
+        onCopy?.();
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       }}
     >
       {copied ? <Check aria-hidden /> : <Copy aria-hidden />}
-      <span aria-live="polite">{copied ? "Copied" : COPY_TEXT}</span>
+      <span aria-live="polite">{copied ? "Copied" : label}</span>
     </Button>
   );
 }
@@ -96,19 +104,6 @@ function suggestion(claim: DerivedClaim, limit: number) {
   return { field, title: `Ask for: ${fieldLabel(field).toLowerCase()}.`, outcomes };
 }
 
-function infoRequestText(claim: DerivedClaim) {
-  const items = missingFacts(claim).map((f) => `- ${fieldLabel(f)}`);
-  return `Claim ${claim.case_id}\n\nTo continue with your claim we need the following:\n${items.join("\n")}\n\nPlease reply with these at your convenience. Thank you.`;
-}
-
-function emailText(claim: DerivedClaim) {
-  return `Subject: Your motor claim ${claim.case_id}\n\nHello,\n\nThank you for reporting your claim. A member of our team is looking at it. ${
-    claim.flow === "yellow"
-      ? "We will be in touch about one or two items we still need."
-      : "We will update you on the next step shortly."
-  }\n\nKind regards,\nClaims team`;
-}
-
 function FactValue({ k, v, blank }: { k: string; v: unknown; blank: boolean }) {
   if (blank || v === null || v === undefined || v === "") return <NotProvided />;
   if (k === "case_status") return <>{v === "closed" ? "Closed" : "Open"}</>;
@@ -136,7 +131,8 @@ export function CaseSheet({
   const { state, dispatch, v1Rules } = useStore();
   const [mode, setMode] = useState<"view" | "override">("view");
   const [target, setTarget] = useState<Rec | undefined>();
-  const [infoOpen, setInfoOpen] = useState(false);
+  const [draftOpen, setDraftOpen] = useState(false);
+  const [openItems, setOpenItems] = useState<string[]>([]);
   const [confirmation, setConfirmation] = useState<{
     timestamp: string;
     caseId: string;
@@ -153,7 +149,8 @@ export function CaseSheet({
     if (open) {
       setMode(initialOverride ? "override" : "view");
       setTarget(initialOverride && initialOverride !== "open" ? initialOverride : undefined);
-      setInfoOpen(false);
+      setDraftOpen(false);
+      setOpenItems([]);
       setConfirmation(null);
     }
   }, [open, claim?.case_id, initialOverride]);
@@ -195,10 +192,40 @@ export function CaseSheet({
     });
   };
 
+  const draft = draftEmail(claim);
+  const mailHref = mailtoHref(claim.contact?.email, draft);
+  const callHref = telHref(claim.contact?.phone);
+  const sent = step.label === "Email sent, waiting for reply";
+  const drafted = step.label === "Information request drafted";
+
   const prepareInfo = () => {
     if (locked) return;
     dispatch({ type: "prepareInfo", case_id: claim.case_id, timestamp: new Date().toISOString() });
-    setInfoOpen(true);
+  };
+  const copyDraft = async () => {
+    try {
+      await navigator.clipboard.writeText(draftAsText(draft));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  // Opens the reviewer's mail program with the draft. When the link would be too long to rely on, the text is copied instead.
+  const sendDraft = async () => {
+    if (locked) return;
+    prepareInfo();
+    if (mailHref) {
+      window.location.href = mailHref;
+      return;
+    }
+    const ok = await copyDraft();
+    toast(ok ? "Draft is too long for a mail link. Copied instead." : "Draft is too long for a mail link. Copy it from the draft below.");
+  };
+  const markSent = () => {
+    if (locked || sent) return;
+    prepareInfo();
+    dispatch({ type: "markInfoSent", case_id: claim.case_id, timestamp: new Date().toISOString() });
+    toast.success("Marked as sent");
   };
 
   return (
@@ -277,27 +304,105 @@ export function CaseSheet({
 
               <div className="grid gap-1 py-4 sm:grid-cols-[112px_1fr] sm:gap-4">
                 <dt className="text-xs font-medium text-muted-foreground">Next step</dt>
-                <dd className="text-sm">
-                  <p className="font-medium">
-                    {step.kind === "done" && (
-                      <Check
-                        className="mr-1 inline size-3.5 -translate-y-px text-muted-foreground"
-                        aria-hidden
-                      />
+                <dd className="min-w-0 space-y-3 text-sm">
+                  <div>
+                    <p className="font-medium">
+                      {step.kind === "done" && (
+                        <Check
+                          className="mr-1 inline size-3.5 -translate-y-px text-muted-foreground"
+                          aria-hidden
+                        />
+                      )}
+                      {step.label}
+                    </p>
+                    {step.timestamp && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Recorded {shortDate(step.timestamp)}
+                      </p>
                     )}
-                    {step.kind === "suggested"
-                      ? `Suggested next step: ${REC_LABEL[claim.recommendation_v1]}`
-                      : step.label}
-                  </p>
-                  {step.timestamp && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Recorded {shortDate(step.timestamp)}
-                    </p>
+                  </div>
+
+                  {!locked && yellow && (
+                    <div className="space-y-3">
+                      <p className="text-text-2">
+                        {sent
+                          ? "Waiting for the customer to reply."
+                          : "Information is missing. A request is drafted."}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {drafted && !sent ? (
+                          <>
+                            <Button onClick={markSent}>
+                              <Check aria-hidden /> Mark as sent
+                            </Button>
+                            <Button variant="outline" onClick={sendDraft}>
+                              <Mail aria-hidden /> Open email again
+                            </Button>
+                          </>
+                        ) : (
+                          <Button variant={sent ? "outline" : "default"} onClick={sendDraft}>
+                            <Mail aria-hidden /> {sent ? "Open email again" : "Send drafted email"}
+                          </Button>
+                        )}
+                        {callHref ? (
+                          <Button variant="outline" asChild>
+                            <a href={callHref}>
+                              <Phone aria-hidden /> Call {claim.contact?.phone}
+                            </a>
+                          </Button>
+                        ) : (
+                          <WhyDisabled disabled reason="No phone number on file">
+                            <Button variant="outline" disabled>
+                              <Phone aria-hidden /> Call
+                            </Button>
+                          </WhyDisabled>
+                        )}
+                        <CopyButton text={draftAsText(draft)} label="Copy email" onCopy={prepareInfo} />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {claim.contact?.email
+                          ? `To: ${claim.contact.email}`
+                          : "No recipient on file. Add it in your mail app."}{" "}
+                        {INFO_FOOTNOTE}
+                      </p>
+                      <div>
+                        <pre
+                          className={cn(
+                            "whitespace-pre-wrap bg-surface p-3 font-sans text-sm text-text-2",
+                            !draftOpen && "line-clamp-6",
+                          )}
+                        >
+                          {draftAsText(draft)}
+                        </pre>
+                        <button
+                          type="button"
+                          onClick={() => setDraftOpen(!draftOpen)}
+                          aria-expanded={draftOpen}
+                          className="touch-target mt-1 text-xs font-medium underline underline-offset-4 hover:text-text-2"
+                        >
+                          {draftOpen ? "Show less" : "Show full email"}
+                        </button>
+                      </div>
+                    </div>
                   )}
-                  {step.kind === "done" && !locked && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Suggested next step: {REC_LABEL[claim.recommendation_v1]}
-                    </p>
+
+                  {!locked && claim.flow === "red" && (
+                    <div className="space-y-2">
+                      <p className="text-text-2">
+                        Review the checks, then confirm or change the recommendation.
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setOpenItems((v) => (v.includes("why") ? v : [...v, "why"]))}
+                      >
+                        Open checklist
+                      </Button>
+                    </div>
+                  )}
+
+                  {!locked && claim.flow === "green" && (
+                    <p className="text-text-2">Nothing is missing and no rule raised a concern.</p>
                   )}
                 </dd>
               </div>
@@ -324,20 +429,7 @@ export function CaseSheet({
               </section>
             ) : (
               <>
-                {infoOpen && yellow && (
-                  <section className="mb-4 rounded-lg border border-border p-4" aria-live="polite">
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <h3 className="section-title">Information request</h3>
-                      <CopyButton text={infoRequestText(claim)} />
-                    </div>
-                    <pre className="whitespace-pre-wrap rounded-md bg-surface p-3 font-sans text-sm text-text-2">
-                      {infoRequestText(claim)}
-                    </pre>
-                    <p className="mt-2 text-xs text-muted-foreground">{INFO_FOOTNOTE}</p>
-                  </section>
-                )}
-
-                <Accordion type="multiple" className="w-full">
+                <Accordion type="multiple" className="w-full" value={openItems} onValueChange={setOpenItems}>
                   <AccordionItem value="why" className={SECTION}>
                     <AccordionTrigger className={TRIGGER}>{REVIEW_COPY.why}</AccordionTrigger>
                     <AccordionContent className="space-y-4">
@@ -413,20 +505,6 @@ export function CaseSheet({
                     </AccordionContent>
                   </AccordionItem>
 
-                  <AccordionItem value="email" className={SECTION}>
-                    <AccordionTrigger className={TRIGGER}>Draft email</AccordionTrigger>
-                    <AccordionContent>
-                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-xs text-muted-foreground">{EMAIL_LABEL}</p>
-                        <CopyButton text={emailText(claim)} />
-                      </div>
-                      <pre className="whitespace-pre-wrap rounded-md bg-surface p-3 font-sans text-sm text-text-2">
-                        {emailText(claim)}
-                      </pre>
-                      <p className="mt-2 text-xs text-muted-foreground">{INFO_FOOTNOTE}</p>
-                    </AccordionContent>
-                  </AccordionItem>
-
                   <AccordionItem value="connections" className={SECTION}>
                     <AccordionTrigger className={TRIGGER}>Connections</AccordionTrigger>
                     <AccordionContent className="flex flex-wrap items-center justify-between gap-3">
@@ -457,7 +535,11 @@ export function CaseSheet({
                 disabled={locked || reviewed}
                 reason={locked ? LOCKED_TOOLTIP : "Already confirmed"}
               >
-                <Button disabled={locked || reviewed || !state.reviewer.trim()} onClick={confirm}>
+                <Button
+                  variant={yellow && !sent ? "outline" : "default"}
+                  disabled={locked || reviewed || !state.reviewer.trim()}
+                  onClick={confirm}
+                >
                   <Check aria-hidden /> {confirmAction(claim.recommendation_v1)}
                 </Button>
               </WhyDisabled>
@@ -466,13 +548,6 @@ export function CaseSheet({
                   <GitBranch aria-hidden /> {OVERRIDE_REC}
                 </Button>
               </WhyDisabled>
-              {yellow && (
-                <WhyDisabled disabled={locked} reason={LOCKED_TOOLTIP}>
-                  <Button variant="ghost" disabled={locked} onClick={prepareInfo}>
-                    <FileText aria-hidden /> {PREPARE_INFO}
-                  </Button>
-                </WhyDisabled>
-              )}
               {confirmation?.caseId === claim.case_id && (
                 <Button
                   variant="ghost"

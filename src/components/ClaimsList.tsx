@@ -1,16 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Check, ChevronDown, RefreshCw, Search, X } from "lucide-react";
+import { ArrowRight, Check, RefreshCw, Search } from "lucide-react";
 import { useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import type { Flow, Rec } from "@/types";
-import {
-  CHANGE_REC,
-  FLOW_OF,
-  LOCKED_TOOLTIP,
-  REC_LABEL,
-  REC_OF,
-  REC_ORDER,
-  changeTo,
-} from "@/copy";
+import { FLOW_OF, LOCKED_TOOLTIP, REC_LABEL, REC_ORDER } from "@/copy";
 import { useStore } from "@/store";
 import type { DerivedClaim } from "@/lib/report";
 import {
@@ -22,61 +14,55 @@ import {
   shortReason,
   type NextStep,
 } from "@/lib/claim-view";
-import { cn } from "@/lib/utils";
-import { Chip, FlowBadge, NotProvided, StatusChip, WhyDisabled } from "@/components/status";
-import { FLOW_BORDER, FLOW_NAME } from "@/lib/flow-styles";
-import { CaseSheet } from "@/components/CaseSheet";
-import { SegmentedControl } from "@/components/SegmentedControl";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  applyBaseFilters,
+  DEFAULT_FILTERS,
+  flowCounts,
+  isDefaultFilters,
+  type FlowFilter,
+  type StatusFilter,
+} from "@/lib/claims-filter";
+import { cn } from "@/lib/utils";
+import { NotProvided, WhyDisabled } from "@/components/status";
+import { FLOW_BORDER, FLOW_EDGE, FLOW_NAME } from "@/lib/flow-styles";
+import { CaseSheet } from "@/components/CaseSheet";
+import { TextTabs } from "@/components/TextTabs";
+import { Button } from "@/components/ui/button";
 
-export type FlowFilter = "all" | Flow;
-type StatusFilter = "open" | "closed" | "all";
+export type { FlowFilter };
 
 /** How many claims the compact dashboard list shows before linking to the full list. */
 const COMPACT_LIMIT = 8;
 
-function QuickActions({
-  c,
-  onPick,
-  compact,
-}: {
-  c: DerivedClaim;
-  onPick: (r: Rec) => void;
-  compact?: boolean;
-}) {
+/**
+ * The two other flows as side by side buttons. The colour edge under each one is the flow it moves the
+ * claim to; a click opens the override with that target chosen.
+ */
+function MoveTo({ c, onPick }: { c: DerivedClaim; onPick: (r: Rec) => void }) {
   const locked = c.case_status === "closed";
   const others = REC_ORDER.filter((r) => r !== c.recommendation_v1);
   return (
-    <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-      <WhyDisabled disabled={locked} reason={LOCKED_TOOLTIP}>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild disabled={locked}>
-            <Button
-              variant="outline"
-              size="sm"
-              aria-label={`${CHANGE_REC} for ${c.case_id}`}
-              className="h-8 whitespace-nowrap px-3 text-xs"
-              disabled={locked}
-            >
-              {compact ? "Change" : CHANGE_REC} <ChevronDown aria-hidden />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {others.map((r) => (
-              <DropdownMenuItem key={r} onSelect={() => onPick(r)} className="gap-2 text-xs">
-                {changeTo(r)}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </WhyDisabled>
+    <div
+      className="flex flex-wrap gap-2"
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      {others.map((r) => (
+        <WhyDisabled key={r} disabled={locked} reason={LOCKED_TOOLTIP}>
+          <button
+            type="button"
+            disabled={locked}
+            onClick={() => onPick(r)}
+            aria-label={`Move ${c.case_id} to ${REC_LABEL[r]}`}
+            className={cn(
+              "touch-target inline-flex h-9 touch-manipulation select-none items-center whitespace-nowrap border border-b-[3px] border-border bg-background px-3 text-sm font-medium text-foreground transition-[background-color,border-color,opacity] duration-(--dur-fast) ease-(--ease-out) [-webkit-tap-highlight-color:transparent] hover:border-border-strong hover:bg-surface active:opacity-70 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-background",
+              FLOW_EDGE[FLOW_OF[r]],
+            )}
+          >
+            {REC_LABEL[r]}
+          </button>
+        </WhyDisabled>
+      ))}
     </div>
   );
 }
@@ -94,15 +80,27 @@ function StepText({ step }: { step: NextStep }) {
   );
 }
 
-function RecheckFlag() {
+function RecheckText() {
   return (
-    <Chip tone="outline">
+    <span className="inline-flex items-center gap-1 text-xs text-text-2">
       <RefreshCw className="size-3" aria-hidden /> Recheck
-    </Chip>
+    </span>
   );
 }
 
-const groupLabel = (f: Flow) => FLOW_NAME[f];
+const statusText = (c: DerivedClaim) => (c.case_status === "open" ? "Open" : "Closed");
+
+/** Flow name with its count on one baseline, the strong rule directly under it. */
+function GroupHeading({ flow, count }: { flow: Flow; count: number }) {
+  return (
+    <span className="flex items-baseline gap-3">
+      <span className="font-display text-2xl font-semibold text-foreground">{FLOW_NAME[flow]}</span>
+      <span className="tnum text-base font-normal text-muted-foreground">
+        {count} {count === 1 ? "claim" : "claims"}
+      </span>
+    </span>
+  );
+}
 
 export function ClaimsList({
   flow,
@@ -119,38 +117,39 @@ export function ClaimsList({
   compact?: boolean;
 }) {
   const { derived, state } = useStore();
-  const [status, setStatus] = useState<StatusFilter>("open");
-  const [q, setQ] = useState("");
-  const [recheckOnly, setRecheckOnly] = useState(false);
+  const [status, setStatus] = useState<StatusFilter>(DEFAULT_FILTERS.status);
+  const [q, setQ] = useState(DEFAULT_FILTERS.q);
+  const [recheckOnly, setRecheckOnly] = useState(DEFAULT_FILTERS.recheckOnly);
   const [openId, setOpenId] = useState<string | null>(null);
   const [initialOverride, setInitialOverride] = useState<Rec | undefined>();
   const rowRefs = useRef<Record<string, HTMLElement | null>>({});
 
   const clear = () => {
     setFlow("all");
-    setStatus("all");
-    setQ("");
-    setRecheckOnly(false);
+    setStatus(DEFAULT_FILTERS.status);
+    setQ(DEFAULT_FILTERS.q);
+    setRecheckOnly(DEFAULT_FILTERS.recheckOnly);
   };
 
   const effectiveStatus: StatusFilter = compact ? "open" : status;
-  const filtered = useMemo(
+  const filters = { status: effectiveStatus, q, recheckOnly };
+  const base = useMemo(() => applyBaseFilters(derived, filters), [derived, effectiveStatus, q, recheckOnly]);
+  const counts = flowCounts(base);
+  const recheckCount = useMemo(
     () =>
-      derived
-        .filter((c) => flow === "all" || c.flow === flow)
-        .filter((c) => effectiveStatus === "all" || c.case_status === effectiveStatus)
-        .filter((c) => !q.trim() || c.case_id.toLowerCase().includes(q.trim().toLowerCase()))
-        .filter((c) => !recheckOnly || c.needs_recheck)
-        .sort(byUrgency),
-    [derived, flow, effectiveStatus, q, recheckOnly],
+      applyBaseFilters(derived, { ...filters, recheckOnly: false }).filter((c) => c.needs_recheck)
+        .length,
+    [derived, effectiveStatus, q],
+  );
+  const filtered = useMemo(
+    () => base.filter((c) => flow === "all" || c.flow === flow).sort(byUrgency),
+    [base, flow],
   );
   const rows = compact ? filtered.slice(0, COMPACT_LIMIT) : filtered;
   const hidden = filtered.length - rows.length;
   const groups = (["red", "yellow", "green"] as Flow[])
     .map((f) => ({ flow: f, items: rows.filter((r) => r.flow === f) }))
     .filter((g) => g.items.length);
-  const counts = { all: derived.length, red: 0, yellow: 0, green: 0 } as Record<FlowFilter, number>;
-  derived.forEach((c) => counts[c.flow]++);
 
   const openClaim = derived.find((c) => c.case_id === openId) ?? null;
   const open = (id: string, target?: Rec) => {
@@ -171,120 +170,125 @@ export function ClaimsList({
     }
   };
 
-  const chips: { label: string; clear: () => void }[] = [];
-  if (!compact) {
-    if (flow !== "all")
-      chips.push({ label: `Recommendation: ${groupLabel(flow)}`, clear: () => setFlow("all") });
-    if (status !== "all")
-      chips.push({
-        label: `Status: ${status === "open" ? "Open" : "Closed"}`,
-        clear: () => setStatus("all"),
-      });
-    if (q.trim()) chips.push({ label: `Case: ${q.trim()}`, clear: () => setQ("") });
-    if (recheckOnly)
-      chips.push({ label: "Needs recheck only", clear: () => setRecheckOnly(false) });
-  }
-
   // Live engine cases carry no incident date; drop the column rather than fill it with blanks.
   const showDate = derived.some((c) => incidentDate(c) !== null);
   const cols = [
     "Case",
-    "Recommendation",
     "Reason",
     "Quote",
-    "Status",
     "Next step",
     ...(showDate ? ["Incident date"] : []),
-    ...(compact ? [] : ["Action"]),
+    ...(compact ? [] : ["Move to"]),
   ];
-  // Relative widths; the reason column takes what the optional columns leave.
+  // Relative widths; the reason column takes what the others leave.
   const width: Record<string, number> = {
-    Case: 9,
-    Recommendation: 15,
-    Quote: 9,
-    Status: 10,
-    "Next step": 17,
+    Case: 12,
+    Quote: 8,
+    "Next step": 16,
     "Incident date": 10,
-    Action: 11,
+    "Move to": 30,
   };
   const reasonWidth = 100 - cols.filter((c) => c !== "Reason").reduce((n, c) => n + width[c]!, 0);
+  const loading = state.source === "connecting" && derived.length === 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {heading}
 
       {!compact && (
-        <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
-          <label className="relative flex w-fit items-center">
-            <Search
-              className="pointer-events-none absolute left-3 size-3.5 text-muted-foreground"
-              aria-hidden
-            />
-            <span className="sr-only">Search by case id</span>
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search case id"
-              className="h-9 w-48 rounded-md border border-border bg-background pl-8 pr-2 text-sm hover:border-border-strong"
-            />
-          </label>
-          {!hideFlowFilter && (
-            <SegmentedControl
-              label="Recommendation"
-              value={flow}
-              onChange={setFlow}
-              options={(["all", "red", "yellow", "green"] as FlowFilter[]).map((f) => ({
-                value: f,
-                count: counts[f],
-                label: f === "all" ? "All" : groupLabel(f),
-              }))}
-            />
-          )}
-          <SegmentedControl
-            label="Status"
-            value={status}
-            onChange={setStatus}
-            options={[
-              { value: "open", label: "Open" },
-              { value: "closed", label: "Closed" },
-              { value: "all", label: "All" },
-            ]}
-          />
-          <label className="inline-flex items-center gap-2 text-xs font-medium text-text-2">
-            <Switch checked={recheckOnly} onCheckedChange={setRecheckOnly} /> Needs recheck only
-          </label>
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3 border-b border-border">
+            {!hideFlowFilter ? (
+              <TextTabs
+                label="Recommendation"
+                value={flow}
+                onChange={setFlow}
+                options={(["all", "red", "yellow", "green"] as FlowFilter[]).map((f) => ({
+                  value: f,
+                  count: counts[f],
+                  label: f === "all" ? "All" : FLOW_NAME[f],
+                }))}
+              />
+            ) : (
+              <span />
+            )}
+            <label className="relative mb-2 flex items-center">
+              <Search
+                className="pointer-events-none absolute left-3 size-3.5 text-muted-foreground"
+                aria-hidden
+              />
+              <span className="sr-only">Search by case id</span>
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search case id"
+                className="h-9 w-48 rounded-md border border-border bg-background pl-8 pr-2 text-base hover:border-border-strong md:text-sm"
+              />
+            </label>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1">
+            <div className="flex flex-wrap items-center gap-x-6">
+              <TextTabs
+                label="Status"
+                value={status}
+                onChange={setStatus}
+                options={[
+                  { value: "open", label: "Open" },
+                  { value: "closed", label: "Closed" },
+                  { value: "all", label: "All" },
+                ]}
+              />
+              {(recheckCount > 0 || recheckOnly) && (
+                <button
+                  type="button"
+                  aria-pressed={recheckOnly}
+                  onClick={() => setRecheckOnly(!recheckOnly)}
+                  className={cn(
+                    "relative inline-flex min-h-11 touch-manipulation select-none items-baseline gap-2 py-2 text-sm transition-[color,opacity] duration-(--dur-fast) ease-(--ease-out) [-webkit-tap-highlight-color:transparent] active:opacity-70",
+                    recheckOnly
+                      ? "font-semibold text-foreground"
+                      : "font-medium text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Needs recheck
+                  <span className="tnum text-xs font-normal">{recheckCount}</span>
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "absolute inset-x-0 bottom-0 h-0.5 origin-left bg-foreground transition-transform duration-(--dur-fast) ease-(--ease-out)",
+                      recheckOnly ? "scale-x-100" : "scale-x-0",
+                    )}
+                  />
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span className="tnum" aria-live="polite">
+                {rows.length} of {derived.length} claims
+              </span>
+              {!isDefaultFilters(flow, { status, q, recheckOnly }) && (
+                <button
+                  onClick={clear}
+                  className="touch-target font-medium text-foreground underline underline-offset-4 hover:text-text-2"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
-      {chips.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          {chips.map((c) => (
-            <button
-              key={c.label}
-              onClick={c.clear}
-              className="inline-flex items-center gap-1 rounded-none border border-border bg-surface px-3 py-1 text-xs hover:border-border-strong"
-            >
-              {c.label} <X className="size-3" aria-hidden />{" "}
-              <span className="sr-only">Remove filter</span>
-            </button>
-          ))}
-          <button
-            onClick={clear}
-            className="text-xs font-medium underline underline-offset-4 hover:text-text-2"
-          >
-            Clear filters
-          </button>
-        </div>
-      )}
-
-      {state.source === "connecting" && derived.length === 0 ? (
-        <div className="space-y-2" role="status" aria-label="Loading claims">
+      {loading ? (
+        <div role="status" aria-label="Loading claims">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="card-panel h-16 animate-pulse bg-surface-2" />
+            <div key={i} className="h-16 border-b border-border py-5">
+              <div className="h-4 w-1/3 animate-pulse bg-surface-2" />
+            </div>
           ))}
         </div>
       ) : rows.length === 0 ? (
-        <div className="card-panel flex flex-col items-center gap-3 px-6 py-16 text-center">
+        <div className="space-y-3 border-y border-border py-10">
           <p className="text-sm text-text-2">
             {derived.length === 0
               ? "There are no claims to show. They appear here once the triage service returns cases."
@@ -300,8 +304,8 @@ export function ClaimsList({
         </div>
       ) : (
         <>
-          <div className="card-panel hidden overflow-x-auto md:block">
-            <table className="w-full min-w-[1040px] table-fixed border-separate border-spacing-0 text-sm">
+          <div className="hidden xl:block">
+            <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
               <colgroup>
                 {cols.map((c) => (
                   <col key={c} style={{ width: `${c === "Reason" ? reasonWidth : width[c]}%` }} />
@@ -314,7 +318,7 @@ export function ClaimsList({
                       key={h}
                       scope="col"
                       className={cn(
-                        "border-b border-border px-4 py-3 text-xs font-medium text-muted-foreground",
+                        "px-4 pb-2 text-xs font-medium text-muted-foreground first:pl-3",
                         h === "Quote" && "text-right",
                       )}
                     >
@@ -329,14 +333,9 @@ export function ClaimsList({
                     <th
                       colSpan={cols.length}
                       scope="rowgroup"
-                      className="border-b border-border bg-surface px-4 py-2 text-left text-xs font-semibold"
+                      className="border-b-2 border-foreground px-0 pb-2 pt-10 text-left"
                     >
-                      <span className="inline-flex items-center gap-2">
-                        {groupLabel(g.flow)}
-                        <span className="tnum font-normal text-muted-foreground">
-                          {g.items.length} {g.items.length === 1 ? "claim" : "claims"}
-                        </span>
-                      </span>
+                      <GroupHeading flow={g.flow} count={g.items.length} />
                     </th>
                   </tr>
                   {g.items.map((c) => {
@@ -356,52 +355,43 @@ export function ClaimsList({
                       >
                         <td
                           className={cn(
-                            "border-b border-l-2 border-border px-4 py-3 align-top",
+                            "border-b border-l-2 border-border px-4 py-4 pl-3 align-top",
                             FLOW_BORDER[c.flow],
                           )}
                         >
-                          <span className="whitespace-nowrap font-mono text-sm font-medium">
+                          <div className="whitespace-nowrap font-mono text-base font-semibold">
                             {c.case_id}
-                          </span>
+                          </div>
+                          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                            <span>{statusText(c)}</span>
+                            {c.case_status === "open" && c.needs_recheck && <RecheckText />}
+                          </div>
                         </td>
-                        <td className="border-b border-border px-4 py-3 align-top">
-                          <FlowBadge rec={c.recommendation_v1} />
-                        </td>
-                        <td className="border-b border-border px-4 py-3 align-top">
-                          <p className="line-clamp-2 text-text-2" title={c.explanation}>
+                        <td className="border-b border-border px-4 py-4 align-top">
+                          <p className="line-clamp-2 text-foreground" title={c.explanation}>
                             {shortReason(c, state.log)}
                           </p>
                         </td>
-                        <td className="tnum border-b border-border px-4 py-3 text-right align-top">
+                        <td className="tnum border-b border-border px-4 py-4 text-right align-top">
                           {quote === null ? (
-                            <span className="text-xs italic text-muted-foreground">
-                              not provided
-                            </span>
+                            <span className="text-xs italic text-muted-foreground">not provided</span>
                           ) : (
                             quote.toLocaleString("en-US")
                           )}
                         </td>
-                        <td className="border-b border-border px-4 py-3 align-top">
-                          <div className="flex flex-col items-start gap-2">
-                            <StatusChip status={c.case_status} />
-                            {c.case_status === "open" && c.needs_recheck && <RecheckFlag />}
-                          </div>
-                        </td>
-                        <td className="border-b border-border px-4 py-3 align-top">
+                        <td className="border-b border-border px-4 py-4 align-top">
                           <StepText step={nextStep(c, state.log)} />
                         </td>
                         {showDate && (
-                          <td className="tnum whitespace-nowrap border-b border-border px-4 py-3 align-top text-text-2">
+                          <td className="tnum whitespace-nowrap border-b border-border px-4 py-4 align-top text-text-2">
                             {date ?? (
-                              <span className="text-xs italic text-muted-foreground">
-                                not provided
-                              </span>
+                              <span className="text-xs italic text-muted-foreground">not provided</span>
                             )}
                           </td>
                         )}
                         {!compact && (
-                          <td className="border-b border-border px-3 py-3 align-top">
-                            <QuickActions compact c={c} onPick={(r) => open(c.case_id, r)} />
+                          <td className="border-b border-border px-4 py-3 align-top">
+                            <MoveTo c={c} onPick={(r) => open(c.case_id, r)} />
                           </td>
                         )}
                       </tr>
@@ -412,15 +402,12 @@ export function ClaimsList({
             </table>
           </div>
 
-          <div className="space-y-6 md:hidden">
+          <div className="space-y-10 xl:hidden">
             {groups.map((g) => (
-              <div key={g.flow} className="space-y-2">
-                <div className="flex items-center gap-2 text-xs font-semibold">
-                  {groupLabel(g.flow)}
-                  <span className="tnum font-normal text-muted-foreground">
-                    {g.items.length} {g.items.length === 1 ? "claim" : "claims"}
-                  </span>
-                </div>
+              <section key={g.flow} aria-label={FLOW_NAME[g.flow]}>
+                <h2 className="border-b-2 border-foreground pb-2">
+                  <GroupHeading flow={g.flow} count={g.items.length} />
+                </h2>
                 {g.items.map((c) => {
                   const quote = quoteOf(c);
                   return (
@@ -432,26 +419,27 @@ export function ClaimsList({
                       onClick={() => open(c.case_id)}
                       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && open(c.case_id)}
                       className={cn(
-                        "card-panel space-y-2 border-l-2 p-4 hover:bg-surface",
+                        "space-y-2 border-b border-l-2 border-border py-4 pl-3 hover:bg-surface",
                         FLOW_BORDER[c.flow],
                       )}
                     >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-sm font-medium">{c.case_id}</span>
-                        <FlowBadge rec={c.recommendation_v1} size="sm" />
-                        <StatusChip status={c.case_status} />
+                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                        <span className="font-mono text-base font-semibold">{c.case_id}</span>
+                        <span className="text-xs text-muted-foreground">{statusText(c)}</span>
+                        {c.case_status === "open" && c.needs_recheck && <RecheckText />}
                         <span className="tnum ml-auto text-sm">
                           {quote === null ? <NotProvided /> : eur(quote)}
                         </span>
                       </div>
-                      <p className="text-sm text-text-2">{shortReason(c, state.log)}</p>
+                      <p className="line-clamp-3 text-sm text-foreground">
+                        {shortReason(c, state.log)}
+                      </p>
                       <StepText step={nextStep(c, state.log)} />
-                      {c.case_status === "open" && c.needs_recheck && <RecheckFlag />}
-                      {!compact && <QuickActions c={c} onPick={(r) => open(c.case_id, r)} />}
+                      {!compact && <MoveTo c={c} onPick={(r) => open(c.case_id, r)} />}
                     </div>
                   );
                 })}
-              </div>
+              </section>
             ))}
           </div>
         </>

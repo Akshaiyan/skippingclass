@@ -19,3 +19,9 @@ export const FLOW_NAME: Record<Flow, string> = {
   yellow: "Missing information",
   green: "Routine processing",
 };
+// The colour edge under a button that moves a claim into that flow. Full class names so Tailwind finds them.
+export const FLOW_EDGE: Record<Flow, string> = {
+  red: "border-b-flow-red",
+  yellow: "border-b-flow-yellow",
+  green: "border-b-flow-green",
+};
