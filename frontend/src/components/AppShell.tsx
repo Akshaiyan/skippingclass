@@ -74,6 +74,14 @@ function NavList({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: (
                 {redOpen}
               </span>
             )}
+            {n.to === "/log" && state.log.length > 0 && (
+              <span
+                className={cn("tnum text-xs text-text-2", collapsed ? "absolute right-1 top-1" : "ml-auto")}
+                aria-label={`${state.log.length} decisions recorded`}
+              >
+                {state.log.length}
+              </span>
+            )}
           </Link>
         );
         return collapsed ? (
