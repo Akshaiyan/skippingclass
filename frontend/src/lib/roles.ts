@@ -7,8 +7,8 @@ export const ROLE_LABEL: Record<Role, string> = {
 
 /** Pages each role can open. Policy change is limited to operations leads. */
 const ACCESS: Record<Role, readonly string[]> = {
-  insurance_claimer: ["/", "/claims", "/log"],
-  operations_lead: ["/", "/claims", "/policy", "/business", "/log"],
+  insurance_claimer: ["/", "/claims", "/log", "/voice"],
+  operations_lead: ["/", "/claims", "/policy", "/business", "/log", "/voice"],
 };
 
 export const canOpen = (role: Role | undefined, path: string) =>

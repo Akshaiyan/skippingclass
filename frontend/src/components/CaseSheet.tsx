@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Check, Copy, GitBranch, Lock, Mail, Phone, Plug } from "lucide-react";
-import type { Rec } from "@/types";
+import type { ReasonCode, Rec } from "@/types";
 import {
   REVIEW_COPY,
   confirmAction,
@@ -120,12 +120,17 @@ export function CaseSheet({
   open,
   onOpenChange,
   initialOverride,
+  initialNote,
+  initialReason,
   onReturnFocus,
 }: {
   claim: DerivedClaim | null;
   open: boolean;
   onOpenChange: (o: boolean) => void;
   initialOverride?: Rec | "open";
+  /** Pre-fills the override form (the voice assistant drafts one; the reviewer still checks and records it). */
+  initialNote?: string;
+  initialReason?: ReasonCode;
   onReturnFocus?: () => void;
 }) {
   const { state, dispatch, v1Rules } = useStore();
@@ -237,6 +242,11 @@ export function CaseSheet({
       <SheetContent
         side="right"
         className="flex w-full flex-col gap-0 overflow-hidden p-0 shadow-sheet sm:max-w-[680px]"
+        onInteractOutside={(event) => {
+          // The voice dock floats over the page; pressing its mic or End button must not dismiss the sheet.
+          const t = event.target;
+          if (t instanceof Element && t.closest("[data-voice-dock]")) event.preventDefault();
+        }}
         onCloseAutoFocus={(event) => {
           if (onReturnFocus) {
             event.preventDefault();
@@ -431,6 +441,8 @@ export function CaseSheet({
                   key={`${claim.case_id}-${target}`}
                   claim={claim}
                   initialTarget={target}
+                  initialNote={initialNote}
+                  initialReason={initialReason}
                   onCancel={() => setMode("view")}
                   onDone={() => onOpenChange(false)}
                 />

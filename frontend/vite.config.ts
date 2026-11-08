@@ -18,6 +18,9 @@ const isStatic = process.env["STATIC_BUILD"] === "1";
 // Where `npm run dev` forwards /api/* so the browser never needs CORS or a hard-coded backend URL.
 const proxyTarget = process.env["VITE_PROXY_TARGET"] ?? "http://127.0.0.1:8000";
 
+// The Aegis voice agent's token server (the elevenlabstest folder, `npm start`). /voice-api/token -> its /api/token.
+const voiceTarget = process.env["VITE_VOICE_PROXY_TARGET"] ?? "http://127.0.0.1:3001";
+
 export default defineConfig({
   ...(isStatic
     ? { nitro: false as const, tanstackStart: { spa: { enabled: true } } }
@@ -29,7 +32,16 @@ export default defineConfig({
         },
       }),
   vite: {
-    server: { proxy: { "/api": { target: proxyTarget, changeOrigin: true } } },
+    server: {
+      proxy: {
+        "/api": { target: proxyTarget, changeOrigin: true },
+        "/voice-api": {
+          target: voiceTarget,
+          changeOrigin: true,
+          rewrite: (p: string) => p.replace(/^\/voice-api/, "/api"),
+        },
+      },
+    },
     ...(isStatic ? { build: { outDir: "dist" } } : {}),
     // Pre-bundle UI deps up front so a mid-session re-optimization can't load a second React copy.
     optimizeDeps: {

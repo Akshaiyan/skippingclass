@@ -141,7 +141,7 @@ function RootComponent() {
       <StoreProvider>
         <TooltipProvider delayDuration={200}>
           <AuthGate />
-          <Toaster position="bottom-right" />
+          <Toaster position="bottom-right" offset={{ bottom: 88, right: 16 }} />
         </TooltipProvider>
       </StoreProvider>
     </QueryClientProvider>

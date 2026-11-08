@@ -13,17 +13,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import type { ReviewerOverride } from "@/types";
 import { postOverride } from "@/data/live";
+import { emitAppEvent } from "@/lib/app-events";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRovingRadio } from "@/hooks/use-roving-radio";
 
 export function OverrideFlow({
   claim,
   initialTarget,
+  initialNote,
+  initialReason,
   onCancel,
   onDone,
 }: {
   claim: Claim;
   initialTarget?: Rec;
+  initialNote?: string;
+  initialReason?: ReasonCode;
   onCancel: () => void;
   onDone: () => void;
 }) {
@@ -32,8 +37,8 @@ export function OverrideFlow({
   const [to, setTo] = useState<Rec | null>(
     initialTarget && initialTarget !== claim.recommendation_v1 ? initialTarget : null,
   );
-  const [reason, setReason] = useState<ReasonCode | null>(null);
-  const [note, setNote] = useState("");
+  const [reason, setReason] = useState<ReasonCode | null>(initialReason ?? null);
+  const [note, setNote] = useState(initialNote ?? "");
   // Overrides are recorded under the signed-in profile; the name is not editable here.
   const actor = state.user?.name ?? state.reviewer;
   const [touched, setTouched] = useState(false);
@@ -90,6 +95,7 @@ export function OverrideFlow({
           // Reload the snapshot so the integrity banner and the log are checked again, not left at load time.
           queryClient.invalidateQueries({ queryKey: ["live-snapshot"] });
           dispatch({ type: "override", record, timestamp });
+          emitAppEvent({ type: "override_recorded", record });
           setDone(record);
         })
         .catch((e: unknown) =>
@@ -99,6 +105,7 @@ export function OverrideFlow({
       return;
     }
     dispatch({ type: "override", record, timestamp });
+    emitAppEvent({ type: "override_recorded", record });
     setDone(record);
   };
 

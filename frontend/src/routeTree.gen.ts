@@ -14,6 +14,7 @@ import { Route as BusinessRouteImport } from './routes/business'
 import { Route as ClaimsRouteImport } from './routes/claims'
 import { Route as LogRouteImport } from './routes/log'
 import { Route as PolicyRouteImport } from './routes/policy'
+import { Route as VoiceRouteImport } from './routes/voice'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +41,11 @@ const PolicyRoute = PolicyRouteImport.update({
   path: '/policy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VoiceRoute = VoiceRouteImport.update({
+  id: '/voice',
+  path: '/voice',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/claims': typeof ClaimsRoute
   '/log': typeof LogRoute
   '/policy': typeof PolicyRoute
+  '/voice': typeof VoiceRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/claims': typeof ClaimsRoute
   '/log': typeof LogRoute
   '/policy': typeof PolicyRoute
+  '/voice': typeof VoiceRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +70,14 @@ export interface FileRoutesById {
   '/claims': typeof ClaimsRoute
   '/log': typeof LogRoute
   '/policy': typeof PolicyRoute
+  '/voice': typeof VoiceRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/business' | '/claims' | '/log' | '/policy'
+  fullPaths: '/' | '/business' | '/claims' | '/log' | '/policy' | '/voice'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/business' | '/claims' | '/log' | '/policy'
-  id: '__root__' | '/' | '/business' | '/claims' | '/log' | '/policy'
+  to: '/' | '/business' | '/claims' | '/log' | '/policy' | '/voice'
+  id: '__root__' | '/' | '/business' | '/claims' | '/log' | '/policy' | '/voice'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,6 +86,7 @@ export interface RootRouteChildren {
   ClaimsRoute: typeof ClaimsRoute
   LogRoute: typeof LogRoute
   PolicyRoute: typeof PolicyRoute
+  VoiceRoute: typeof VoiceRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -116,6 +126,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/voice': {
+      id: '/voice'
+      path: '/voice'
+      fullPath: '/voice'
+      preLoaderRoute: typeof VoiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -125,6 +142,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClaimsRoute: ClaimsRoute,
   LogRoute: LogRoute,
   PolicyRoute: PolicyRoute,
+  VoiceRoute: VoiceRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

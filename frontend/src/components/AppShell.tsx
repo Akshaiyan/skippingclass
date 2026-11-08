@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Mic,
   PanelLeftClose,
   PanelLeftOpen,
   Scale,
@@ -19,6 +20,7 @@ import { PolicyStamp } from "./status";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { VoiceProvider } from "@/voice/VoiceProvider";
 
 const NAV = [
   { to: "/", label: "Dashboard", short: "Home", icon: LayoutDashboard },
@@ -26,6 +28,7 @@ const NAV = [
   { to: "/policy", label: "Policy change", short: "Policy", icon: Scale },
   { to: "/business", label: "Cost impact", short: "Business", icon: TrendingUp },
   { to: "/log", label: "Decision log", short: "Log", icon: ScrollText },
+  { to: "/voice", label: "Talk to Aegis", short: "Aegis", icon: Mic },
 ] as const;
 
 const initials = (name: string) =>
@@ -171,75 +174,77 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   return (
-    <div className="flex min-h-dvh bg-background">
-      <aside
-        className={cn(
-          "sticky top-0 hidden h-dvh shrink-0 flex-col justify-between border-r border-border bg-sidebar transition-[width] duration-200 ease-out md:flex",
-          collapsed ? "w-16 px-2 py-4" : "w-60 px-3 py-5",
-        )}
-      >
-        <div className="space-y-7">
-          <div className={cn(collapsed ? "flex justify-center" : "px-1")}>
-            <Brand collapsed={collapsed} />
-          </div>
-          <NavList collapsed={collapsed} />
-        </div>
-        <div className="space-y-3">
-          <UserPanel collapsed={collapsed} />
-          <button
-            onClick={() => setCollapsed((c) => !c)}
-            className={cn(
-              "flex w-full rounded-md text-xs text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground",
-              collapsed ? "flex-col items-center gap-1 py-2" : "items-center gap-2 px-3 py-2",
-            )}
-          >
-            {collapsed ? (
-              <PanelLeftOpen className="size-4" aria-hidden />
-            ) : (
-              <PanelLeftClose className="size-4" aria-hidden />
-            )}
-            {collapsed ? "Expand" : "Collapse sidebar"}
-          </button>
-        </div>
-      </aside>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:hidden">
-          <AegisLogo className="h-6 w-auto text-foreground" />
-          <Button variant="outline" size="sm" onClick={() => setMobileOpen(true)}>
-            <Menu aria-hidden /> Menu
-          </Button>
-        </div>
-        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetContent side="left" className="flex w-72 flex-col justify-between bg-sidebar">
-            <div className="space-y-6">
-              <SheetTitle className="sr-only">Navigation</SheetTitle>
-              <Brand collapsed={false} />
-              <NavList collapsed={false} onNavigate={() => setMobileOpen(false)} />
-            </div>
-            <UserPanel collapsed={false} />
-          </SheetContent>
-        </Sheet>
-        {state.source !== "live" && (
-          <div
-            role="status"
-            className="border-b border-border bg-surface px-4 py-2 text-sm md:px-8"
-          >
-            <strong className="font-medium">Demo data.</strong>{" "}
-            {state.source === "connecting"
-              ? "Connecting to the triage service…"
-              : "The triage service is not reachable, so decisions shown here are not from the engine and are not recorded."}
-          </div>
-        )}
-        <main
+    <VoiceProvider>
+      <div className="flex min-h-dvh bg-background">
+        <aside
           className={cn(
-            "mx-auto w-full flex-1 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 md:px-8 md:py-8",
-            !fullWidth && "max-w-[1440px]",
+            "sticky top-0 hidden h-dvh shrink-0 flex-col justify-between border-r border-border bg-sidebar transition-[width] duration-200 ease-out md:flex",
+            collapsed ? "w-16 px-2 py-4" : "w-60 px-3 py-5",
           )}
         >
-          {children}
-        </main>
+          <div className="space-y-7">
+            <div className={cn(collapsed ? "flex justify-center" : "px-1")}>
+              <Brand collapsed={collapsed} />
+            </div>
+            <NavList collapsed={collapsed} />
+          </div>
+          <div className="space-y-3">
+            <UserPanel collapsed={collapsed} />
+            <button
+              onClick={() => setCollapsed((c) => !c)}
+              className={cn(
+                "flex w-full rounded-md text-xs text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground",
+                collapsed ? "flex-col items-center gap-1 py-2" : "items-center gap-2 px-3 py-2",
+              )}
+            >
+              {collapsed ? (
+                <PanelLeftOpen className="size-4" aria-hidden />
+              ) : (
+                <PanelLeftClose className="size-4" aria-hidden />
+              )}
+              {collapsed ? "Expand" : "Collapse sidebar"}
+            </button>
+          </div>
+        </aside>
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:hidden">
+            <AegisLogo className="h-6 w-auto text-foreground" />
+            <Button variant="outline" size="sm" onClick={() => setMobileOpen(true)}>
+              <Menu aria-hidden /> Menu
+            </Button>
+          </div>
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetContent side="left" className="flex w-72 flex-col justify-between bg-sidebar">
+              <div className="space-y-6">
+                <SheetTitle className="sr-only">Navigation</SheetTitle>
+                <Brand collapsed={false} />
+                <NavList collapsed={false} onNavigate={() => setMobileOpen(false)} />
+              </div>
+              <UserPanel collapsed={false} />
+            </SheetContent>
+          </Sheet>
+          {state.source !== "live" && (
+            <div
+              role="status"
+              className="border-b border-border bg-surface px-4 py-2 text-sm md:px-8"
+            >
+              <strong className="font-medium">Demo data.</strong>{" "}
+              {state.source === "connecting"
+                ? "Connecting to the triage service…"
+                : "The triage service is not reachable, so decisions shown here are not from the engine and are not recorded."}
+            </div>
+          )}
+          <main
+            className={cn(
+              "mx-auto w-full flex-1 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 md:px-8 md:py-8",
+              !fullWidth && "max-w-[1440px]",
+            )}
+          >
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </VoiceProvider>
   );
 }

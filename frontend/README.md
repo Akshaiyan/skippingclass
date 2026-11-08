@@ -44,3 +44,18 @@ Everything the UI sends or receives goes through **`src/data/live.ts`** (HTTP ca
 
 `vercel.json` and `netlify.toml` are ready: connect the repo, set the root directory to `frontend`, done.
 Lockfiles: `package-lock.json` (npm, used by hosts) and `bun.lock` (Lovable). Keep both when adding a dependency.
+
+## Voice assistant (Aegis)
+
+A **Talk to Aegis** button sits bottom-right on every page once you are signed in. The voice agent itself lives in
+the separate `elevenlabstest` folder; this app only connects the microphone and gives the agent tools.
+
+- Run it: in `elevenlabstest`, `npm start` (set `NO_OPEN=1` in its `.env` so it doesn't open its own tab), then
+  `npm run dev` here. Vite forwards `/voice-api/token` to `http://127.0.0.1:3001/api/token`
+  (`VITE_VOICE_PROXY_TARGET` to change). Hosted: build with `VITE_VOICE_API_BASE=https://your-voice-server/api`
+  and add that origin to `ALLOWED_ORIGINS` in the voice server's `.env`.
+- Tools (`src/voice/tools.ts`) must match `tools` in `elevenlabstest/aegis.config.js` by name and parameters:
+  `get_app_context`, `navigate_to_page`, `open_claim`, `show_diagram`, `close_diagram`, `propose_override`.
+- Diagrams (`src/voice/diagrams.ts`, drawn by `DiagramPanel.tsx`) are built from the live claims and rules.
+- The assistant can look, navigate, open claims and **draft** an override into the normal form. It cannot record
+  anything: the reviewer presses Record override. Page access follows the signed-in role (`src/lib/roles.ts`).
