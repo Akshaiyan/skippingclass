@@ -20,5 +20,18 @@ with tempfile.TemporaryDirectory() as d:
     same.write_text(json.dumps(v1), encoding="utf-8")
     z = b.policy_change_saving(str(same))
     check("a policy identical to v1 flips nothing and saves nothing", z["flip_share"] == 0 and z["saving_eur"] == 0, z)
+# Annual figures at the practice mix (7 routine, 2 request-information, 3 human review of 12), ASSUMED inputs.
+manual, system = b.annual_triage_cost(7 / 12, 2 / 12, 3 / 12)
+check("annual triage today is EUR 180,000 and with the system EUR 63,750", round(manual) == 180000 and round(system) == 63750, (manual, system))
+saving = manual - system
+payback = b.val("system_running_cost_eur_per_year") / saving * 12
+check("year-1 net benefit is EUR 56,250 and payback 6.2 months", round(saving - b.val("system_running_cost_eur_per_year")) == 56250 and round(payback, 1) == 6.2, (saving, payback))
+# Cost of errors and the threshold it sets.
+e = b.error_costs(7 / 12)
+check("an unnecessary escalation costs EUR 8.25 extra", e["extra_cost_unnecessary_escalation_eur"] == 8.25, e)
+check("a claim goes to a person once the chance of a wrong routine decision exceeds 0.41%", e["escalate_above_error_probability"] == 0.0041, e)
+half = next(r for r in e["annual_cost_by_wrong_routine_rate"] if r["wrong_routine_rate"] == 0.005)
+check("a 0.5% wrong-routine rate costs EUR 116,667 a year", half["annual_error_cost_eur"] == 116667, half)
+check("a zero error rate costs nothing", e["annual_cost_by_wrong_routine_rate"][0]["annual_error_cost_eur"] == 0, e)
 print("ALL BUSINESS TESTS PASSED" if not FAILS else f"FAILED: {FAILS}")
 sys.exit(1 if FAILS else 0)
